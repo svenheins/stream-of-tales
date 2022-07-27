@@ -48,6 +48,7 @@ public class GamePanel extends JPanel {
 	public Entity playerEntity;
 //	public Entity eye;
 //	public Space space;
+	private Space spaceAdd;
 
 	
 //	private ConsoleInputHandler consoleInput;
@@ -75,6 +76,7 @@ public class GamePanel extends JPanel {
 	public IngameWindow mainMenu;
 	
 	public Space startButton;
+	public Space simulationButton;
 	public Space connectButton;
 	
 //	public IngameConsole gameConsole;
@@ -131,6 +133,8 @@ public class GamePanel extends JPanel {
 		// Init GUI-Objects
 		startButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Start.png", 0.5f);
 		startButton.setAllXY(100, 120);
+		simulationButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Simulation.png", 0.5f);
+		simulationButton.setAllXY(100, 190);
 		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
 		connectButton.setAllXY(100, 50);
 		
@@ -168,8 +172,8 @@ public class GamePanel extends JPanel {
 		this.setMenu(false);
 		this.serverInitialized = false;
 		this.setViewPoint(362, 181);
-		this.minViewPointX = 362;
-		this.minViewPointY = 181;
+		this.minViewPointX = -30000;//362;
+		this.minViewPointY = -30000;//181;
 		this.maxViewPointX = 34416;
 		this.maxViewPointY = 26169;
 		this.setZoomFactor(1.0f);
@@ -207,6 +211,9 @@ public class GamePanel extends JPanel {
 			gamePaint(g);
 			//GamePanel.gp.loadEntityList();
 		}
+		if (GameModus.modus == GameModus.SIM) {
+			simPaint(g);
+		}
 		g.dispose();
 	}
 	
@@ -218,6 +225,7 @@ public class GamePanel extends JPanel {
 	public void mainMenuPaint(Graphics2D g) {
 		g.setPaintMode();
 		startButton.paint(g, 0, 0);
+		simulationButton.paint(g, 0, 0);
 		connectButton.paint(g, 0, 0);
 	}
 	
@@ -227,28 +235,10 @@ public class GamePanel extends JPanel {
 	 */
 	public void gamePaint(Graphics2D g){
 		g.scale(this.getZoomFactor(), this.getZoomFactor());
-//		g.translate((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2));
-//		setRotationDegree((getRotationDegree()+0.001)%360);
-//		g.rotate(rotationDegree);
 		if (playerEntity != null) {
 			GamePanel.gp.setViewPoint((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2)-(int)(GameStates.getWidth()/2/zoomFactor), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2)-(int)(GameStates.getHeight()/2/zoomFactor));
 		}
-//		System.out.println("Viewpoint x="+viewPointX+" y="+viewPointY);
 		/** Paint Spaces */
-		
-		// First sort by Z-index then draw objects
-//		SpaceManager.sortZIndex();
-//		for (int i = 0; i< SpaceManager.sizeSorted(); i++){
-//			Space space = SpaceManager.getSorted(i);
-//			if(space != null) {
-//				if(space.getPolygon() != null) {
-//					space.paint(g, (int) (viewPointX),(int) (viewPointY));
-//				}
-//			}
-//		}
-		
-//		SpaceManager.sortZIndex();
-//		for (int i = 0; i< SpaceManager.size(); i++){
 //		GameWindow.gw.gameInfoConsole.appendInfo("IdList Spaces: "+SpaceManager.idList.size());
 		g.setPaintMode();
 		List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
@@ -307,11 +297,7 @@ public class GamePanel extends JPanel {
 			}
 		}
 		/** reset Scale for all GUI-Elements */
-		g.setPaintMode();
-		// paint the Menu
-		if (menu) {
-			mainMenu.paint(g, 0, 0);
-		}
+		
 		// paint the console
 //		if (GameWindow.gw.getShowConsole()) {
 //			GameWindow.gw.gameConsole.paint(g, 0, 0);
@@ -322,6 +308,74 @@ public class GamePanel extends JPanel {
 //			GameWindow.gw.gameInfoConsole.paint(g, 0, 0);
 //		}
 //		GameWindow.gw.setFocusable(true);
+		GameWindow.gw.requestFocus();
+	}
+	
+	/** paint the simulation modus */
+	public void simPaint(Graphics2D g) {
+		g.scale(this.getZoomFactor(), this.getZoomFactor());
+		if (playerEntity != null) {
+			GamePanel.gp.setViewPoint((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2)-(int)(GameStates.getWidth()/2/zoomFactor), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2)-(int)(GameStates.getHeight()/2/zoomFactor));
+		}
+		/** Paint Spaces */
+//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Spaces: "+SpaceManager.idList.size());
+		g.setPaintMode();
+		List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
+		for (BigInteger i: idListTempSpaces){
+			Space space = SpaceManager.get(i);
+			if(space != null) {
+				if(space.getPolygon() != null) {
+//					GameWindow.gw.gameInfoConsole.appendInfo("Space "+space.getId());
+					space.paint(g, (int) (-viewPointX),(int) (-viewPointY));
+				}
+			}
+			else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Space");
+		}
+
+		/** Paint Server-Entities */
+		g.setPaintMode();
+//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Entities: "+EntityManager.size());
+//		for (int i = 0; i < EntityManager.size(); i++) {
+		List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
+		for (BigInteger i: idListTempEntities) {
+			Entity e= EntityManager.get(i);
+			if(e != null) {
+				if(e.getSprite().getImage() != null) {
+//					GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
+					g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
+				}
+			}
+			else
+			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+		}
+		
+		
+		g.setPaintMode();
+		if(playerEntity != null) {
+			
+			if(playerEntity.getSprite().getImage() != null) {
+//				GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
+				g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
+			}
+		}else
+			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+		
+		g.setPaintMode();
+		if(PlayerManager.size() >0) {
+			List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
+			for (BigInteger i: idListTempPlayers) {
+				Entity playerEntity= PlayerManager.get(i);
+				if(playerEntity != null) {
+					if(playerEntity.getSprite().getImage() != null) {
+						g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
+					}
+				}
+				else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+			}
+		}
+		/** reset Scale for all GUI-Elements */
 		GameWindow.gw.requestFocus();
 	}
 
@@ -428,5 +482,13 @@ public class GamePanel extends JPanel {
 	
 	public double getRotationDegree() {
 		return this.rotationDegree;
+	}
+
+	public Space getSpaceAdd() {
+		return spaceAdd;
+	}
+
+	public void setSpaceAdd(Space spaceAdd) {
+		this.spaceAdd = spaceAdd;
 	}
 }

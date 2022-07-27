@@ -2,6 +2,8 @@ package de.svenheins.main;
 
 import javax.swing.JApplet;
 
+import de.svenheins.handlers.MouseHandler;
+
 public class AppletGUI extends JApplet {
 
 	public static boolean running = false;
@@ -18,24 +20,26 @@ public class AppletGUI extends JApplet {
 	}
 
 	 public void init()
-	     {
-	 	                 System.out.println("Applet initializing");
-	 	                // getContentPane().add(new GamePanel());
-	 	                new GameWindow("Grafikengine", GameStates.getWidth(), GameStates.getHeight());
-	 	        }
+     {
+		addMouseListener(new MouseHandler());
+		addMouseMotionListener(new MouseHandler());
+ 	    System.out.println("Applet initializing");
+ 	    // getContentPane().add(new GamePanel());
+ 	    new GameWindow("Grafikengine", GameStates.getWidth(), GameStates.getHeight());
+     }
 	 	        //start
-	 	    public void start()
-	 	        {
-	 	                System.out.println("Applet starting");
-	         }
-	 	        //stop
-	 	        public void stop()
-	 	        {
-	 	                System.out.println("Applet stopping");
-	 	        }
-	 	        //destroy
-	 	        public void destroy()
-	 	        {
-	 	                System.out.println("Applet destroyed");
-	 	        }
+	 public void start()
+	 {
+		 System.out.println("Applet starting");
+	 }
+	 //stop
+	 public void stop()
+	 {
+		 System.out.println("Applet stopping");
+	 }
+	 //destroy
+	 public void destroy()
+	 {
+		 System.out.println("Applet destroyed");
+	 }
 }

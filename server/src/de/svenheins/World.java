@@ -22,8 +22,11 @@
 package de.svenheins;
 
 import java.awt.GraphicsEnvironment;
+import java.io.File;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,6 +52,7 @@ import com.sun.sgs.app.TaskManager;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.SpriteManager;
 import de.svenheins.objects.Entity;
@@ -135,6 +139,9 @@ public class World
         GameStates.setWidth(ge.getMaximumWindowBounds().width);
         GameStates.setHeight(ge.getMaximumWindowBounds().height);
         
+        /** init ressources */
+        initializeRessources();
+        
         this.initStartIndex = 0;
         
 //        this.initEndIndex = this.initStartIndex + this.initPackageSize;
@@ -196,7 +203,7 @@ public class World
         Sprite it_spriteAgent = SpriteManager.manager.getSprite(iterativSpriteStringAgent);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
-        int numAgentsEntrepreneur = 100;
+        int numAgentsEntrepreneur = 10;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgent.getWidth());
@@ -219,13 +226,13 @@ public class World
         Sprite it_spriteAgentEmployee = SpriteManager.manager.getSprite(iterativSpriteStringAgentEmployee);
         ServerSprite it_s_spriteAgentEmployee = new ServerSprite(iterativSpriteStringAgentEmployee, it_spriteAgentEmployee.getHeight(), it_spriteAgentEmployee.getWidth());
         ServerEntity it_s_entityAgentEmployee;
-        int numAgentsEmployee = 0;
+        int numAgentsEmployee = 5;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEmployee; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgentEmployee.getWidth());
         	it_y = (float) (Math.random()*GameStates.getHeight()-it_s_spriteAgentEmployee.getHeight());
-        	it_mx = 10;//Math.random()*50+0;
-        	it_my = 10;//Math.random()*50+0;
+        	it_mx = 30;//Math.random()*50+0;
+        	it_my = 30;//Math.random()*50+0;
         	entityIDIndex = entityIDIndex.add(BigInteger.valueOf(1));
         	it_s_entityAgentEmployee = new ServerAgentEmployee(it_s_spriteAgentEmployee, entityIDIndex, it_x, it_y, it_mx, it_my);
         	room.addEntity(it_s_entityAgentEmployee);
@@ -246,8 +253,8 @@ public class World
         /** Create World-Plates */
         String hexaString = "Sechseck.svg";
         Space hexaSpace;
-        int rowsHexagons = 10;
-        int colsHexagons = 10;
+        int rowsHexagons = 2;
+        int colsHexagons = 3;
         float hexX, hexY, hexMX, hexMY;
         float climateHexagon;
         int capacityHexagon;
@@ -257,7 +264,7 @@ public class World
 //        	int red = 25*(int) (Math.random()*10);
 //        	int green = red/10;
 //        	int blue = red / 2;
-            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 6.0f);
+            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 3.0f);
             hexX = (float) (i % colsHexagons)*hexaSpace.getWidth();
             hexY = (float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.75f));
             if ((i/colsHexagons) % 2 == 0) hexX += hexaSpace.getWidth()/2;
@@ -266,7 +273,7 @@ public class World
 	      	hexaSpace.setAllXY(hexX, hexY);
 	      	hexaSpace.setMovement(0, 0);
 	      	climateHexagon = 0.0f;
-	        capacityHexagon = 50;
+	        capacityHexagon = 10;
 	        ServerRegion s_hexaSpace = new ServerRegion(hexaSpace, climateHexagon, capacityHexagon);
 	        room.addSpace(s_hexaSpace);
 	        hexaSpace.setId(s_hexaSpace.getId());
@@ -689,6 +696,60 @@ public class World
 	        dataManager.markForUpdate(this);
 
 	        return supPlayers.add(dataManager.createReference(supPlayer));
+		}
+		
+		private void initializeRessources() {
+			// Directory path to svg-files
+			URL pathSVG = getClass().getResource(GameStates.resourcePath+"svg/");//GameStates.resourcePath+"svg/"; 
+			 
+			  String fileName;
+			  File folder;
+			try {
+				folder = new File(pathSVG.toURI());
+				File[] listOfFiles = folder.listFiles(); 
+				 
+				  for (int i = 0; i < listOfFiles.length; i++) 
+				  {
+				 
+				   if (listOfFiles[i].isFile()) 
+				   {
+				   fileName = listOfFiles[i].getName();
+				       if (fileName.endsWith(".svg") || fileName.endsWith(".SVG"))
+				       {
+				          // add to ArrayList
+				    	   RessourcenManager.addSVG(fileName);
+				        }
+				     }
+				  }
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			  
+			// Directory path to image-files
+			URL pathImages = getClass().getResource(GameStates.resourcePath+"images/");//GameStates.resourcePath+"images/";
+			  try {
+				folder = new File(pathImages.toURI());
+				File[] listOfFiles = folder.listFiles(); 
+				 
+				  for (int i = 0; i < listOfFiles.length; i++) 
+				  {
+				 
+				   if (listOfFiles[i].isFile()) 
+				   {
+				   fileName = listOfFiles[i].getName();
+				       if (fileName.endsWith(".png") || fileName.endsWith(".PNG"))
+				       {
+				          // add to ArrayList
+				    	   RessourcenManager.addImage(fileName);
+				        }
+				     }
+				  }
+			} catch (URISyntaxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			  
 		}
 	 
 }

@@ -62,7 +62,6 @@ public class PlayerManager{
 		} else
 		{
 			PlayerManager.add(new Entity("ship.png", objectId, objectX, objectY, objectMX, objectMY));
-			
 		}
 	}
 	

@@ -22,9 +22,12 @@
 package de.svenheins;
 
 
+import java.awt.Polygon;
+import java.awt.TrayIcon.MessageType;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +48,7 @@ import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.ServerSpace;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.WorldObject;
 
@@ -337,6 +341,59 @@ public class WorldPlayer
 	    			getRoom().editPlayer(this.getId(), new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});
 	    		}
 	    		
+				break;
+				
+				/** parse upload message */
+			case UPLOAD_OBJECT:
+				OBJECTCODE objCodeUpload = OBJECTCODE.values()[message.getInt()];
+				if(objCodeUpload == OBJECTCODE.SPACE) {
+					BigInteger id = BigInteger.valueOf(message.getLong());
+					System.out.println("got ID: "+id);
+					byte[] nameBytes = new byte[message.getInt()];
+	    			message.get(nameBytes);
+	    			String name = new String(nameBytes); // name
+		    		int lengthOfPubCoord = message.getInt();
+		    		int[] pubXCoord = new int[lengthOfPubCoord];
+		    		int[] pubYCoord = new int[lengthOfPubCoord];
+		    		for (int i = 0; i < lengthOfPubCoord; i++) {
+		    			pubXCoord[i] = message.getInt();
+		    			pubYCoord[i] = message.getInt();
+		    		}
+		    		int[] rgb = new int[]{message.getInt(),message.getInt(),message.getInt()};
+		    		float trans = message.getFloat() ; // 4 Bytes
+		    		int filledInt = message.getInt();
+		    		boolean filled;
+		    		if (filledInt == 1) filled = true; else filled = false; 
+		    		float scale = message.getFloat() ;
+		            float area = message.getFloat() ;
+		            int polyX = message.getInt();
+		            int polyY = message.getInt();
+		    		
+		            int numberOfPolygons = message.getInt();
+		            ArrayList<Polygon> polygon = new ArrayList<Polygon>();
+		            Polygon addPolygon;
+		    		for (int i = 0; i < numberOfPolygons; i++) {
+		    			int numberOfActualPolygon = message.getInt();
+		    			System.out.println("number of edges: "+ numberOfActualPolygon);
+		    			int[] xpoints = new int[numberOfActualPolygon];
+		    			int[] ypoints = new int[numberOfActualPolygon];
+		    			for (int j = 0; j < numberOfActualPolygon; j++) {
+		    				xpoints[j] = message.getInt();
+		    				ypoints[j] = message.getInt();
+		    			}
+		    			addPolygon = new Polygon(xpoints, ypoints, numberOfActualPolygon);
+		    			polygon.add(addPolygon);
+		    		}
+					
+		    		/** now everything is well prepared */
+		    		Space spaceAdd = new Space(polygon, polyX, polyY, "polygon", id, rgb, filled, trans, scale);
+		    		//if (polygon.size() > 1) System.out.println(polygon.get(1).npoints);
+		    		spaceAdd.setName(name);
+		    		spaceAdd.setArea(area);
+		    		SpaceManager.add(spaceAdd);
+		    		getRoom().addSpace(new ServerSpace(spaceAdd));
+				}
+				
 				break;
 			case RESPAWN:
 	//		    int respawnId = packet.getInt();

@@ -1,7 +1,14 @@
 package de.svenheins.messages;
 
+import java.awt.Polygon;
+import java.awt.TexturePaint;
+import java.awt.image.BufferedImage;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+
+import de.svenheins.animation.SpaceAnimation;
+import de.svenheins.objects.Space;
 
 
 /** Message from the client TO the server */
@@ -62,8 +69,8 @@ public class ClientMessages extends Messages{
     
     /** 
      * 
-     * @param id
-     * @return 
+     * @param id, state
+     * @return ByteBuffer
      */
     public static ByteBuffer editObjectState(OBJECTCODE objCode, BigInteger id,  float[] state) {
         byte[] bytes = new byte[1 + 4 + 8 + 24];
@@ -107,6 +114,89 @@ public class ClientMessages extends Messages{
         return buffer;
     }
    
+    
+    /** 
+     * Upload Object onto the server
+     * @param id, state
+     * @return ByteBuffer
+     */
+    public static ByteBuffer uploadObject(OBJECTCODE objCode, BigInteger id,  Space uploadSpace) {
+    	/** divide Space by all its relevant parts */
+    	int[] pubXCoord = uploadSpace.getPubXCoord(); // (pubXCoord.length * 4) bytes
+    	int[] pubYCoord = uploadSpace.getPubYCoord(); // (pubYCoord.length * 4) bytes
+    	int[] rgb = uploadSpace.getRGB(); // (rgb.length * 4) bytes
+    	String name = uploadSpace.getName();
+    	float trans = uploadSpace.getTrans(); // 4 bytes
+    	Boolean filled = uploadSpace.isFilled(); // 4 bytes
+    	float scale = uploadSpace.getScale(); // 4 bytes
+    	float area = uploadSpace.getArea(); // 4 bytes
+    	int polyX = uploadSpace.getPolyX(); // 4 bytes
+    	int polyY = uploadSpace.getPolyY(); // 4 bytes
+    	/** now the more complex structure */
+    	ArrayList<Polygon> polygon = uploadSpace.getPolygon();
+    	int numPolygons = polygon.size();
+    	/** begin with the number of polygonElements */
+    	int bytesOfPolygon = 4;
+    	for (int i = 0; i < numPolygons; i++) {
+    		Polygon actualPolygon = polygon.get(i);
+    		int[] actualPolygonX = actualPolygon.xpoints;
+    		/** save the length and the x- and y-coordinates */
+    		bytesOfPolygon += (4 + 4*actualPolygonX.length*2);
+    	}
+
+    	byte[] bytes = new byte[1 + 4 + 8 + 4 + name.length() + 4 + (pubXCoord.length * 4) + (pubYCoord.length * 4)+(rgb.length * 4)+4+4+4+4+4+4 + bytesOfPolygon];
+    	
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.UPLOAD_OBJECT.ordinal()); // 1 Byte
+        buffer.putInt(objCode.ordinal()); // 4 Bytes 
+        
+        /** ID */
+        buffer.putLong(id.longValue()); // 8 Bytes
+        /** name */
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // name.length
+        /** insert pubXCoord and pubYCoord*/
+        buffer.putInt(pubXCoord.length); // 4 bytes
+        for (int i = 0; i < pubXCoord.length; i++) {
+        	buffer.putInt(pubXCoord[i]); // 4 Bytes
+        	buffer.putInt(pubYCoord[i]); // 4 Bytes
+        }
+        /** insert rgb*/
+        for (int i = 0; i < rgb.length; i++) {
+        	buffer.putInt(rgb[i]);
+        }
+        // trans
+        buffer.putFloat(trans); // 4 Bytes
+        // filled
+        if(filled) buffer.putInt(1); else buffer.putInt(0); // 4 bytes
+        // scale
+        buffer.putFloat(scale); // 4 Bytes
+        // area
+        buffer.putFloat(area); // 4 Bytes
+        // polyX
+        buffer.putInt(polyX); // 4 bytes
+        // polyY
+        buffer.putInt(polyY); // 4 bytes
+        /** now the more complex polygon structure */
+        /** first save the number of polygon-structures */
+        buffer.putInt(numPolygons); // 4 bytes
+    	for (int i = 0; i < numPolygons; i++) {
+    		Polygon actualPolygon = polygon.get(i);
+    		int[] actualPolygonX = actualPolygon.xpoints;
+    		int[] actualPolygonY = actualPolygon.ypoints;
+    		/** save the length of the actual Polygon */
+    		buffer.putInt(actualPolygonX.length);  // 4 bytes
+    		/** put the actual Polygon into the buffer */
+    		for (int j = 0; j < actualPolygonX.length; j++) {
+    			buffer.putInt(actualPolygonX[j]); // 4 bytes
+    			buffer.putInt(actualPolygonY[j]); // 4 bytes
+    		}
+    	}
+        buffer.flip();
+        return buffer;
+    }
+    
+    
 //    public static ByteBuffer getIds(OBJECTCODE objCode, int id) {
 //        byte[] bytes = new byte[1 + 4 + 4];
 //        ByteBuffer buffer = ByteBuffer.wrap(bytes);

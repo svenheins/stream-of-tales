@@ -18,7 +18,7 @@ public class ServerSpace extends WorldObject{
 	protected int[] pubXCoord;
 	protected int[] pubYCoord;
 	
-	private final Set<ManagedReference<ServerPolygon>> polygons = new HashSet<ManagedReference<ServerPolygon>>();
+	private Set<ManagedReference<ServerPolygon>> polygons = new HashSet<ManagedReference<ServerPolygon>>();
 //	protected ArrayList<Polygon> polygon;
 //	protected Color color;
 //	protected BufferedImage bufferedImage; 
@@ -34,8 +34,9 @@ public class ServerSpace extends WorldObject{
 	
 	public ServerSpace(Space space) {
 		ArrayList<Polygon> polygon_array = space.getPolygon();
-		for(int i = 1; i< polygon_array.size(); i++) {
-			ServerPolygon s_polygon = new ServerPolygon(polygon_array.get(i).xpoints, polygon_array.get(i).ypoints);
+		ServerPolygon s_polygon;
+		for(int i = 0; i< polygon_array.size(); i++) {
+			s_polygon = new ServerPolygon(polygon_array.get(i).xpoints, polygon_array.get(i).ypoints);
 			this.polygons.add(AppContext.getDataManager().createReference(s_polygon));
 		}
 		this.setName(space.getName());
@@ -78,7 +79,7 @@ public class ServerSpace extends WorldObject{
 			ServerPolygon s_polygon = polygon.getForUpdate();
 			int[] xcoords = s_polygon.getPolyX();
 			int[] ycoords = s_polygon.getPolyY();
-			for (int j = 1; j< xcoords.length; j++) {
+			for (int j = 0; j< xcoords.length; j++) {
 				xcoords[j] = (int) (xcoords[j]+ x-this.getX());
 				ycoords[j] = (int) (ycoords[j]+ y-this.getY());
 			}
@@ -98,7 +99,7 @@ public class ServerSpace extends WorldObject{
 			ServerPolygon s_polygon = polygon.getForUpdate();
 			int[] xcoords = s_polygon.getPolyX();
 			int[] ycoords = s_polygon.getPolyY();
-			for (int j = 1; j< xcoords.length; j++) {
+			for (int j = 0; j< xcoords.length; j++) {
 				xcoords[j] = (int) (xcoords[j]*factor);
 				ycoords[j] = (int) (ycoords[j]*factor);
 			}

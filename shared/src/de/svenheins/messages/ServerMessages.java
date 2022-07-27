@@ -1,7 +1,9 @@
 package de.svenheins.messages;
 
+import java.awt.Polygon;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
@@ -101,18 +103,38 @@ public class ServerMessages extends Messages{
         return buffer;
     }
     
-    
+    /** here we only send known spaces 
+     * those which are not yet known by clients should be handled separately
+     * */
     public static ByteBuffer sendSpaces(Space[] localObjects) {
     	byte[] bytes;
     	ByteBuffer buffer = null;
     	/** get the length of Bytes that must be reserved for the names */
 		int namesLength = 0;
+    	
+		int polygonBytesAbsolut = 0;
+		int numPolygons = 0;
+		ArrayList<Polygon> polygon;
 		for (int i = 0; i<localObjects.length; i++) {
 			namesLength += localObjects[i].getName().length();
+			
+			/** reserve 4 + 4 bytes for the polyX and polyY Coordinates */
+			polygonBytesAbsolut += 8;
+	    	/** polygons start here */
+			polygon = localObjects[i].getPolygon();
+			numPolygons = polygon.size();
+			/** the size of each localObject polygon-ArrayList must be reserved */
+			polygonBytesAbsolut += 4;
+			/** now check the required bytes for the polygon ArrayList */
+			for (int j = 0; j < numPolygons; j++) {
+	    		Polygon actualPolygon = polygon.get(j);
+	    		/** save the length and the x- and y-coordinates */
+	    		polygonBytesAbsolut += (4 + 4*actualPolygon.xpoints.length*2);
+	    	}
 		}
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 36*localObjects.length + namesLength];
+		bytes = new byte[1 + 40*localObjects.length + namesLength + polygonBytesAbsolut];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITSPACES.ordinal()); 
     	
@@ -132,6 +154,13 @@ public class ServerMessages extends Messages{
     		else filled = 0;
     		float trans = s.getTrans();
     		float scale = s.getScale();
+    		float area = s.getArea();
+    		int polyX = s.getPolyX();
+        	int polyY = s.getPolyY();
+        	/** reset polygon */
+        	polygon = s.getPolygon();
+        	numPolygons = polygon.size();
+        	
     		buffer.putLong(id.longValue()); // 8
     		buffer.putInt(name.length()); // 4
         	buffer.put(name.getBytes()); // name.length
@@ -141,6 +170,26 @@ public class ServerMessages extends Messages{
         	buffer.putInt(filled); // 4
         	buffer.putFloat(trans); // 4
         	buffer.putFloat(scale); // 4
+        	buffer.putFloat(area); // 4
+        	
+        	// polyX
+            buffer.putInt(polyX); // 4 bytes
+            // polyY
+            buffer.putInt(polyY); // 4 bytes
+            /** start of Polygon ArrayList */
+        	buffer.putInt(numPolygons); // 4 bytes
+        	for (int j = 0; j < numPolygons; j++) {
+        		Polygon actualPolygon = polygon.get(j);
+        		int[] actualPolygonX = actualPolygon.xpoints;
+        		int[] actualPolygonY = actualPolygon.ypoints;
+        		/** save the length of the actual Polygon */
+        		buffer.putInt(actualPolygonX.length);  // 4 bytes
+        		/** put the actual Polygon into the buffer */
+        		for (int k = 0; k < actualPolygonX.length; k++) {
+        			buffer.putInt(actualPolygonX[k]); // 4 bytes
+        			buffer.putInt(actualPolygonY[k]); // 4 bytes
+        		}
+        	}
     	} 	
     	buffer.flip();
     		

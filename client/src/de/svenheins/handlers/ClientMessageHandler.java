@@ -1,9 +1,11 @@
 package de.svenheins.handlers;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import de.svenheins.main.GamePanel;
+import de.svenheins.main.GameWindow;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.OBJECTCODE;
@@ -22,31 +24,42 @@ public class ClientMessageHandler {
     public static void parseClientPacket(OPCODE opCode, ByteBuffer packet) {
     	switch(opCode) {
     	case OBJECTSTATE:
-    		OBJECTCODE objCode = OBJECTCODE.values()[packet.getInt()];
-    		int objectId = packet.getInt();
-    		double objectX = packet.getDouble();
-    		double objectY = packet.getDouble();
-    		double objectMX = packet.getDouble();
-    		double objectMY = packet.getDouble();
-    		double objectWidth = packet.getDouble();
-    		double objectHeight = packet.getDouble();
-    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
-    		else if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);	
+    		if (GamePanel.gp.isServerInitialized()) {
+	    		OBJECTCODE objCode = OBJECTCODE.values()[packet.getInt()];
+	    		BigInteger objectId = BigInteger.valueOf(packet.getLong());;
+	    		float objectX = packet.getFloat();
+	    		float objectY = packet.getFloat();
+	    		float objectMX = packet.getFloat();
+	    		float objectMY = packet.getFloat();
+	    		float objectWidth = packet.getFloat();
+	    		float objectHeight = packet.getFloat();
+	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
+	    		else if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
+//	    		if(objectId.intValue() == 0 && objectX != 0) {
+//					GameWindow.gw.gameInfoConsole.appendInfo("Entity: x="+objectX+" y="+objectY);
+//				}
+    		}
     		break;
     	case INITSPACES:
     		/** no more need for init requests*/
     		GamePanel.gp.setServerInitialized(true);
     		/** Init Spaces */
-			int id;
+			BigInteger id;
 			String name;
 			int r, g, b;
     		int i_filled;
     		boolean filled;
     		float trans;
+    		float scale;
 			ArrayList<Space> spaceList = new ArrayList<Space>();
 			/** for each available packet do */
     		while (packet.hasRemaining()) {
-    			id = packet.getInt(); // ID
+//    			byte[] bigByte = new byte[packet.getInt()];
+//				for (int i =0; i<bigByte.length; i++) {
+//					bigByte[i] = packet.get();
+//				}
+//	    		BigInteger objectId = new BigInteger(bigByte);
+    			id = BigInteger.valueOf(packet.getLong()); // ID
     			byte[] nameBytes = new byte[packet.getInt()];
     			packet.get(nameBytes);
     			name = new String(nameBytes); // name
@@ -57,26 +70,33 @@ public class ClientMessageHandler {
     			if (i_filled == 0) filled = false;
     			else filled = true;
     			trans = packet.getFloat();
-    			spaceList.add(new Space(name, id, new int[]{r, g, b}, filled, trans));
+    			scale = packet.getFloat();
+    			spaceList.add(new Space(name, id, new int[]{r, g, b}, filled, trans, scale));
     		}
     		/** transform list into array */
     		Space[] spaces = new Space[spaceList.size()];
     		for (int i = 0; i<spaceList.size(); i++){
     			spaces[i] = spaceList.get(i);
     		}
-
+    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+spaceList.size()+ " Spaces");
     		GamePanel.gp.loadSpaceList(spaces);
+    		GameWindow.gw.gameInfoConsole.appendInfo("There are "+SpaceManager.size()+ " Spaces");
     		break;
     	case INITENTITIES:
     		/** no more need for init requests*/
     		GamePanel.gp.setServerInitialized(true);
     		/** Init Entities */
-			int id_entity;
+			BigInteger id_entity;
 			String name_entity;
 			ArrayList<Entity> entityList = new ArrayList<Entity>();
 			/** for each available packet do */
     		while (packet.hasRemaining()) {
-    			id_entity = packet.getInt(); // ID
+//    			byte[] bigByte = new byte[packet.getInt()];
+//				for (int i =0; i<bigByte.length; i++) {
+//					bigByte[i] = packet.get();
+//				}
+//	    		BigInteger objectId = new BigInteger(bigByte);
+    			id_entity = BigInteger.valueOf(packet.getLong()); // ID
     			byte[] nameBytes = new byte[packet.getInt()];
     			packet.get(nameBytes);
     			name_entity = new String(nameBytes); // name
@@ -87,7 +107,14 @@ public class ClientMessageHandler {
     		for (int i = 0; i<entityList.size(); i++){
     			entities[i] = entityList.get(i);
     		}
-			GamePanel.gp.loadEntityList(entities);		
+    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entities.length+ " entities from array");
+    		GamePanel.gp.loadEntityList(entities);	
+			GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entityList.size()+ " entityList");
+			GameWindow.gw.gameInfoConsole.appendInfo("There are "+EntityManager.size()+ " Entities");
+//			System.out.println("got entities: "+entities.length);
+//			if (entities.length>253)
+//			GamePanel.gp.setServerInitialized(true);
+			
     		break;
     	case MOVEMOB:
     		break;

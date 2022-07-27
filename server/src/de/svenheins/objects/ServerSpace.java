@@ -1,6 +1,7 @@
 package de.svenheins.objects;
 
 
+import java.awt.Point;
 import java.awt.Polygon;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,8 +26,11 @@ public class ServerSpace extends WorldObject{
 	protected int[] rgb;
 	protected float trans;
 	protected Boolean filled;
-	protected double area;
+	protected float scale;
+	protected float area;
 	protected int polyX, polyY;
+	protected long lastTimestamp;
+	
 	
 	public ServerSpace(Space space) {
 		ArrayList<Polygon> polygon_array = space.getPolygon();
@@ -44,34 +48,37 @@ public class ServerSpace extends WorldObject{
 		this.setHeight(space.getHeight());
 		this.setMovement(space.getHorizontalMovement(), space.getVerticalMovement());
 		this.setId(space.getId());
+		this.setScale(space.getScale());
+		this.scale(this.getScale());
+		this.lastTimestamp = System.currentTimeMillis();
 	}
 	
 //	public void moveOnX(long duration){
-//		double movement = duration * mx/1000;
+//		float movement = duration * mx/1000;
 //		setX(getX()+movement);
 //	}
 //	
 //	public void moveOnY(long duration){
-//		double movement = duration * my/1000;
+//		float movement = duration * my/1000;
 //		setY(getY()+movement);
 //	}
 	
-	public void move(long duration){
-		double movementX = duration * mx/1000;
-		double movementY = duration * my/1000;
+	public void move(long timestamp){
+		long duration = timestamp - this.lastTimestamp;
+		float movementX = duration * mx/1000;
+		float movementY = duration * my/1000;
 		setAllXY(getX()+movementX, getY()+movementY);
+		this.lastTimestamp = timestamp;
 	}
 	
-	public void setAllXY(double x, double y) {
+	public void setAllXY(float x, float y) {
 		for (ManagedReference<ServerPolygon> polygon : polygons)
 		{
 			ServerPolygon s_polygon = polygon.getForUpdate();
 			int[] xcoords = s_polygon.getPolyX();
-			for (int j = 1; j< xcoords.length; j++) {
-				xcoords[j] = (int) (xcoords[j]+ x-this.getX());
-			}
 			int[] ycoords = s_polygon.getPolyY();
 			for (int j = 1; j< xcoords.length; j++) {
+				xcoords[j] = (int) (xcoords[j]+ x-this.getX());
 				ycoords[j] = (int) (ycoords[j]+ y-this.getY());
 			}
 			s_polygon.setPolyX(xcoords);
@@ -79,6 +86,25 @@ public class ServerSpace extends WorldObject{
 		}		
 		this.setX(x);
 		this.setY(y);
+	}
+	
+	
+	public void scale(float factor) {
+		Point positionOld = new Point((int)this.getX(), (int)this.getY());
+		this.setAllXY(0, 0);
+		for (ManagedReference<ServerPolygon> polygon : polygons)
+		{
+			ServerPolygon s_polygon = polygon.getForUpdate();
+			int[] xcoords = s_polygon.getPolyX();
+			int[] ycoords = s_polygon.getPolyY();
+			for (int j = 1; j< xcoords.length; j++) {
+				xcoords[j] = (int) (xcoords[j]*factor);
+				ycoords[j] = (int) (ycoords[j]*factor);
+			}
+			s_polygon.setPolyX(xcoords);
+			s_polygon.setPolyY(ycoords);
+		}		
+		this.setAllXY(positionOld.x, positionOld.y);
 	}
 	
 	public void setRGB(int[] rgb){
@@ -103,5 +129,13 @@ public class ServerSpace extends WorldObject{
 	
 	public float getTrans(){
 		return trans;
+	}
+	
+	public float getScale() {
+		return scale;
+	}
+	
+	public void setScale(float scale) {
+		this.scale = scale;
 	}
 }

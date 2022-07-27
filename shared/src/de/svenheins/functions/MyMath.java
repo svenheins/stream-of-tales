@@ -1,9 +1,23 @@
 package de.svenheins.functions;
 
+import java.awt.Point;
 import java.awt.Polygon;
 import java.lang.Math;
+import java.util.Random;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.CoordinateList;
+import com.vividsolutions.jts.geom.CoordinateSequence;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.operation.distance.DistanceOp;
+
+import math.geom2d.Point2D;
+import math.geom2d.polygon.SimplePolygon2D;
 
 public class MyMath {
+	public static GeometryFactory geoFactory = new GeometryFactory();
 
 	/*This function will return the determinant of any two dimensional matrix. For this particular function a two dimensional double matrix needs to be passed as arguments - Avishek Ghosh*/
 
@@ -96,4 +110,71 @@ public class MyMath {
 		return pTemp;
 	}
 	
+	public static int[] polyTranslate(int[] p, double shift) {
+		int[] pTemp = p;
+		for (int i = 0; i< p.length ; i++){
+			pTemp[i] = (int) Math.round(p[i]+ shift);
+		}
+		return pTemp;
+	}
+	
+	/** returns the distance from a polygon (0 if inside the polygon) */
+	public static double getDistance(Polygon polygon, Point point) {
+		double[] xc = new double[polygon.npoints];
+		double[] yc = new double[polygon.npoints];
+		for (int i = 0; i<xc.length; i++) {
+			xc[i] = polygon.xpoints[i];
+			yc[i] = polygon.ypoints[i];
+		}
+		SimplePolygon2D simplePolygon = new SimplePolygon2D(xc, yc);
+		Point2D p2D = new Point2D(point.x, point.y);
+		
+		return simplePolygon.distance(p2D);		
+	}
+	
+	/** returns the distance between two points */
+	public static double getDistance(Point pointA, Point pointB) {
+		double distance = Math.sqrt((pointA.x-pointB.x)*(pointA.x-pointB.x)+(pointA.y-pointB.y)*(pointA.y-pointB.y));
+		return distance;		
+	}
+	
+	/** get nearest Point between polygon and point */
+	public static Point getNearest(Polygon polygon, Point point) {
+		com.vividsolutions.jts.geom.Point co_point = geoFactory.createPoint(new Coordinate(point.x, point.y));
+		Coordinate[] co = new Coordinate[polygon.npoints+1];
+		for (int i = 0; i< polygon.npoints; i++) {
+			co[i] = new Coordinate(polygon.xpoints[i], polygon.ypoints[i]);
+		}
+		co[polygon.npoints] = new Coordinate(polygon.xpoints[0], polygon.ypoints[0]);
+//		CoordinateList co_polygon = new CoordinateList(co);
+		LinearRing linear = geoFactory.createLinearRing(co);
+
+		com.vividsolutions.jts.geom.Polygon co_poly = new com.vividsolutions.jts.geom.Polygon(linear, null, geoFactory);
+//		com.vividsolutions.jts.geom.Point g1 = new com.vividsolutions.jts.geom.Point();
+		Coordinate[] pts = DistanceOp.closestPoints(co_poly, co_point);
+		return (new Point((int)pts[0].x,(int) pts[0].y));
+	}
+	
+	/** explore region of one point: 
+	 * take a point and give back a random point its proximity
+	 * with a given distance
+	 */
+	public static Point randomShot(Point point, int distance) {
+		int x = (int) (Math.random()*2*distance -distance);
+		int y = (int) Math.sqrt(distance*distance - x*x);
+		Random random = new Random();
+		boolean sign = random.nextBoolean();
+		if (sign) y = -y;
+		return new Point((int) (point.x+x), (int) (point.y+y));
+	}
+	
+	
+	/** explore region of one point: 
+	 * take a point and return a point with given x and y distances
+	 */
+	public static Point randomShotQuadrat(Point point, int distance) {
+		int x = (int) (Math.random()*2*distance -distance);
+		int y = (int) (Math.random()*2*distance -distance);
+		return new Point((int) (point.x+x), (int) (point.y+y));
+	}
 }

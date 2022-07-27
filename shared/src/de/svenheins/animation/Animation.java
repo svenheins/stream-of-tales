@@ -9,8 +9,8 @@ public class Animation {
 	
 	//private static final long serialVersionUID = 1L;
 	public List<Sprite> spriteList;
-	private double timeBetweenAnimation;
-	private double instantOfAnimation;
+	private float timeBetweenAnimation;
+	private float instantOfAnimation;
 	private boolean running;
 	private boolean ending;
 	
@@ -26,17 +26,17 @@ public class Animation {
 	}
 	
 	// Full Constructor
-	public Animation(List<Sprite> spriteList, double delay) {
+	public Animation(List<Sprite> spriteList, float delay) {
 		this.timeBetweenAnimation = delay;
 		this.spriteList = spriteList;
 		this.instantOfAnimation  = System.currentTimeMillis();
 		this.running = false;
 	}
 	
-	public Sprite getSprite(double timeNow, String[] stdAnimation) {
+	public Sprite getSprite(float timeNow, String[] stdAnimation) {
 		if (spriteList.size() > 0) {
 			if ((running == true || ending == true) && timeBetweenAnimation > 0 && instantOfAnimation <= timeNow) {
-				double difference = timeNow - this.instantOfAnimation;
+				float difference = timeNow - this.instantOfAnimation;
 				int loop = ((int) Math.floor(difference / this.timeBetweenAnimation));
 				int index =  loop % spriteList.size();
 				// Check if the last Spriteframe was reached
@@ -50,11 +50,11 @@ public class Animation {
 			return null;
 	}
 	
-	public double getTimeBetweenAnimation() {
+	public float getTimeBetweenAnimation() {
 		return timeBetweenAnimation;
 	}
 	
-	public void setTimeBetweenAnimation(double timeBetweenAnimation) {
+	public void setTimeBetweenAnimation(float timeBetweenAnimation) {
 		this.timeBetweenAnimation = timeBetweenAnimation;
 	}
 	
@@ -63,7 +63,7 @@ public class Animation {
 		this.running = true;
 	}
 	
-	public void start( double waitMillis) {
+	public void start( float waitMillis) {
 		this.instantOfAnimation = System.currentTimeMillis() + waitMillis;
 		this.running = true;
 	}
@@ -81,10 +81,10 @@ public class Animation {
 		start();
 		end();
 	}
-	public double getInstantOfAnimation() {
+	public float getInstantOfAnimation() {
 		return instantOfAnimation;
 	}
-	public void setInstantOfAnimation(double instantOfAnimation) {
+	public void setInstantOfAnimation(float instantOfAnimation) {
 		this.instantOfAnimation = instantOfAnimation;
 	}
 	

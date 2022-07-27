@@ -3,11 +3,13 @@ package de.svenheins.objects;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.TexturePaint;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URL;
 import java.util.ArrayList;
 
@@ -50,9 +52,10 @@ public class Space extends LocalObject{
 	protected TexturePaint texturePaint;
 	protected float trans;
 	protected Boolean filled;
-	protected double area;
-//	protected double mx, my;
-//	protected double height, width;
+	protected float scale;
+	protected float area;
+//	protected float mx, my;
+//	protected float height, width;
 	protected int polyX, polyY;
 	
 	protected SpaceAnimation spaceAnimation;
@@ -77,7 +80,7 @@ public class Space extends LocalObject{
 		this.bufferedImage = null;
 	}
 	
-	public Space( String str, int id,  int[] rgb, Boolean filled, float trans) {
+	public Space( String str, BigInteger id,  int[] rgb, Boolean filled, float trans, float scale) {
 //		setColor(color);
 		setFilled(filled);
 		setTrans(trans);
@@ -87,12 +90,16 @@ public class Space extends LocalObject{
 		addPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+str)));
 		this.setId(id);
 		this.setName(str);
+		this.scale = scale;
+		this.scale(scale);
+		this.width = this.width*scale;
+		this.height = this.height *scale;
 		spaceAnimation = new SpaceAnimation(this);
 		this.texturePaint = null;
 		this.bufferedImage = null;
 	}
 	
-	public Space( String str, int id, String textureString, float trans) {
+	public Space( String str, BigInteger id, String textureString, float trans) {
 		setPolygon( new ArrayList<Polygon>());
 //		addPolygon(GamePanel.svgPath+str);
 		addPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+str)));
@@ -115,7 +122,7 @@ public class Space extends LocalObject{
 	}
 	
 	public void updateSpace()	{
-		double timeNow = System.currentTimeMillis();
+		float timeNow = System.currentTimeMillis();
 		spaceAnimation.update(timeNow);
 
 	}
@@ -144,11 +151,11 @@ public class Space extends LocalObject{
 					document = builder.parse(src.openStream());					
 					int numPaths = document.getElementsByTagName("path").getLength();
 					//System.out.println(numPaths);
-					double ar = this.getArea();
-					double tempMinX = 1000;
-					double tempMinY = 1000; 
-					double tempMaxX = -1000;
-					double tempMaxY = -1000; 
+					float ar = this.getArea();
+					float tempMinX = 1000;
+					float tempMinY = 1000; 
+					float tempMaxX = -1000;
+					float tempMaxY = -1000; 
 					for(int k = 0; k< numPaths; k++) {
 						String polyDataRead = document.getElementsByTagName("path").item(k).getAttributes().getNamedItem("d").getNodeValue();
 						//System.out.println(polyDataRead);
@@ -237,7 +244,7 @@ public class Space extends LocalObject{
 	 * Paint each Polygon of the Polygon-ArrayList
 	 * @param g the Graphics2D-instance
 	 */
-	public void paint(Graphics2D g){
+	public void paint(Graphics2D g, int x, int y){
 		int type = AlphaComposite.SRC_OVER;
 		// reset the paintmode
 		g.setPaintMode();
@@ -252,17 +259,25 @@ public class Space extends LocalObject{
  			g.setPaint(texturePaint);
  		}
  		
- 		if (this.isFilled()) {
- 			for (int i = 0; i<this.getPolygon().size(); i++) {
- 				g.fillPolygon(this.getPolygon().get(i));
- 			}
- 		}
- 		else {
- 			for (int i = 0; i<this.getPolygon().size(); i++) {
- 				g.drawPolygon(this.getPolygon().get(i));
- 			}
+ 		Polygon pTemp;
+		for (int i = 0; i<this.getPolygon().size(); i++) {
+//			if (x >0 || y>0) {
+				int[] x_shift = MyMath.polyTranslate(this.getPolygon().get(i).xpoints, 0);
+				int[] y_shift =  MyMath.polyTranslate(this.getPolygon().get(i).ypoints, 0);
+				
+				pTemp = new Polygon(x_shift, y_shift, this.getPolygon().get(i).npoints);
+//			} else
+//				pTemp = new Polygon(this.getPolygon().get(i).xpoints, this.getPolygon().get(i).ypoints, this.getPolygon().get(i).npoints);
+				g.translate(x, y);
+			if (this.isFilled()){
+				g.fillPolygon(pTemp);
+			} else {
+				g.drawPolygon(pTemp);
+			}
+			g.translate(-x, -y);
+		}
  			
- 		}
+ 		
 	}
 	
 	/**
@@ -283,7 +298,7 @@ public class Space extends LocalObject{
 	 * @param y set y-coordinate
 	 * 
 	 */
-	public void setAllXY(double x, double y) {
+	public void setAllXY(float x, float y) {
 		this.setX(x);
 		this.setY(y);
 		for (int i = 0; i<this.getPolygon().size(); i++) {
@@ -298,8 +313,8 @@ public class Space extends LocalObject{
 	 * always move; the collision should be handled in the collision-thread
 	 */
 	public void move(long duration){
-		double movementX = duration * this.getHorizontalMovement()/1000;
-		double movementY = duration * this.getVerticalMovement()/1000;
+		float movementX = duration * this.getHorizontalMovement()/1000;
+		float movementY = duration * this.getVerticalMovement()/1000;
 		// Always update
 		if(GameStates.getWidth()>0 && GameStates.getHeight()>0) {
 			setX(this.getX()+movementX);
@@ -317,7 +332,7 @@ public class Space extends LocalObject{
 	}
 
 	@Override
-	public void setY(double y) {
+	public void setY(float y) {
 		this.y = y;
 		setZIndex(y+this.getHeight());
 	}
@@ -346,11 +361,11 @@ public class Space extends LocalObject{
 		this.trans = alpha;
 	}
 
-	public double getArea() {
+	public float getArea() {
 		return this.area;
 	}
 	
-	public void setArea(double area) {
+	public void setArea(float area) {
 		this.area = area;
 	}
 	
@@ -360,5 +375,25 @@ public class Space extends LocalObject{
 	
 	public int[] getRGB(){
 		return rgb;
+	}
+	
+	public void scale(float factor) {
+		Point positionOld = new Point((int)this.getX(), (int)this.getY());
+		this.setAllXY(0, 0);
+		for (int i = 0; i<this.getPolygon().size(); i++) {
+			for (int j =0; j< this.getPolygon().get(i).npoints; j++) {
+				this.getPolygon().get(i).xpoints[j] = (int) (this.getPolygon().get(i).xpoints[j] * factor);
+				this.getPolygon().get(i).ypoints[j] = (int) (this.getPolygon().get(i).ypoints[j] * factor);
+			}
+		}
+		this.setAllXY(positionOld.x, positionOld.y);
+	}
+	
+	public float getScale() {
+		return scale;
+	}
+	
+	public void setScale(float scale) {
+		this.scale = scale;
 	}
 }

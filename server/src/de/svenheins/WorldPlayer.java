@@ -23,6 +23,7 @@ package de.svenheins;
 
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,6 +38,8 @@ import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
 
+import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
@@ -64,6 +67,11 @@ public class WorldPlayer
     /** The prefix for player bindings in the {@code DataManager}. */
     protected static final String PLAYER_BIND_PREFIX = "Player.";
 
+    /** is ready??*/
+    private boolean ready;
+    
+    private boolean initializing;
+    
     /** The {@code ClientSession} for this player, or null if logged out. */
     private ManagedReference<ClientSession> currentSessionRef = null;
 
@@ -108,6 +116,8 @@ public class WorldPlayer
      */
     protected WorldPlayer(String name) {
         super(name, "Seeker of the Sword", 0, 0);
+        ready = false;
+        initializing= false;
     }
 
     /**
@@ -213,28 +223,60 @@ public class WorldPlayer
 		switch (opCode) {
 //			case EYE:
 //				int id = message.getInt();
-//				double[] state = getRoom().getEntityState(this, id);
+//				float[] state = getRoom().getEntityState(this, id);
 //				getSession().send(ServerMessages.sendEntityState(id, state[0], state[1], state[2], state[3]));
 //				break;
 //			case SPACE:
 //				int space_id = message.getInt();
-//				double[] space_state = getRoom().getSpaceState(this, space_id);
+//				float[] space_state = getRoom().getSpaceState(this, space_id);
 //				getSession().send(ServerMessages.sendSpaceState(space_id, space_state[0], space_state[1], space_state[2], space_state[3]));
 //				break;
-			case OBJECTSTATE:
-				int object_id = message.getInt();
-				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
-				/** get the six object-states: x,y,mx,my,width,height */
-				double[] object_state = getRoom().getObjectState(objCode, this, object_id);
-				getSession().send(ServerMessages.sendObjectState(objCode, object_id, object_state));
-				break;
+//			case OBJECTSTATE:
+//				int object_id = message.getInt();
+//				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
+//				/** get the six object-states: x,y,mx,my,width,height */
+//				float[] object_state = getRoom().getObjectState(objCode, this, object_id);
+//				getSession().send(ServerMessages.sendObjectState(objCode, object_id, object_state));
+//				break;
 			case INITENTITIES:
-				Entity[] entityArray = getRoom().getEntities(this);
-				getSession().send(ServerMessages.sendEntities(entityArray));
+				if(!this.isInitializing()) {
+					setInitializing(true);
+					int countEntities = currentRoomRef.get().getCountEntities();
+//					logger.log(Level.INFO, "countEntities = "+countEntities);
+					int end = 0;
+					Entity[] entityArray;
+	//				entityArray = getRoom().getEntities(this, 0, countEntities);
+	//				getSession().send(ServerMessages.sendEntities(entityArray));
+					for (int begin = 0; end<countEntities; begin+=200) {
+	//					begin = i*(countEntities/countPackets);
+	//					end= (i+1)*(countEntities/ countPackets);
+						end = begin+200;
+						if (end> countEntities) end = countEntities;
+						entityArray = getRoom().getEntities(this, begin, end);
+//						logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
+
+						getSession().send(ServerMessages.sendEntities(entityArray));
+//						logger.log(Level.INFO, "packet send");
+					
+					}
+					this.ready = true;
+					this.setInitializing(false);
+				}
 				break;
 			case INITSPACES:
-				Space[] spaceArray = getRoom().getSpaces(this);
-				getSession().send(ServerMessages.sendSpaces(spaceArray));
+				int countSpaces = currentRoomRef.get().getCountSpaces();
+				Space[] spaceArray;
+				int end = 0;
+				for (int begin = 0; end<countSpaces; begin+=200) {
+					end = begin+200;
+					if (end> countSpaces) end = countSpaces;
+					spaceArray = getRoom().getSpaces(this, begin, end);
+//										logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
+
+					getSession().send(ServerMessages.sendSpaces(spaceArray));
+//										logger.log(Level.INFO, "packet send");
+				
+				}
 				break;
 //				OBJECTCODE objInitCode = OBJECTCODE.values()[message.getInt()];
 //				/** get the six object-states: x,y,mx,my,width,height */
@@ -258,6 +300,24 @@ public class WorldPlayer
 //				String objectName = getRoom().getObjectName(objCodeName, this, objectNameId);
 //				getSession().send(ServerMessages.sendObjectName(objCodeName, objectNameId, objectName));
 //				break;
+			case EDIT_OBJECT:
+				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
+//				byte[] bigByte = new byte[message.getInt()];
+//				for (int i =0; i<bigByte.length; i++) {
+//					bigByte[i] = message.get();
+//				}
+	    		BigInteger objectId = BigInteger.valueOf(message.getLong());
+	    		float objectX = message.getFloat();
+	    		float objectY = message.getFloat();
+	    		float objectMX = message.getFloat();
+	    		float objectMY = message.getFloat();
+	    		float objectWidth = message.getFloat();
+	    		float objectHeight = message.getFloat();
+	    		// TODO: Update the entities/ spaces of the WorldRoom
+	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
+	    		else if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
+	    		
+				break;
 			case RESPAWN:
 	//		    int respawnId = packet.getInt();
 	//		    float respawnX = packet.getFloat();
@@ -428,4 +488,20 @@ public class WorldPlayer
 //        
 //        return code;
 //    }
+    
+    public boolean isReady() {
+    	return ready;
+    }
+    
+    public void setReady(boolean bool) {
+    	this.ready = bool;
+    }
+    
+    public boolean isInitializing() {
+    	return initializing;
+    }
+    
+    public void setInitializing(boolean init) {
+    	this.initializing=init;
+    }
 }

@@ -4,6 +4,12 @@ package de.svenheins.main;
 //import de.svenheins.Client.NullClientChannelListener;
 import de.svenheins.WorldClient;
 import de.svenheins.handlers.ClientMessageHandler;
+import de.svenheins.handlers.ConsoleInputHandler;
+import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.SpaceManager;
+import de.svenheins.messages.ClientMessages;
+import de.svenheins.objects.Entity;
+import de.svenheins.objects.IngameConsole;
 
 
 import java.awt.Color;
@@ -11,12 +17,14 @@ import java.awt.Dimension;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.PasswordAuthentication;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -46,10 +54,17 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	private Dimension dim;
 	private GamePanel panel;
 	public final JMenuItem item21= new JMenuItem("Pause");
+	public final JMenuItem item22= new JMenuItem("Server aktualisieren");
 	
 	public static GameWindow gw;
 	private GraphicsDevice device;
     private boolean isFullScreen = false;
+    private boolean loggedIn, superUser;
+    private boolean showConsole, showInfoConsole;
+    
+    private ConsoleInputHandler consoleInput;
+    public IngameConsole gameConsole;
+    public IngameConsole gameInfoConsole;
 
 
     /** The name of the host property. */
@@ -97,12 +112,15 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 
 		gw = this;
 		
-		simpleClient = new SimpleClient(this);
-		
 		this.breite = breite;
 		this.hoehe = hoehe;
 		//this.title = title;
 		dim = new Dimension(this.breite, this.hoehe);
+		
+		simpleClient = new SimpleClient(this);
+		setLoggedIn(false);
+		setSuperUser(true);
+
 		
 		panel = new GamePanel();
 		panel.setBackground(new Color(30,30,30));
@@ -126,13 +144,23 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
         GameStates.setWidth(ge.getMaximumWindowBounds().width);
         GameStates.setHeight(ge.getMaximumWindowBounds().height);
  
+		consoleInput = new ConsoleInputHandler();
+		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-60, new int[]{120, 120, 220}, 0.75f, true, 20);
+		gw.addKeyListener(consoleInput);
+		this.showConsole = false;
+		
+		/** InfoConsole */
+		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-60, new int[]{120, 120, 120}, 0.75f, false, 14);
+        this.showInfoConsole = false;
+		
         if(device.isFullScreenSupported()){
             device.setFullScreenWindow(this);
         }
 		
-		setResizable(false);
+		setResizable(true);
 		
 		add(panel);
+//		getContentPane().add(panel);
 		
 		// Add main-menu
 		JMenuBar mbar = new JMenuBar();
@@ -173,7 +201,16 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
             	}
             }
 		});
+		item22.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	EntityManager.emptyAll();
+            	SpaceManager.emptyAll();
+            	GamePanel.gp.setServerInitialized(false);
+            	
+            }
+		});
 		menu2.add(item21);
+		menu2.add(item22);
 
 		mbar.add(menu);
 		mbar.add(menu2);
@@ -220,6 +257,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
             connectProps.put("port", port);
             simpleClient.login(connectProps);
             new Thread(GamePanel.serverUpdateThread).start();
+//            new Thread(GamePanel.inputThread).start();
+            
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -309,6 +348,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     public void loggedIn() {
 //        inputPanel.setEnabled(true);
         setStatus("Logged in");
+        setLoggedIn(true);
     }
 
     /**
@@ -318,6 +358,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      */
     public void loginFailed(String reason) {
         setStatus("Login failed: " + reason);
+        setLoggedIn(true);
     }
 
     /**
@@ -328,6 +369,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     public void disconnected(boolean graceful, String reason) {
 //        inputPanel.setEnabled(false);
         setStatus("Disconnected: " + reason);
+        setLoggedIn(false);
     }
 
     /**
@@ -489,6 +531,16 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     public String getPortNumber() {
     	return this.portNumber;
     }
+
+
+	public boolean isLoggedIn() {
+		return loggedIn;
+	}
+
+
+	public void setLoggedIn(boolean loggedIn) {
+		this.loggedIn = loggedIn;
+	}
     
    
 //     
@@ -506,5 +558,33 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //            setVisible(true);
 //        }
 //    }
-   
+	public void setShowConsole(boolean showConsole){
+		this.showConsole = showConsole;
+	}
+	
+	public boolean getShowConsole() {
+		return showConsole;
+	}
+	
+	public void setShowInfoConsole(boolean showInfoConsole){
+		this.showInfoConsole = showInfoConsole;
+	}
+	
+	public boolean getShowInfoConsole() {
+		return showInfoConsole;
+	}
+	
+	public ConsoleInputHandler getConsoleInputHandler() {
+		return this.consoleInput;
+	}
+
+
+	public boolean isSuperUser() {
+		return superUser;
+	}
+
+
+	public void setSuperUser(boolean superUser) {
+		this.superUser = superUser;
+	}
 }

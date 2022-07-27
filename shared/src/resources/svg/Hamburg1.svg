@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="Konvergenzregion1.svg">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="3.959798"
+     inkscape:cx="337.24717"
+     inkscape:cy="921.4859"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer2"
+     showgrid="false"
+     inkscape:window-width="1600"
+     inkscape:window-height="825"
+     inkscape:window-x="-9"
+     inkscape:window-y="88"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="EbeneHamburg">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 297.74246,150.04343 301.02546,138.17414 298.24754,133.62845 302.28815,130.34545 303.80338,126.0523 306.83383,125.54723 310.87444,130.09291 310.87444,133.37591 313.39983,135.14368 317.94551,135.90129 321.73358,131.86068 323.50135,126.80992 328.04704,122.76931 329.8148,118.98124 334.10795,117.71855 337.13841,114.43555 340.92648,116.45586 345.21963,115.69824 346.9874,109.88986 349.51278,105.09164 354.05846,107.36448 358.60415,107.36448 361.12953,99.535801 367.19045,97.768034 369.71583,94.990114 371.98867,94.990114 378.04959,89.434275 383.60543,91.959657 378.8072,98.020572 376.7869,103.82895 376.02928,110.1424 381.33258,113.17286 384.36304,118.22362 387.14096,123.27439 390.67649,126.80992 387.89857,131.86068 383.10035,130.85053 382.0902,133.12337 377.03944,136.91144 385.62573,137.16398 384.1105,143.72997 382.0902,150.5485 384.1105,156.60942 387.64604,161.91272 387.64604,168.47871 393.70695,171.76171 404.31355,175.80232 405.07117,182.87339 405.07117,191.71222 394.21203,191.96476 383.60543,198.27821 367.19045,195.50029 356.58385,181.61069 343.45186,188.68176 328.29958,190.70207 312.89475,181.10562 z"
+       id="path3003"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1" />
+</svg>

@@ -8,11 +8,11 @@ import java.awt.event.KeyListener;
 
 public class InputHandler implements KeyListener{
 
-	private int k1, k2, k3, k4, k5, k6, k7;
-	public boolean up, down, left, right, attack, pause, options;
+	private int k1, k2, k3, k4, k5, k6, k7, k8;
+	public boolean up, down, left, right, attack, pause, options, infoConsole;
 	
 	
-	public InputHandler(int k1, int k2, int k3, int k4, int k5, int k6, int k7) {
+	public InputHandler(int k1, int k2, int k3, int k4, int k5, int k6, int k7, int k8) {
 		this.k1 = k1;
 		this.k2 = k2;
 		this.k3 = k3;
@@ -20,11 +20,13 @@ public class InputHandler implements KeyListener{
 		this.k5 = k5;
 		this.k6 = k6;
 		this.k7 = k7;
+		this.k8 = k8;
 	}
 	
 	@Override
 	public void keyPressed(KeyEvent e) {
 		// TODO Auto-generated method stub
+//		System.out.println("pressed");
 		int key = e.getKeyCode();
 		if (key== k1) {
 			left = true;
@@ -47,7 +49,9 @@ public class InputHandler implements KeyListener{
 		if (key== k7) {
 			options = true;
 		}
-
+		if (key== k8) {
+			infoConsole = true;
+		}
 	}
 
 	@Override
@@ -75,7 +79,9 @@ public class InputHandler implements KeyListener{
 		if (key== k7) {
 			options = false;
 		}
-
+		if (key== k8) {
+			infoConsole = false;
+		}
 		
 		
 	}

@@ -22,26 +22,30 @@ import de.svenheins.functions.MyStrings;
 import de.svenheins.animation.SpaceAnimation;
 import de.svenheins.animation.SpaceDisappear;
 
-import de.svenheins.objects.AlienEntity;
+import de.svenheins.managers.EntityManager;
+import de.svenheins.objects.Entity;
 import de.svenheins.objects.LocalObject;
-import de.svenheins.objects.ShipEntity;
 import de.svenheins.objects.Space;
 
 public class EditWindow {
 	//private Color color;
 
 	public EditWindow(final LocalObject o){
-		
-		if (o instanceof AlienEntity && o != null) {
-			editAlien((AlienEntity) o );
-		}
-		
-		if (o instanceof Space && o != null) {
-			editSpace((Space) o);
-		}
-		if (o instanceof ShipEntity && o != null) {
-			editShip((ShipEntity) o);
-		}
+//		if (GameWindow.gw.isSuperUser()) {
+	//		if (o instanceof AlienEntity && o != null) {
+	//			editAlien((AlienEntity) o );
+	//		}
+			
+			if (o instanceof Space && o != null) {
+				editSpace((Space) o);
+			}
+	//		if (o instanceof ShipEntity && o != null) {
+	//			editShip((ShipEntity) o);
+	//		}
+			if (o instanceof Entity && o != null) {
+				editEntity((Entity) o);
+			}
+//		}
 	}
 	
 	private void editSpace(final Space space) {
@@ -108,12 +112,62 @@ public class EditWindow {
         spaceDialog.setVisible(true);
 	}
 	
-	private void editShip(final ShipEntity ship) {
+//	private void editShip(final ShipEntity ship) {
+//
+//		// Erzeugung eines neuen Dialoges
+//        final JDialog meinJDialog = new JDialog();
+//        meinJDialog.setModal(true);
+//        meinJDialog.setTitle("Ship Editor");
+//        meinJDialog.setSize(450,300);
+// 
+//        // Hier erzeugen wir unsere JPanels
+//        JPanel panelRot = new JPanel();
+//        JPanel panelBlue = new JPanel();
+//        JPanel panelGreen = new JPanel();
+//        JPanel panelDark = new JPanel();
+//        
+//        final JTextField textField = new JTextField("100", 10);
+//        JButton button1 = new JButton("Ok");
+//        button1.addActionListener(new ActionListener() {
+//            public void actionPerformed(ActionEvent e) {
+//            	String str = textField.getText();
+//    			try {
+//    				int editY = Integer.parseInt(str);
+//    		    //Integer integerZahl = new Integer(stringZahl);
+//    				ship.setY((float) editY);
+//    			} catch (NumberFormatException numberException) {
+//    				System.out.println("Wrong number format!");
+//    			}
+//            	meinJDialog.dispose();
+//            }
+//        });
+//        JButton button2 = new JButton("Abbrechen");
+//        panelBlue.add(textField);
+//        panelBlue.add(button1);
+//        panelBlue.add(button2);
+//        
+//        // Erzeugung eines JTabbedPane-Objektes
+//        JTabbedPane tabpane = new JTabbedPane
+//            (JTabbedPane.TOP,JTabbedPane.SCROLL_TAB_LAYOUT );
+// 
+//        // Hier werden die JPanels als Registerkarten hinzugefügt
+//        tabpane.addTab("Allgemein", panelRot);
+//        tabpane.addTab("Aussehen", panelBlue);
+//        tabpane.addTab("Verhalten", panelDark);
+//        tabpane.addTab("Sonstiges", panelGreen);
+// 
+//        // JTabbedPane wird unserem Dialog hinzugefügt
+//        meinJDialog.add(tabpane);
+//        // Wir lassen unseren Dialog anzeigen
+//        meinJDialog.setVisible(true);
+//	}
+	
+	private void editEntity(final Entity entity) {
 
 		// Erzeugung eines neuen Dialoges
         final JDialog meinJDialog = new JDialog();
         meinJDialog.setModal(true);
-        meinJDialog.setTitle("Ship Editor");
+        meinJDialog.setTitle("Entity Editor");
         meinJDialog.setSize(450,300);
  
         // Hier erzeugen wir unsere JPanels
@@ -122,15 +176,22 @@ public class EditWindow {
         JPanel panelGreen = new JPanel();
         JPanel panelDark = new JPanel();
         
-        final JTextField textField = new JTextField("100", 10);
+        final JTextField textField = new JTextField(""+entity.getY(), 10);
         JButton button1 = new JButton("Ok");
         button1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
             	String str = textField.getText();
     			try {
     				int editY = Integer.parseInt(str);
-    		    //Integer integerZahl = new Integer(stringZahl);
-    				ship.setY((double) editY);
+    				if (GameWindow.gw.isLoggedIn()) {
+    					/** here we are connected */
+    					// TODO: request edit from server
+    					entity.setY((float) editY);
+    				} else
+    				{
+    					/** we launch a standalone-Client */
+    					entity.setY((float) editY);
+    				}
     			} catch (NumberFormatException numberException) {
     				System.out.println("Wrong number format!");
     			}
@@ -138,9 +199,24 @@ public class EditWindow {
             }
         });
         JButton button2 = new JButton("Abbrechen");
+        JButton deleteButton = new JButton("Löschen");
+        deleteButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+				if (GameWindow.gw.isLoggedIn()) {
+					/** here we are connected */
+					// TODO: request delete from server
+				} else
+				{
+					/** we launch a standalone-Client */
+					EntityManager.entityList.remove(entity);
+				}
+				meinJDialog.dispose();
+            }
+        });
         panelBlue.add(textField);
         panelBlue.add(button1);
         panelBlue.add(button2);
+        panelBlue.add(deleteButton);
         
         // Erzeugung eines JTabbedPane-Objektes
         JTabbedPane tabpane = new JTabbedPane
@@ -158,14 +234,14 @@ public class EditWindow {
         meinJDialog.setVisible(true);
 	}
 	
-	private void editAlien(AlienEntity alien) {
-		String str = JOptionPane.showInputDialog( "Bitte Zahl eingeben" );
-		try {
-			int editY = Integer.parseInt(str);
-	    //Integer integerZahl = new Integer(stringZahl);
-			alien.setY((double) editY);
-		} catch (NumberFormatException e) {
-			System.out.println("Wrong number format!");
-		}
-	}
+//	private void editAlien(AlienEntity alien) {
+//		String str = JOptionPane.showInputDialog( "Bitte Zahl eingeben" );
+//		try {
+//			int editY = Integer.parseInt(str);
+//	    //Integer integerZahl = new Integer(stringZahl);
+//			alien.setY((float) editY);
+//		} catch (NumberFormatException e) {
+//			System.out.println("Wrong number format!");
+//		}
+//	}
 }

@@ -3,9 +3,12 @@ package de.svenheins.objects;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Polygon;
 import java.util.ArrayList;
+import java.util.Date;
 
+import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 
 public class IngameConsole extends Space {
@@ -14,29 +17,39 @@ public class IngameConsole extends Space {
 	 */
 	//private static final long serialVersionUID = 1L;
 	private StringBuffer consoleText;
-	private boolean deleteable;
+	private boolean deleteable, writable;
+	private int maxEnters;
+	private Point position;
+	private int height, width;
+	private int fontSize;
 	
-	public IngameConsole() {
+	public IngameConsole(Point position, int width, int height, int[] color, float trans, boolean writable, int fontSize) {
 		super();
-		Polygon polyWindow = new Polygon(new int[]{20,20, GameWindow.gw.breite-40, GameWindow.gw.breite-40}, new int[]{20,GameWindow.gw.hoehe-40, GameWindow.gw.hoehe-40, 20}, 4);
+		Polygon polyWindow = new Polygon(new int[]{position.x,position.x, position.x+width, position.x+width}, new int[]{position.y,position.y+height, position.y+height, position.y}, 4);
 		ArrayList<Polygon> polyList = new ArrayList<Polygon>();
 		polyList.add(polyWindow);
 		this.setPolygon(polyList);
-		this.setRGB(new int[]{120, 120, 220});
-		this.setTrans(0.75f);
-		
+		this.setRGB(color);
+		this.setTrans(trans);
+		float enterScale = 32.0f* (20.0f/(float)fontSize);
+		this.maxEnters =(int) ((GameStates.getHeight()/768)*enterScale);
+		this.position = position;
+		this.height = height;
+		this.width = width;
+		this.writable = writable;
+		this.fontSize = fontSize;
 		// init consoleText (tabulator is not shown, and this bugfixes the firstline-bug
 		consoleText = new StringBuffer("");
 		this.update();
 	}
 	
 	@Override
-	public void paint(Graphics2D g) {
-		super.paint(g);
+	public void paint(Graphics2D g, int x, int y) {
+		super.paint(g, x, y);
 		g.setPaintMode();
 		g.setColor(new Color(250, 250, 250));
-		g.setFont(new Font("Arial", Font.PLAIN , 20));
-		drawConsoleText(g, 30, 30);
+		g.setFont(new Font("Arial", Font.PLAIN , fontSize));
+		drawConsoleText(g, this.position.x+10, this.position.y+10);
 	}
 	
 	public StringBuffer getConsoleText() {
@@ -59,10 +72,10 @@ public class IngameConsole extends Space {
 		if (enters >0) setDeleteable(false);
 			else setDeleteable(true);
 		int firstEnter = -1;
-		if (count > 28) {
+		if (count > maxEnters) {
 			firstEnter = text.indexOf("\n");
 			// delete the first line
-			if (enters == 28) temp = temp.replace(0, firstEnter+1, "\n");
+			if (enters == maxEnters) temp = temp.replace(0, firstEnter+1, "\n");
 			else temp = temp.delete(0, firstEnter+1);		
 		}
 		// After all update the StringBuffer consoleText
@@ -85,6 +98,21 @@ public class IngameConsole extends Space {
 	}
 	
 	/**
+	 * @return the number of "\n"s (Enters) inside the console
+	 */
+	public int getActualCharCount() {
+		String text = this.consoleText.toString();
+		int charCount;
+		if (text.contains("\n")) {
+			text = text.substring(text.lastIndexOf("\n"), text.length()-1);
+		}
+		charCount = text.length();
+//		System.out.println("charcount: "+charCount);
+		
+		return charCount;
+	}
+	
+	/**
 	 * @param g Graphic2D-Object that paints the content
 	 * @param textBuffer: this should be the consoleText
 	 * @param x
@@ -103,24 +131,34 @@ public class IngameConsole extends Space {
 	    	if(enters >0) {
 	    		g.drawString(line, x, y += g.getFontMetrics().getHeight());
 	    		// only when we reach the last line do the following
-	    		if (j == count-enters && System.currentTimeMillis() % 1000 >500) {
+	    		if (j == count-enters && System.currentTimeMillis() % 1000 >500 && writable) {
 	    			// draw cursor on the actual line
 	    			g.drawString("|", x, y+= (enters)*g.getFontMetrics().getHeight());
 	    		}
 	    	} else {
 	    		// -> if enters == 0
-	    		if(j== count && System.currentTimeMillis() % 1000 >500) g.drawString(line+"|", x, y+=g.getFontMetrics().getHeight());
+	    		if(j== count && System.currentTimeMillis() % 1000 >500 && writable) g.drawString(line+"|", x, y+=g.getFontMetrics().getHeight());
 				else g.drawString(line, x, y += g.getFontMetrics().getHeight());
 	    	}
 		}
 	    // Handle empty "Enter-Screen" below 28 rows
-	    if (enters == count && System.currentTimeMillis() % 1000 >500) {
+	    if (enters == count && System.currentTimeMillis() % 1000 >500 && writable) {
 	    	g.drawString("|", x, y+= (enters)*g.getFontMetrics().getHeight());
 	    }
 	}
 	
 	public void append(String str){
 		this.consoleText.append(str);
+	}
+	
+	public void appendLine(String str){
+		this.consoleText.append(str+"\n");
+	}
+	
+	public void appendInfo(String str){
+		Date date = new Date();
+		this.consoleText.append(date+": "+str+"\n");
+		this.update();
 	}
 	
 	public void append(char c){

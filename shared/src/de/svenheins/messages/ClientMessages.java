@@ -59,6 +59,33 @@ public class ClientMessages extends Messages{
         return buffer;
     }
     
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer editObjectState(OBJECTCODE objCode, int id,  double[] state) {
+        byte[] bytes = new byte[1 + 4 + 4 + 48];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.EDIT_OBJECT.ordinal());
+        buffer.putInt(objCode.ordinal());
+        buffer.putInt(id);
+        // x
+        buffer.putDouble(state[0]);
+        // y
+        buffer.putDouble(state[1]);
+        // mx
+        buffer.putDouble(state[2]);
+        // my
+        buffer.putDouble(state[3]);
+        // height
+        buffer.putDouble(state[4]);
+        // width
+        buffer.putDouble(state[5]);
+        buffer.flip();
+        return buffer;
+    }
+    
     public static ByteBuffer initEntities() {
         byte[] bytes = new byte[1];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);

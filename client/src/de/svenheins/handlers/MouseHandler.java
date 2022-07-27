@@ -121,8 +121,10 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		Point p_save = new Point(point);
 //		System.out.println("ViewPoint: x = "+GamePanel.gp.getViewPointX()+ " y = "+ GamePanel.gp.getViewPointY());
 //		EnemyManager.sortZIndex();
-		point.x = point.x - GamePanel.gp.getViewPointX();
-		point.y = point.y - GamePanel.gp.getViewPointY();
+//		point.x = point.x - GamePanel.gp.getViewPointX();
+//		point.y = point.y - GamePanel.gp.getViewPointY();
+		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
+		point = correctedPoint;
 //		for( int i =0; i < EnemyManager.sizeSorted(); i++){
 //			
 //				if (EnemyManager.getSorted(i).contains(point)) {
@@ -161,8 +163,10 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		
 		}
 		
-		/** Set new ViewPoint */
-		GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+p_save.x-(GameStates.width/2) ,GamePanel.gp.getViewPointY()+ p_save.y-(GameStates.height/2));
+		/** Set new ViewPoint 
+		 * (this is set automatically)
+		 * */
+//		GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+p_save.x-(GameStates.width/2) ,GamePanel.gp.getViewPointY()+ p_save.y-(GameStates.height/2));
 
 	}
 	
@@ -200,6 +204,20 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	public void gameMouseMoved(Point point){
 		dragging = false;
 		dragSpace = null;
+		
+		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
+		for (BigInteger i: SpaceManager.idList) {
+			boolean inside = false;
+			for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
+				if (SpaceManager.get(i).getPolygon().get(j).contains(correctedPoint))
+				inside = true;
+			}
+			 if (inside) {
+					SpaceManager.get(i).setTrans(1.0f);
+				} else {
+					SpaceManager.get(i).setTrans(0.5f);
+				}
+		}
 	}
 	
 	/**
@@ -208,8 +226,10 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	 * @param point
 	 */
 	public void gameMouseDragged(Point point) {
-		point.x = point.x - GamePanel.gp.getViewPointX();
-		point.y = point.y - GamePanel.gp.getViewPointY();
+		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
+		point = correctedPoint;
+//		point.x = point.x - GamePanel.gp.getViewPointX();
+//		point.y = point.y - GamePanel.gp.getViewPointY();
 		if(dragging == true && dragSpace != null) {
 			float newX = (float) (point.getX()-localX);
 			float newY = (float) (point.getY()-localY);
@@ -242,8 +262,8 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 						SpaceManager.get(i).setSpaceAnimation(spaceDis);
 						SpaceManager.get(i).setMovement(0, 0);
 						dragSpace = SpaceManager.get(i);
-						localX = (int) (point.getX()- (int) dragSpace.getX());
-						localY = (int) (point.getY()- (int) dragSpace.getY());
+						localX = (int) (point.getX()- (int) dragSpace.getPolyX());
+						localY = (int) (point.getY()- (int) dragSpace.getPolyY());
 						dragging = true;
 					}
 				}

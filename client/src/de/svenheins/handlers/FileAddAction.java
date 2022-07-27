@@ -60,6 +60,7 @@ public class FileAddAction implements ActionListener {
 				e1.printStackTrace();
 			}
 			spaceAdd.setId(SpaceManager.getMax().add(BigInteger.valueOf(1)));
+			System.out.println("ID: "+spaceAdd.getId());
 			spaceAdd.setPolyX(0);
 			spaceAdd.setPolyY(0);
 			System.out.println("send ID: "+spaceAdd.getId());

@@ -21,7 +21,7 @@ public class EntityManager{
 	
 	public static List<BigInteger> idList = new ArrayList<BigInteger>();
 	
-	public static void remove(int index) {
+	public static void remove(BigInteger index) {
 //		if(entityList.get(index) instanceof AlienEntity) AlienEntity.aliens--;
 		entityList.remove(index);
 		idList.remove(index);

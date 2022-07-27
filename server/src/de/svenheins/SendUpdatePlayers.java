@@ -34,7 +34,7 @@ import com.sun.sgs.app.Task;
  * A simple repeating Task that tracks and prints the time since it was
  * last run.
  */
-public class SendUpdatePlayersSpaces
+public class SendUpdatePlayers
     implements Serializable,  // for persistence, as required by ManagedObject.
                Task,           // to schedule future calls to our run() method.
                ManagedObject
@@ -44,24 +44,26 @@ public class SendUpdatePlayersSpaces
 
     /** The {@link Logger} for this class. */
     private static final Logger logger =
-        Logger.getLogger(SendUpdatePlayersSpaces.class.getName());
+        Logger.getLogger(SendUpdatePlayersTaskSimple.class.getName());
 
     /**  The timestamp when this task was last run. */
     private long lastTimestamp = System.currentTimeMillis();
     
-    private int begin, end, packageSize, index;
+    private int begin, end;
+    int index;
+	int packageSize;
     
     /** The  room. */
     private ManagedReference<WorldRoom> room = null;
         
     
-    public SendUpdatePlayersSpaces(WorldRoom worldRoom, int begin, int end, int packageSize) {
+    public SendUpdatePlayers(WorldRoom worldRoom, int begin, int end, int packageSize) {
     	DataManager dataManager = AppContext.getDataManager();
     	this.room = dataManager.createReference(worldRoom);
     	this.begin = begin;
     	this.end = end;
-    	this.index = end;
     	this.packageSize = packageSize;
+    	this.index = this.begin;
     }
 
     /**
@@ -89,14 +91,11 @@ public class SendUpdatePlayersSpaces
 
 	private void update(long delta) {
 		// TODO Auto-generated method stub
-//		if (!(room.get() == null)) {
-//			room.get().updateSendPlayersSpaces(delta, begin, end);
-//        }
 		if (!(room.get() == null)) {
 			int endIndex = this.index + this.packageSize;
 			if (endIndex > this.end) endIndex =this.end;
 			
-			room.get().updateSendPlayersSpaces(index, endIndex);
+			room.get().updateSendPlayers(index, endIndex);
 //			room.get().updateSendPlayersEntities(delta, begin, end);
 			
 			this.index += this.packageSize;

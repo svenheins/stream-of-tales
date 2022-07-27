@@ -2,8 +2,11 @@ package de.svenheins.threads;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
+import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.PlayerManager;
+import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.handlers.InputHandler;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Player;
@@ -14,11 +17,11 @@ public class InputThread implements Runnable{
 	
 	private long duration, last;
 	private Player[] players;
-//	private ShipEntity[] ships;
+	private Entity playerEntity;
 	
-	public InputThread(Player[] players) {
+	public InputThread(Player[] players, Entity playerEntity) {
 		this.players = players;
-//		this.ships = ships;
+		this.playerEntity = playerEntity;
 	}
 	
 	@Override
@@ -50,27 +53,33 @@ public class InputThread implements Runnable{
 //				ShipEntity s = ships[h];
 				InputHandler input = players[h].getInputHandler();
 				Player p = players[h];
+				playerEntity.setMovement(0, 0);
+//				GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //				p.setLastAttack(p.getLastAttack()+duration);
 //				s.setHorizontalMovement(0);
 //				s.setVerticalMovement(0);
 //				if ( PlayerManager.contains(s)){
 					if (input.down && !input.up){
-//						s.setVerticalMovement(Entity.DEFAULT_MOVEMENT_ON_Y);
-						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()-20);
+						playerEntity.setVerticalMovement(Entity.DEFAULT_MOVEMENT_ON_Y);
+//						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()+20);
+//						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //						System.out.println("down");
 					}
 					if (input.up && !input.down){
-//						s.setVerticalMovement(-Entity.DEFAULT_MOVEMENT_ON_Y);
-						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()+20);
+						playerEntity.setVerticalMovement(-Entity.DEFAULT_MOVEMENT_ON_Y);
+//						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()-20);
+//						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //						System.out.println("up");
 					}
 					if (input.left && !input.right){
-//						s.setHorizontalMovement(-Entity.DEFAULT_MOVEMENT_ON_X);
-						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+20, GamePanel.gp.getViewPointY());
+						playerEntity.setHorizontalMovement(-Entity.DEFAULT_MOVEMENT_ON_X);
+//						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()-20, GamePanel.gp.getViewPointY());
+//						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 					}
 					if (input.right && !input.left){
-//						s.setHorizontalMovement(Entity.DEFAULT_MOVEMENT_ON_X);
-						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()-20, GamePanel.gp.getViewPointY());
+						playerEntity.setHorizontalMovement(Entity.DEFAULT_MOVEMENT_ON_X);
+//						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+20, GamePanel.gp.getViewPointY());
+						
 					}
 					if (input.attack && p.getLastAttack() > p.getTimebetweenAttacks() && !GamePanel.gp.isPaused()){
 //						ShotEntity shot = new ShotEntity("shot3.png", s.getX()+s.getSprite().getWidth()/2-12, s.getY()-20);
@@ -97,7 +106,10 @@ public class InputThread implements Runnable{
 //						GamePanel.gp.setMenu(!GamePanel.gp.isMenu());
 						input.infoConsole = false;
 					}
+//					GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //				}
+//					if (GameWindow.gw.l
+					GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY(), playerEntity.getHeight(), playerEntity.getWidth()}));
 			}
 		}
 		else if (GameWindow.gw.getShowConsole() == true) {

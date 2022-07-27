@@ -22,6 +22,7 @@ import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.OBJECTCODE;
 
 public class MouseHandler implements MouseListener, MouseMotionListener{
 
@@ -140,13 +141,13 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 //			}
 //		}
 		
-		for( int i =0; i < PlayerManager.size(); i++){
-			if (PlayerManager.get(i).contains(point)) {
-				// open edit-windows
-//				GamePanel.gp.setPause(true);
-				new EditWindow(PlayerManager.get(i));
-			}
-		}
+//		for( int i =0; i < PlayerManager.size(); i++){
+//			if (PlayerManager.get(i).contains(point)) {
+//				// open edit-windows
+////				GamePanel.gp.setPause(true);
+//				new EditWindow(PlayerManager.get(i));
+//			}
+//		}
 		
 //		for( int i =0; i < EntityManager.size(); i++){
 		for(BigInteger i : EntityManager.idList){
@@ -159,7 +160,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		}
 		
 		/** Set new ViewPoint */
-		GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()-p_save.x+(GameStates.width/2) ,GamePanel.gp.getViewPointY()- p_save.y+(GameStates.height/2));
+		GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+p_save.x-(GameStates.width/2) ,GamePanel.gp.getViewPointY()+ p_save.y-(GameStates.height/2));
 
 	}
 	
@@ -205,6 +206,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			float newX = (float) (point.getX()-localX);
 			float newY = (float) (point.getY()-localY);
 			dragSpace.setAllXY(newX, newY);
+			GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.SPACE, dragSpace.getId(),  new float[]{newX, newY, dragSpace.getMX(), dragSpace.getMY(), dragSpace.getHeight(), dragSpace.getWidth()}));
 			System.out.println("x: "+newX+" y: "+newY);
 		} else {
 //			SpaceManager.sortZIndex();

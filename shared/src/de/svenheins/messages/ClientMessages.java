@@ -1,5 +1,6 @@
 package de.svenheins.messages;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 
@@ -64,24 +65,26 @@ public class ClientMessages extends Messages{
      * @param id
      * @return 
      */
-    public static ByteBuffer editObjectState(OBJECTCODE objCode, int id,  double[] state) {
-        byte[] bytes = new byte[1 + 4 + 4 + 48];
+    public static ByteBuffer editObjectState(OBJECTCODE objCode, BigInteger id,  float[] state) {
+        byte[] bytes = new byte[1 + 4 + 8 + 24];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.EDIT_OBJECT.ordinal());
         buffer.putInt(objCode.ordinal());
-        buffer.putInt(id);
+        
+        /** ID */
+        buffer.putLong(id.longValue()); // 8 Bytes
         // x
-        buffer.putDouble(state[0]);
+        buffer.putFloat(state[0]);
         // y
-        buffer.putDouble(state[1]);
+        buffer.putFloat(state[1]);
         // mx
-        buffer.putDouble(state[2]);
+        buffer.putFloat(state[2]);
         // my
-        buffer.putDouble(state[3]);
+        buffer.putFloat(state[3]);
         // height
-        buffer.putDouble(state[4]);
+        buffer.putFloat(state[4]);
         // width
-        buffer.putDouble(state[5]);
+        buffer.putFloat(state[5]);
         buffer.flip();
         return buffer;
     }

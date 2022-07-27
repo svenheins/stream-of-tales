@@ -52,7 +52,15 @@ public class LocalObject {
 		return mx;
 	}
 	
+	public float getMX() {
+		return mx;
+	}
+	
 	public float getVerticalMovement() {
+		return my;
+	}
+	
+	public float getMY() {
 		return my;
 	}
 

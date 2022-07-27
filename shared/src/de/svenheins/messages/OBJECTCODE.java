@@ -1,5 +1,5 @@
 package de.svenheins.messages;
 
 public enum OBJECTCODE {
-	ENTITY, SPACE
+	ENTITY, SPACE, PLAYER
 }

@@ -72,6 +72,15 @@ public class WorldObject
         this.id = BigInteger.valueOf(0);
     }
     
+//    public WorldObject clone() {
+//    	try {
+//			return (WorldObject) super.clone();
+//		} catch (CloneNotSupportedException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//			return null;
+//		}
+//    }
     
     public WorldObject() {
         this.name = "standard";
@@ -175,6 +184,14 @@ public class WorldObject
 	}
 	
 	public float getVerticalMovement() {
+		return my;
+	}
+	
+	public float getMX() {
+		return mx;
+	}
+	
+	public float getMY() {
 		return my;
 	}
 

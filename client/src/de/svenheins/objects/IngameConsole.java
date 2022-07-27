@@ -32,7 +32,7 @@ public class IngameConsole extends Space {
 		this.setRGB(color);
 		this.setTrans(trans);
 		float enterScale = 32.0f* (20.0f/(float)fontSize);
-		this.maxEnters =(int) ((GameStates.getHeight()/768)*enterScale);
+		this.maxEnters = (int) (((float)GameStates.getHeight()/768)*enterScale);
 		this.position = position;
 		this.height = height;
 		this.width = width;

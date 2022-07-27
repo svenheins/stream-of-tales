@@ -264,9 +264,13 @@ public class World
 //        	int red = 25*(int) (Math.random()*10);
 //        	int green = red/10;
 //        	int blue = red / 2;
-            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 3.0f);
+            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 2.0f);
             hexX = (float) (i % colsHexagons)*hexaSpace.getWidth();
             hexY = (float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.75f));
+//            System.out.println("height: "+hexaSpace.getHeight());
+//            System.out.println("width: "+hexaSpace.getWidth());
+//            System.out.println("x: "+hexX);
+//            System.out.println("y: "+hexY);
             if ((i/colsHexagons) % 2 == 0) hexX += hexaSpace.getWidth()/2;
             hexMX = 0;//Math.random()*50+0;
             hexMY = 0;//Math.random()*50+0;
@@ -553,7 +557,8 @@ public class World
 	        	for (int i = this.initStartIndex; i<this.initEndIndex; i++) {
 	    			ManagedReference<ServerSpace> space = spacesArray.get(i);
 	        		ServerSpace sp = space.get();
-	        		Space realSpace = new Space(sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale());
+//	        		Space realSpace = new Space(sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale());
+	        		Space realSpace = new Space(sp.getPolygon(), (int) sp.getX(), (int) sp.getY(), sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale());
 	        		if(!SpaceManager.add(realSpace)) {
 	            		/** something went wrong -> RESTART!!! */
 	            		this.restartDuplicated = true;

@@ -92,8 +92,9 @@ public class Space extends LocalObject{
 		this.setName(str);
 		this.scale = scale;
 		this.scale(scale);
-		this.width = this.width*scale;
-		this.height = this.height *scale;
+		this.setAllXY(0, 0);
+//		this.width = this.width*scale;
+//		this.height = this.height *scale;
 		spaceAnimation = new SpaceAnimation(this);
 		this.texturePaint = null;
 		this.bufferedImage = null;
@@ -105,15 +106,19 @@ public class Space extends LocalObject{
 		setTrans(trans);
 		setRGB(rgb);
 		setPolygon( polygon);
-		setAllXY(polyX, polyY);
+		this.setPolyX(polyX);
+		this.setPolyY(polyY);
+//		this.setX(polyX);
+//		this.setY(polyY);
+//		setAllXY(-polyX, -polyY);
 //		addPolygon(GamePanel.svgPath+str);
 		//addPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+str)));
 		this.setId(id);
 		this.setName(str);
 		this.scale = scale;
-		this.scale(scale);
-		this.width = this.width*scale;
-		this.height = this.height *scale;
+//		this.scale(scale);
+//		this.width = this.width*scale;
+//		this.height = this.height *scale;
 		spaceAnimation = new SpaceAnimation(this);
 		this.texturePaint = null;
 		this.bufferedImage = null;
@@ -339,6 +344,8 @@ public class Space extends LocalObject{
 		if(GameStates.getWidth()>0 && GameStates.getHeight()>0) {
 			setX(this.getX()+movementX);
 			setY(this.getY()+movementY);
+			this.setPolyX(this.getPolyX()+ (int) movementX);
+			this.setPolyY(this.getPolyY()+ (int) movementY);
 		}
 	}
 	
@@ -407,6 +414,8 @@ public class Space extends LocalObject{
 			}
 		}
 		this.setAllXY(positionOld.x, positionOld.y);
+		this.width = this.width*factor;
+		this.height = this.height *factor;
 	}
 	
 	public float getScale() {

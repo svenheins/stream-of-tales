@@ -211,8 +211,9 @@ public class WorldRoom extends WorldObject
     public boolean editSpace(BigInteger id, float[] state) {
        if ( spaces.containsKey(id)) {
     	   ServerSpace space = spaces.get(id).getForUpdate();
-    	   space.setX(state[0]);
-    	   space.setY(state[1]);
+//    	   space.setX(state[0]);
+//    	   space.setY(state[1]);
+    	   space.setAllXY(state[0], state[1]);
     	   space.setMovement(state[2], state[3]);
     	   space.setHeight(state[4]);
     	   space.setWidth(state[5]);
@@ -428,13 +429,19 @@ public class WorldRoom extends WorldObject
     		ServerSpace s_space = spaces.get(SpaceManager.idList.get(i)).getForUpdate();//space.getForUpdate();
     		
     		if (s_space instanceof ServerRegion) {
-    			/** do nothing */
+    			/** update dimensions */
+    			Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale());
+    			if ( SpaceManager.overwrite(realSpace) ) {
+//        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
+        		} else {
+        			logger.log(Level.INFO, "Overwrite error - space is not existent!");
+        		}
     		} else {
     			timestamp = System.currentTimeMillis();
         		/** Spaces can move without limitations (_IF_ they move) */
 //        		if(s_space.getHorizontalMovement() != 0 || s_space.getVerticalMovement()!=0) 
         		s_space.move(timestamp);
-        		Space realSpace = new Space(s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale());
+        		Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale());
         		if ( SpaceManager.overwrite(realSpace) ) {
 //        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
         		} else {

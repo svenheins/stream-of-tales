@@ -98,8 +98,11 @@ public class SpaceManager{
 			float objectY, float objectMX, float objectMY) {
 		Space space = SpaceManager.spaceList.get(objectId);
 		if (space != null) {
-			space.setX(objectX);
-			space.setY(objectY);
+			space.setX((int)objectX);
+			space.setY((int)objectY);
+//			space.setPolyX((int)objectX);
+//			space.setPolyY((int)objectY);
+			space.setAllXY(objectX, objectY);
 			space.setMovement(objectMX, objectMY);
 			SpaceManager.spaceList.put(objectId, space);
 		}

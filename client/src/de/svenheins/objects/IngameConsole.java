@@ -8,6 +8,7 @@ import java.awt.Polygon;
 import java.util.ArrayList;
 import java.util.Date;
 
+import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 
@@ -32,7 +33,7 @@ public class IngameConsole extends Space {
 		this.setRGB(color);
 		this.setTrans(trans);
 		float enterScale = 32.0f* (20.0f/(float)fontSize);
-		this.maxEnters = (int) (((float)GameStates.getHeight()/768)*enterScale);
+		this.maxEnters =(int) (((float)GameStates.getHeight()/768)*enterScale);
 		this.position = position;
 		this.height = height;
 		this.width = width;
@@ -45,10 +46,12 @@ public class IngameConsole extends Space {
 	
 	@Override
 	public void paint(Graphics2D g, int x, int y) {
+//		this.setPolygon(getPolygon().get(0).translate(arg0, arg1))
 		super.paint(g, x, y);
 		g.setPaintMode();
 		g.setColor(new Color(250, 250, 250));
 		g.setFont(new Font("Arial", Font.PLAIN , fontSize));
+//		drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
 		drawConsoleText(g, this.position.x+10, this.position.y+10);
 	}
 	

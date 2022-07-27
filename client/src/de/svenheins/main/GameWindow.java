@@ -53,6 +53,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	public final int breite;
 	private Dimension dim;
 	private GamePanel panel;
+	private StatPanel menuPanel;
 	public final JMenuItem item21= new JMenuItem("Pause");
 	public final JMenuItem item22= new JMenuItem("Server aktualisieren");
 	
@@ -81,6 +82,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     public static final String DEFAULT_PORT = "1139";//"62964";//"1139";
     private String portNumber;
     
+    private String loginName = "";
+    private String loginPassword = "";
     
 
     /** The message encoding. */
@@ -121,10 +124,16 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		setLoggedIn(false);
 		setSuperUser(true);
 
-		
+		/** Main-GamePanel
+		 * this panel will be scaled or rotated*/
 		panel = new GamePanel();
 		panel.setBackground(new Color(0,0,0));
 		panel.setDoubleBuffered(true);
+		
+		/** add the menuPanel, that lies above the GamePanel */
+		menuPanel = new StatPanel();
+		setGlassPane(menuPanel);
+		menuPanel.setVisible(true);
 		
 		JInternalFrame frame1;
 		frame1 = new JInternalFrame("Frame1", true, true, true, true);
@@ -141,26 +150,29 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         device =ge.getDefaultScreenDevice();
-        GameStates.setWidth(ge.getMaximumWindowBounds().width);
-        GameStates.setHeight(ge.getMaximumWindowBounds().height);
+//        GameStates.setWidth(ge.getMaximumWindowBounds().width);
+//        GameStates.setHeight(ge.getMaximumWindowBounds().height);
+        GameStates.setWidth(breite);
+        GameStates.setHeight(hoehe);
  
 		consoleInput = new ConsoleInputHandler();
 		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-60, new int[]{120, 120, 220}, 0.75f, true, 20);
-		this.addKeyListener(consoleInput);
+		gw.addKeyListener(consoleInput);
 		this.showConsole = false;
+		
+		gw.addKeyListener(GamePanel.gp.getPlayer().getInputHandler());
 		
 		/** InfoConsole */
 		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-60, new int[]{120, 120, 120}, 0.75f, false, 14);
         this.showInfoConsole = false;
 		
-        if(device.isFullScreenSupported()){
-            device.setFullScreenWindow(this);
-        }
+//        if(device.isFullScreenSupported()){
+//            device.setFullScreenWindow(this);
+//        }
 		
 		setResizable(true);
 		
 		add(panel);
-//		getContentPane().add(panel);
 		
 		// Add main-menu
 		JMenuBar mbar = new JMenuBar();
@@ -215,11 +227,12 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		mbar.add(menu);
 		mbar.add(menu2);
 		// Comment to unsupport Menu
-//		this.setJMenuBar(mbar);
+		this.setJMenuBar(mbar);
 //		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		
 		setVisible(true);
-		
+		gw.setFocusable(true);
+		gw.requestFocus();
 	}
 	
 	
@@ -256,6 +269,14 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
             connectProps.put("host", host);
             connectProps.put("port", port);
             simpleClient.login(connectProps);
+//            try {
+//            	synchronized (simpleClient) {
+//            		simpleClient.wait(5000L);
+//            	}
+//            } catch (InterruptedException e) {
+//            	e.printStackTrace();
+//            }
+            
             new Thread(GamePanel.serverUpdateThread).start();
 //            new Thread(GamePanel.inputThread).start();
             
@@ -333,10 +354,10 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      * to pop up a login dialog to get these fields from the player.
      */
     public PasswordAuthentication getPasswordAuthentication() {
-        this.player = "guest-" + random.nextInt(1000);
+        this.player = this.getLoginName();//"guest-" + random.nextInt(1000);
 //    	this.player = "player";
         setStatus("Logging in as " + player);
-        String password = "123";
+        String password = this.getLoginPassword();
         return new PasswordAuthentication(player, password.toCharArray());
     	
     }
@@ -359,7 +380,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      */
     public void loginFailed(String reason) {
         setStatus("Login failed: " + reason);
-        setLoggedIn(true);
+        setLoggedIn(false);
     }
 
     /**
@@ -587,5 +608,25 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 
 	public void setSuperUser(boolean superUser) {
 		this.superUser = superUser;
+	}
+
+
+	public String getLoginName() {
+		return loginName;
+	}
+
+
+	public void setLoginName(String loginName) {
+		this.loginName = loginName;
+	}
+
+
+	public String getLoginPassword() {
+		return loginPassword;
+	}
+
+
+	public void setLoginPassword(String loginPassword) {
+		this.loginPassword = loginPassword;
 	}
 }

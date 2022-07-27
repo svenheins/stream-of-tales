@@ -196,7 +196,7 @@ public class World
         Sprite it_spriteAgent = SpriteManager.manager.getSprite(iterativSpriteStringAgent);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
-        int numAgentsEntrepreneur = 1000;
+        int numAgentsEntrepreneur = 100;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgent.getWidth());

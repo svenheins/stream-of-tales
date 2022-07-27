@@ -96,6 +96,12 @@ public class InputThread implements Runnable{
 						GamePanel.gp.setPause(!GamePanel.gp.isPaused());
 						input.pause = false;
 					}
+					if (input.zoomIn) {
+						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()*1.1f);
+					}
+					if (input.zoomOut) {
+						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()/1.1f);
+					}
 					if (input.options ){
 						GamePanel.gp.setPause(!GamePanel.gp.isPaused());
 						GamePanel.gp.setMenu(!GamePanel.gp.isMenu());
@@ -108,8 +114,9 @@ public class InputThread implements Runnable{
 					}
 //					GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //				}
-//					if (GameWindow.gw.l
-					GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY(), playerEntity.getHeight(), playerEntity.getWidth()}));
+					if (GameWindow.gw.isLoggedIn()) {
+						GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY(), playerEntity.getHeight(), playerEntity.getWidth()}));
+					}
 			}
 		}
 		else if (GameWindow.gw.getShowConsole() == true) {

@@ -83,7 +83,7 @@ public class Client extends JFrame
     public static final String HOST_PROPERTY = "tutorial.host";
 
     /** The default hostname. */
-    public static final String DEFAULT_HOST = "192.168.1.2";
+    public static final String DEFAULT_HOST = "localhost";//"193.174.43.177";
 
     /** The name of the port property. */
     public static final String PORT_PROPERTY = "tutorial.port";
@@ -322,6 +322,8 @@ public class Client extends JFrame
      * Decodes the message data and adds it to the display.
      */
     public void receivedMessage(ByteBuffer message) {
+    	//TODO: ByteBuffers ersten byte lesen und an receivedMessage(ENUM, ByteBuffer) weitergeben
+    	// dieses receivedMessage muss noch geschrieben werden und führt die konkreten Anweisungen durch
         appendOutput("Server sent: " + decodeString(message));
     }
 
@@ -365,6 +367,16 @@ public class Client extends JFrame
      * @param text the text to send.
      */
     protected void send(String text) {
+    	//TODO: ByteBuffer versenden:
+    	/**
+    	 * simpleClient.send(buffer);
+    	 * das muss folgendermaßen umgesetz werden:
+    	 * Beim absenden, ruft send(ENUM, Buffer) amm schluss send(Buffer) auf
+    	 * case enum: --> buffer = ServerMessages.moveMe(x,y)
+    	 * 
+    	 *  
+    	 * */
+    	
         try {
             ByteBuffer message = encodeString(text);
             simpleClient.send(message);

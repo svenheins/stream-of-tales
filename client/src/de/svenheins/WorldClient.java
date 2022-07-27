@@ -150,7 +150,10 @@ public class WorldClient extends Client
         String channelName =
             (String) channelSelector.getSelectedItem();
         if (channelName.equalsIgnoreCase("<DIRECT>")) {
-            send(text);
+            /**
+             *  hier wird später send(ENUM_NACHRICHT, text) aufgerufen
+             */
+        	send(text);
         } else {
             ClientChannel channel = channelsByName.get(channelName);
             try {
@@ -198,6 +201,8 @@ public class WorldClient extends Client
          * Formats and displays messages received on a channel.
          */
         public void receivedMessage(ClientChannel channel, ByteBuffer message) {
+        	//TODO: ByteBuffer korrekt parsen
+        	// hier kriegt der Client Nachrichten aus dem Channel
             appendOutput("[" + channel.getName() + "/ " + channelNumber +
                 "] " + decodeString(message));
         }

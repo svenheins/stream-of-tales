@@ -127,4 +127,16 @@ public class SpaceManager{
 //		sortedSpaceList = new ArrayList<Space>();
 		idList = new ArrayList<BigInteger>();
 	}
+	
+	/** get Maximum of ids */
+	public static BigInteger getMax(){
+		BigInteger tempMax = BigInteger.valueOf(-1);
+		for(BigInteger bId : idList) {
+			/** if we found a new maximum replace the old one **/
+			if (bId.compareTo(tempMax) > 0) {
+				tempMax = bId;
+			}
+		}
+		return tempMax;
+	}
 }

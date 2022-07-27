@@ -99,12 +99,12 @@ public class ServerAgentEmployee extends ServerAgent  {
 				/** Create a Space, to compute some stuff (faster and fewer errors) */
 				Space space = new Space(s_space.getName(), s_space.getId(), new int[]{0,0,0}, true, 0.5f, s_space.getScale());
 				space.setAllXY(s_space.getX(), s_space.getY());
-//				ArrayList<Point> blockedPoints = ((ServerRegion) s_space).getBlockedPoints();
-//				/** if capacity of region is reached, continue with next region */
-//				if (blockedPoints.size() < ((ServerRegion) s_space).getResidents().size()*3) {
-//					continue;
-//				}
-//					logger.log(Level.INFO, "Space found: "+serverSpace.get().getName());
+				ArrayList<Point> blockedPoints = ((ServerRegion) s_space).getBlockedPoints();
+				/** if capacity of region is reached, continue with next region */
+				if (blockedPoints.size() < ((ServerRegion) s_space).getResidents().size()*3) {
+					continue;
+				}
+					logger.log(Level.INFO, "Space found: "+serverSpace.get().getName());
 				/** iterate all the space-polygons */
 				for (int i = 0; i< space.getPolygon().size(); i++) {
 					Polygon polygon = space.getPolygon().get(i);
@@ -174,16 +174,16 @@ public class ServerAgentEmployee extends ServerAgent  {
 	
 	@Override
 	public boolean validateGoal() {
-//		Point myPosition = new Point ((int) this.getX(), (int) this.getY());
-//		if (this.getRegion() != null) {
-//			ArrayList<Point> blockedPoints = this.getRegion().getBlockedPoints();
-//			if (blockedPoints.size() < this.getRegion().getResidents().size()*3) {
-//				return false;
-//			} else
-//				return true;
-//		} else
-//			return false;
-		return true;
+		Point myPosition = new Point ((int) this.getX(), (int) this.getY());
+		if (this.getRegion() != null) {
+			ArrayList<Point> blockedPoints =((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).get()).getBlockedPoints();
+			if (blockedPoints.size() < ((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).get()).getResidents().size()) {
+				return false;
+			} else
+				return true;
+		} else
+			return false;
+//		return true;
 	}
 	
 	@Override

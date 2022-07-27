@@ -21,10 +21,15 @@ public class EntityManager{
 	
 	public static List<BigInteger> idList = new ArrayList<BigInteger>();
 	
-	public static void remove(BigInteger index) {
+	public static void remove(BigInteger index) throws IllegalArgumentException {
 //		if(entityList.get(index) instanceof AlienEntity) AlienEntity.aliens--;
-		entityList.remove(index);
-		idList.remove(index);
+		try {
+			entityList.remove(index);
+			idList.remove(index);
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 //	public static void remove(Entity entity) {
@@ -34,7 +39,7 @@ public class EntityManager{
 //		
 //	}
 	
-	public static boolean add(Entity entity){
+	public static boolean add(Entity entity) {
 		if (entityList.containsKey(entity.getId())) {
 			return false;
 		} else {

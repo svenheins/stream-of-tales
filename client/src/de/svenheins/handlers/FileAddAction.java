@@ -9,7 +9,10 @@ import java.net.MalformedURLException;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
 
+import de.svenheins.main.GameWindow;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.OBJECTCODE;
 
 import de.svenheins.objects.Space;
 
@@ -49,14 +52,20 @@ public class FileAddAction implements ActionListener {
 		d.showOpenDialog(null);
 		File file = d.getSelectedFile();
 		if(file != null) {
-			spaceAdd = new Space("Zeichnung.svg", BigInteger.valueOf(0), new int[]{20, 230, 40}, true, 0.5f, 1.0f);
+			spaceAdd = new Space("Start.svg", BigInteger.valueOf(0), new int[]{20, 230, 40}, true, 0.5f, 1.0f);
 			try {
 				spaceAdd.setPolygon(file.toURL());
 			} catch (MalformedURLException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
+			spaceAdd.setId(SpaceManager.getMax().add(BigInteger.valueOf(1)));
+			spaceAdd.setPolyX(0);
+			spaceAdd.setPolyY(0);
+			System.out.println("send ID: "+spaceAdd.getId());
 			SpaceManager.add(spaceAdd);
+			/** send space to server */ 
+			GameWindow.gw.send(ClientMessages.uploadObject(OBJECTCODE.SPACE, spaceAdd.getId(), spaceAdd));
 		}
 	}
 	

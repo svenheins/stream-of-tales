@@ -58,6 +58,11 @@ public class StatPanel  extends JPanel{
 	}
 
 	public void gamePaint(Graphics2D g){
+//		g.setPaintMode();
+		// paint the Menu
+		if (GamePanel.gp.isMenu()) {
+			GamePanel.gp.mainMenu.paint(g, 0, 0);
+		}
 		// paint the info-console
 		if (GameWindow.gw.getShowInfoConsole()) {
 			GameWindow.gw.gameInfoConsole.paint(g, 0, 0);

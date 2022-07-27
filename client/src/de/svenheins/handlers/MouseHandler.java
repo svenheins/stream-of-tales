@@ -104,7 +104,9 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		if (GamePanel.gp.startButton.getPolygon().get(0).contains(point)) {
 			GameModus.modus = GameModus.GAME;
 		}
-		
+		if (GamePanel.gp.simulationButton.getPolygon().get(0).contains(point)) {
+			GameModus.modus = GameModus.SIM;
+		}
 		if (GamePanel.gp.connectButton.getPolygon().get(0).contains(point)) {
 			new ConnectionWindow();
 		}
@@ -182,6 +184,12 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		} else {
 			GamePanel.gp.connectButton.setTrans(0.5f);
 		}
+		
+		if (GamePanel.gp.simulationButton.getPolygon().get(0).contains(point)) {
+			GamePanel.gp.simulationButton.setTrans(1.0f);
+		} else {
+			GamePanel.gp.simulationButton.setTrans(0.5f);
+		}
 	}
 	
 	/**
@@ -192,17 +200,6 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	public void gameMouseMoved(Point point){
 		dragging = false;
 		dragSpace = null;
-		
-//		for (BigInteger i: SpaceManager.idList) {
-//			for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
-//				if (SpaceManager.get(i).getPolygon().get(j).contains(point)) {
-//					SpaceManager.get(i).setTrans(1.0f);
-//				} else {
-//					SpaceManager.get(i).setTrans(0.5f);
-//				}
-//				
-//			}
-//		}
 	}
 	
 	/**

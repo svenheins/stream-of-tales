@@ -99,6 +99,26 @@ public class Space extends LocalObject{
 		this.bufferedImage = null;
 	}
 	
+	public Space(ArrayList<Polygon> polygon, int polyX, int polyY, String str, BigInteger id,  int[] rgb, Boolean filled, float trans, float scale) {
+//		setColor(color);
+		setFilled(filled);
+		setTrans(trans);
+		setRGB(rgb);
+		setPolygon( polygon);
+		setAllXY(polyX, polyY);
+//		addPolygon(GamePanel.svgPath+str);
+		//addPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+str)));
+		this.setId(id);
+		this.setName(str);
+		this.scale = scale;
+		this.scale(scale);
+		this.width = this.width*scale;
+		this.height = this.height *scale;
+		spaceAnimation = new SpaceAnimation(this);
+		this.texturePaint = null;
+		this.bufferedImage = null;
+	}
+	
 	public Space( String str, BigInteger id, String textureString, float trans) {
 		setPolygon( new ArrayList<Polygon>());
 //		addPolygon(GamePanel.svgPath+str);
@@ -396,4 +416,21 @@ public class Space extends LocalObject{
 	public void setScale(float scale) {
 		this.scale = scale;
 	}
+	
+	public void setPubXCoord(int[] pubXCoord) {
+		this.pubXCoord = pubXCoord;
+	}
+	
+	public void setPubYCoord(int[] pubYCoord) {
+		this.pubYCoord = pubYCoord;
+	}
+	
+	public int[] getPubXCoord() {
+		return pubXCoord;
+	}
+	
+	public int[] getPubYCoord() {
+		return pubYCoord;
+	}
+	
 }

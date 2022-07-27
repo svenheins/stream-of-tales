@@ -5,7 +5,10 @@ package de.svenheins.main;
 import de.svenheins.WorldClient;
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.handlers.ConsoleInputHandler;
+import de.svenheins.handlers.FileAddAction;
+import de.svenheins.handlers.FileOpenAction;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.Entity;
@@ -20,9 +23,12 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.PasswordAuthentication;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -154,9 +160,12 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //        GameStates.setHeight(ge.getMaximumWindowBounds().height);
         GameStates.setWidth(breite);
         GameStates.setHeight(hoehe);
+        
+        /** init ressources */
+        initializeRessources();
  
 		consoleInput = new ConsoleInputHandler();
-		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-60, new int[]{120, 120, 220}, 0.75f, true, 20);
+		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-80, new int[]{120, 120, 220}, 0.75f, true, 20);
 		gw.addKeyListener(consoleInput);
 		this.showConsole = false;
 		
@@ -181,9 +190,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //		JMenuItem item = new JMenuItem("Open");
 //		item.addActionListener(new FileOpenAction(panel.getSpace()));
 //		menu.add(item);
-//		JMenuItem item2 = new JMenuItem("Add");
-//		item2.addActionListener(new FileAddAction(panel.getSpaceAdd()));
-//		menu.add(item2);
+		JMenuItem item2 = new JMenuItem("Add");
+		item2.addActionListener(new FileAddAction(panel.getSpaceAdd()));
+		menu.add(item2);
 		JMenuItem mainMenuItem = new JMenuItem("Menu");
 		mainMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -228,7 +237,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		mbar.add(menu2);
 		// Comment to unsupport Menu
 		this.setJMenuBar(mbar);
-//		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		
 		setVisible(true);
 		gw.setFocusable(true);
@@ -628,5 +637,59 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 
 	public void setLoginPassword(String loginPassword) {
 		this.loginPassword = loginPassword;
+	}
+	
+	private void initializeRessources() {
+		// Directory path to svg-files
+		URL pathSVG = getClass().getResource(GameStates.resourcePath+"svg/");//GameStates.resourcePath+"svg/"; 
+		 
+		  String fileName;
+		  File folder;
+		try {
+			folder = new File(pathSVG.toURI());
+			File[] listOfFiles = folder.listFiles(); 
+			 
+			  for (int i = 0; i < listOfFiles.length; i++) 
+			  {
+			 
+			   if (listOfFiles[i].isFile()) 
+			   {
+			   fileName = listOfFiles[i].getName();
+			       if (fileName.endsWith(".svg") || fileName.endsWith(".SVG"))
+			       {
+			          // add to ArrayList
+			    	   RessourcenManager.addSVG(fileName);
+			        }
+			     }
+			  }
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		  
+		// Directory path to image-files
+		URL pathImages = getClass().getResource(GameStates.resourcePath+"images/");//GameStates.resourcePath+"images/";
+		  try {
+			folder = new File(pathImages.toURI());
+			File[] listOfFiles = folder.listFiles(); 
+			 
+			  for (int i = 0; i < listOfFiles.length; i++) 
+			  {
+			 
+			   if (listOfFiles[i].isFile()) 
+			   {
+			   fileName = listOfFiles[i].getName();
+			       if (fileName.endsWith(".png") || fileName.endsWith(".PNG"))
+			       {
+			          // add to ArrayList
+			    	   RessourcenManager.addImage(fileName);
+			        }
+			     }
+			  }
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		  
 	}
 }

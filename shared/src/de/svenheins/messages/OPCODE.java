@@ -5,7 +5,9 @@ public enum OPCODE {
      * Client to server opcodes.
      */
 	EDIT_OBJECT, 
-    MOVEME, //ATTACK, GETFLAG, SCORE,
+    MOVEME, 
+    UPLOAD_OBJECT, 
+    //ATTACK, GETFLAG, SCORE,
     /**
      * Server to client opcodes.
      */

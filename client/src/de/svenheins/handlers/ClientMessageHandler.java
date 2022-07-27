@@ -1,13 +1,16 @@
 package de.svenheins.handlers;
 
+import java.awt.Polygon;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import de.svenheins.main.GamePanel;
+import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
+import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
@@ -61,6 +64,14 @@ public class ClientMessageHandler {
     		boolean filled;
     		float trans;
     		float scale;
+    		float area;
+    		int polyX;
+        	int polyY;
+        	int numberOfPolygons;
+        	int numberOfActualPolygon;
+        	int[] xpoints;
+			int[] ypoints;
+        	ArrayList<Polygon> polygon;
 			ArrayList<Space> spaceList = new ArrayList<Space>();
 			/** for each available packet do */
     		while (packet.hasRemaining()) {
@@ -81,7 +92,41 @@ public class ClientMessageHandler {
     			else filled = true;
     			trans = packet.getFloat();
     			scale = packet.getFloat();
-    			spaceList.add(new Space(name, id, new int[]{r, g, b}, filled, trans, scale));
+    			area = packet.getFloat();
+    			
+    			polyX = packet.getInt();
+	            polyY = packet.getInt();
+	    		
+	            numberOfPolygons = packet.getInt();
+	            polygon = new ArrayList<Polygon>();
+	    		for (int i = 0; i < numberOfPolygons; i++) {
+	    			numberOfActualPolygon = packet.getInt();
+	    			System.out.println("number of edges: "+ numberOfActualPolygon);
+	    			xpoints = new int[numberOfActualPolygon];
+	    			ypoints = new int[numberOfActualPolygon];
+	    			for (int j = 0; j < numberOfActualPolygon; j++) {
+	    				xpoints[j] = packet.getInt();
+	    				ypoints[j] = packet.getInt();
+	    			}
+	    			Polygon addPolygon = new Polygon(xpoints, ypoints, numberOfActualPolygon);
+	    			polygon.add(addPolygon);
+	    		}
+    			// if the name not yet known, we have to download the file from the server
+    			/** !!!!!!!!!!!!!!!!!!
+    			 * OK, new strategy: load every space-coordinates, its less performance but BUG-safer
+    			 *  !!!!!!!!!!!!!!!!!!!!!!!
+    			 */
+    			// TODO: Add here the polygons like from client to server
+//    			if (!RessourcenManager.containsSVG(name)) {
+//    				//TODO: add to "get full space list"
+//    			}
+    			
+    			/** now everything is well prepared */
+	    		Space spaceAdd = new Space(polygon, polyX, polyY, "polygon", id, new int[]{r,g,b}, filled, trans, scale);
+	    		spaceAdd.setName(name);
+	    		spaceAdd.setArea(area);
+	    		//SpaceManager.add(spaceAdd);
+	    		spaceList.add(spaceAdd);
     		}
     		/** transform list into array */
     		Space[] spaces = new Space[spaceList.size()];

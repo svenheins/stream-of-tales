@@ -1,15 +1,19 @@
 package de.svenheins.main;
 import de.svenheins.handlers.ConsoleInputHandler;
+import de.svenheins.handlers.InputHandler;
 import de.svenheins.handlers.MouseHandler;
 
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.KeyEvent;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 
-import de.svenheins.managers.EnemyManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
@@ -17,6 +21,7 @@ import de.svenheins.managers.SpaceManager;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
 import de.svenheins.objects.IngameWindow;
+import de.svenheins.objects.Player;
 import de.svenheins.objects.Space;
 
 import de.svenheins.threads.AnimationThread;
@@ -37,15 +42,15 @@ public class GamePanel extends JPanel {
 //	private String[] shipArray;
 //	private ShipEntity s;
 //	private ShipEntity s2;
-//	private Player p;
+	private Player p;
 //	private Player p2;
-//	private Player[] players;
+	private Player[] players;
 //	private ShipEntity[] ships;
 //	public Entity eye;
 //	public Space space;
 
 	
-	private ConsoleInputHandler consoleInput;
+//	private ConsoleInputHandler consoleInput;
 	private MoveThread moveThread;
 	private InputThread inputThread;
 	private MouseHandler mouseHandler;
@@ -60,15 +65,16 @@ public class GamePanel extends JPanel {
 	public long last;
 	public boolean showStats;
 	private boolean serverInitialized;
-	private boolean pause, menu, showConsole;
+	private boolean pause, menu;
 	private boolean allwaysAnimated;
+	private int viewPointX, viewPointY;
 	
 	public IngameWindow mainMenu;
 	
 	public Space startButton;
 	public Space connectButton;
 	
-	public IngameConsole gameConsole;
+//	public IngameConsole gameConsole;
 	
 	
 	/**
@@ -109,26 +115,28 @@ public class GamePanel extends JPanel {
 //		s.setY(GameWindow.gw.hoehe-s.getHeight()-30);
 //		s2 = new ShipEntity("ship.png", 600, 0);
 //		s2.setY(GameWindow.gw.hoehe-s2.getHeight()-30);
-//		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE));
+		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I));
 //		p2 = new Player("Spieler2", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S,KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_O));
-//		players = new Player[]{p, p2};
+		players = new Player[]{p};
 //		ships = new ShipEntity[]{s, s2};
 //		eye = new Entity("eye.png", 1, 150, 100);
 //		space = new Space("Start.svg", 1000000, new Color(150, 30, 40), true, 0.3f);
 		
-		consoleInput = new ConsoleInputHandler();
+//		consoleInput = new ConsoleInputHandler();
 		
 		// Init GUI-Objects
-		startButton = new Space("Start.svg", 0, "Start.png", 0.5f);
-		connectButton = new Space("connect.svg", 0, "connect.png", 0.5f);
-		connectButton.setAllXY(10, 400);
-		gameConsole = new IngameConsole();
+		startButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Start.png", 0.5f);
+		startButton.setAllXY(100, 120);
+		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
+		connectButton.setAllXY(100, 50);
+		
+//		gameConsole = new IngameConsole();
 		
 		// Init the input
 		// Keyboard
-//		gp.addKeyListener(p.getInputHandler());
+		GameWindow.gw.addKeyListener(p.getInputHandler());
 //		gp.addKeyListener(p2.getInputHandler());
-		gp.addKeyListener(consoleInput);
+//		gp.addKeyListener(consoleInput);
 		// Mouse
 		addMouseListener(new MouseHandler());
 		addMouseMotionListener(new MouseHandler());
@@ -138,7 +146,7 @@ public class GamePanel extends JPanel {
 		
 		// Init Threads
 		moveThread = new MoveThread(System.currentTimeMillis());
-//		inputThread = new InputThread(players, ships);
+		inputThread = new InputThread(players);
 		graphicThread = new GraphicThread(this);
 		collisionThread = new CollisionThread();
 		animationThread = new AnimationThread();
@@ -152,8 +160,10 @@ public class GamePanel extends JPanel {
 		this.setPause(false);
 		this.setAllwaysAnimated(true);
 		this.setShowStats(false);
+//		this.showConsole = false;
 		this.setMenu(false);
 		this.serverInitialized = false;
+		this.setViewPoint(50, 50);
 		
 		// Modify the Cursor
 		//Cursor cursor = getToolkit().createCustomCursor(new ImageIcon(getClass().getResource(resourcePath+"images/"+"cursor.png")).getImage(), new Point(0,0), "Cursor");
@@ -164,20 +174,7 @@ public class GamePanel extends JPanel {
 		// Config PlayerManager
 //		PlayerManager.playerList.add(s);
 //		PlayerManager.playerList.add(s2);
-		
-		// Config EnemyManager
-		configEnemyManager();
-		
-		// Create a tree-structure of Spaces and paint it to the Graphic2D-instance
-//		land = new Tree<Space>(space1);
-		// fill the tree
-//		Space[] spaces = {space2,space3};
-//		land.getRoot().addChildren(spaces);
-//		Node<Space> n = land.getRoot().getChildren().get(0);
-//		n.addChild(space4);
-		
-		// Config SpaceManager
-		configSpaceManager();
+
 	}
 
 	/* (non-Javadoc)
@@ -210,8 +207,8 @@ public class GamePanel extends JPanel {
 	 */	
 	public void mainMenuPaint(Graphics2D g) {
 		g.setPaintMode();
-		startButton.paint(g);
-		connectButton.paint(g);
+		startButton.paint(g, 0, 0);
+		connectButton.paint(g, 0, 0);
 	}
 	
 	/**
@@ -219,55 +216,66 @@ public class GamePanel extends JPanel {
 	 * @GAME-Modus
 	 */
 	public void gamePaint(Graphics2D g){
-		/** Paint Enemies */
-		g.setPaintMode();
-		EnemyManager.sortZIndex();
-		for (int i = 0; i< EnemyManager.sizeSorted(); i++){
-			Entity e= EnemyManager.getSorted(i);
-			if(e != null) {
-				if(e.getSprite().getImage() != null) {
-					g.drawImage(e.getSprite().getImage(), (int) e.getX(), (int) e.getY(), this);
-				}
-			}
-		}
-		for (int i = 0; i< PlayerManager.size(); i++){
-			Entity e= PlayerManager.get(i);
-			if(e != null) {
-				if(e.getSprite().getImage() != null) {
-					g.drawImage(e.getSprite().getImage(), (int) e.getX(), (int) e.getY(), this);
-				}
-			}
-		}	
-		/** Paint Server-Entities */
-		for (int i = 0; i < EntityManager.size(); i++) {
-			Entity e= EntityManager.get(i);
-			if(e != null) {
-				if(e.getSprite().getImage() != null) {
-					g.drawImage(e.getSprite().getImage(), (int) e.getX(), (int) e.getY(), this);
-				}
-			}
-		}
 		/** Paint Spaces */
 		g.setPaintMode();
 		// First sort by Z-index then draw objects
-		SpaceManager.sortZIndex();
-		for (int i = 0; i< SpaceManager.sizeSorted(); i++){
-			Space space = SpaceManager.getSorted(i);
+//		SpaceManager.sortZIndex();
+//		for (int i = 0; i< SpaceManager.sizeSorted(); i++){
+//			Space space = SpaceManager.getSorted(i);
+//			if(space != null) {
+//				if(space.getPolygon() != null) {
+//					space.paint(g, (int) (viewPointX),(int) (viewPointY));
+//				}
+//			}
+//		}
+		
+//		SpaceManager.sortZIndex();
+//		for (int i = 0; i< SpaceManager.size(); i++){
+//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Spaces: "+SpaceManager.idList.size());
+		List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
+		for (BigInteger i: idListTempSpaces){
+			Space space = SpaceManager.get(i);
 			if(space != null) {
 				if(space.getPolygon() != null) {
-					space.paint(g);
+//					GameWindow.gw.gameInfoConsole.appendInfo("Space "+space.getId());
+					space.paint(g, (int) (viewPointX),(int) (viewPointY));
 				}
 			}
+			else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Space");
 		}
+
+		/** Paint Server-Entities */
+		g.setPaintMode();
+//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Entities: "+EntityManager.size());
+//		for (int i = 0; i < EntityManager.size(); i++) {
+		List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
+		for (BigInteger i: idListTempEntities) {
+			Entity e= EntityManager.get(i);
+			if(e != null) {
+				if(e.getSprite().getImage() != null) {
+//					GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
+					g.drawImage(e.getSprite().getImage(), (int) (e.getX()+viewPointX), (int) (e.getY()+viewPointY), this);
+				}
+			}
+			else
+			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+		}
+		
 		
 		g.setPaintMode();
 		// paint the Menu
 		if (menu) {
-			mainMenu.paint(g);
+			mainMenu.paint(g, 0, 0);
 		}
 		// paint the console
-		if (showConsole) {
-			gameConsole.paint(g);
+		if (GameWindow.gw.getShowConsole()) {
+			GameWindow.gw.gameConsole.paint(g, 0, 0);
+		}
+		// paint the info-console
+		if (GameWindow.gw.getShowInfoConsole()) {
+//			GameWindow.gw.gameInfoConsole.update();
+			GameWindow.gw.gameInfoConsole.paint(g, 0, 0);
 		}
 	}
 
@@ -284,53 +292,6 @@ public class GamePanel extends JPanel {
 			SpaceManager.createSpacesFromArray(spaces);
 		}
 	}
-	
-	public void configEnemyManager() {
-//		int startx = 50;
-//		int rows = 100;
-//		int arows = 100;
-//		double randomLength;
-//		for(int i_i = 0; i_i< rows; i_i++) {
-//			for (int i_j=0;i_j<arows;i_j++ ) {
-//				String[] alienString;
-//				alienString = new String[]{"eye.png", "eye2.png"};
-//				randomLength = 300+ Math.random()*700;
-//				AlienEntity alien = new AlienEntity(alienString, startx+i_j*7, 5+i_i*4, i_i+1, i_j+1);
-//				// Configure the individual animation
-//				double randomStart = Math.random()*5000;
-//				alien.getAnimation().setTimeBetweenAnimation(randomLength);
-//				alien.getAnimation().start(randomStart);
-//				alien.setHorizontalMovement(10);
-//				alien.setVerticalMovement(0);
-//				// Alien is ready to be added
-//				EnemyManager.enemyList.add(alien);
-//				AlienEntity.aliens++;
-//			}	
-//		}
-	}
-	
-	public void configSpaceManager() {
-//		spaceAdd = new Space("Zeichnung-4.svg", new Color(230, 20, 40), true, 1.0f);
-//		spaceAdd.setHorizontalMovement(10);
-//		SpaceManager.add(spaceAdd);
-//		spaceAdd = new Space("Zeichnung-3.svg", new Color(20, 230, 40), true, 1.0f);
-//		spaceAdd.setHorizontalMovement(5);
-//		SpaceManager.add(spaceAdd);
-//		spaceAdd = new Space("Zeichnung-2.svg", new Color(20, 20, 240), true, 1.0f);
-//		spaceAdd.setHorizontalMovement(100);
-//		SpaceManager.add(spaceAdd);
-//		spaceAdd = new Space("Quadrat.svg","texture.png", 0.8f);
-//		spaceAdd.setHorizontalMovement(5);
-//		SpaceManager.add(spaceAdd);
-	}
-	
-//	public Space getSpace() {
-//		return space;
-//	}
-//	
-//	public void setSpace(Space space) {
-//		this.space = space;
-//	}
 	
 	public void setPause(boolean pause) {
 		this.pause = pause;
@@ -360,14 +321,6 @@ public class GamePanel extends JPanel {
 	public void setMouseHandler(MouseHandler mouseHandler) {
 		this.mouseHandler = mouseHandler;
 	}
-
-//	public Space getSpaceAdd() {
-//		return spaceAdd;
-//	}
-//
-//	public void setSpaceAdd(Space spaceAdd) {
-//		this.spaceAdd = spaceAdd;
-//	}
 	
 	public void setMenu(boolean menu) {
 		this.menu = menu;
@@ -377,17 +330,7 @@ public class GamePanel extends JPanel {
 		return this.menu;
 	}
 	
-	public void setShowConsole(boolean showConsole){
-		this.showConsole = showConsole;
-	}
 	
-	public boolean getShowConsole() {
-		return showConsole;
-	}
-	
-	public ConsoleInputHandler getConsoleInputHandler() {
-		return this.consoleInput;
-	}
 	
 	public boolean isServerInitialized(){
 		return serverInitialized;
@@ -395,5 +338,18 @@ public class GamePanel extends JPanel {
 
 	public void setServerInitialized(boolean b) {
 		serverInitialized = b;
+	}
+	
+	public void setViewPoint(int x, int y) {
+		this.viewPointX = x;
+		this.viewPointY = y;
+	}
+	
+	public int getViewPointX() {
+		return this.viewPointX;
+	}
+	
+	public int getViewPointY() {
+		return this.viewPointY;
 	}
 }

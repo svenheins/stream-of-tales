@@ -1,81 +1,83 @@
 package de.svenheins.objects;
 
+import java.math.BigInteger;
+
 public class LocalObject {
-	protected double x, y;
-	protected double zIndex;
-	protected double height, width;
-	protected double mx;
-	protected double my;
-	protected int id;
+	protected float x, y;
+	protected float zIndex;
+	protected float height, width;
+	protected float mx;
+	protected float my;
+	protected BigInteger id;
 	protected String name;
 
-	public double getZIndex() {
+	public float getZIndex() {
 		return zIndex;
 	}
 
-	public void setZIndex(double zIndex) {
+	public void setZIndex(float zIndex) {
 		this.zIndex = zIndex;
 	}
 
-	public double getX() {
+	public float getX() {
 		return x;
 	}
 	
-	public double getY() {
+	public float getY() {
 		return y;
 	}
 	
-	public void setX(double x) {
+	public void setX(float x) {
 		this.x = x;
 	}
 
-	public void setY(double y) {
+	public void setY(float y) {
 		this.y = y;
 	}
 	
-	public void setHorizontalMovement(double hm) {
+	public void setHorizontalMovement(float hm) {
 		mx = hm;
 	}
 	
-	public void setVerticalMovement(double vm) {
+	public void setVerticalMovement(float vm) {
 		my = vm;
 	}
 	
-	public void setMovement(double mx, double my) {
+	public void setMovement(float mx, float my) {
 		this.mx = mx;
 		this.my = my;
 	}
 	
-	public double getHorizontalMovement() {
+	public float getHorizontalMovement() {
 		return mx;
 	}
 	
-	public double getVerticalMovement() {
+	public float getVerticalMovement() {
 		return my;
 	}
 
-	public double getHeight() {
+	public float getHeight() {
 		return this.height;
 	}
 	
 	
-	public void setHeight(double height){
+	public void setHeight(float height){
 		this.height = height;
 	}
 
-	public double getWidth() {
+	public float getWidth() {
 		return this.width;
 	}
 	
-	public void setWidth(double width){
+	public void setWidth(float width){
 		this.width = width;
 	}
 	
-	public int getId() {
+	public BigInteger getId() {
 		return id;
 	}
 	
-	public void setId(int id) {
+	public void setId(BigInteger id) {
 		this.id = id;
 	}
 	

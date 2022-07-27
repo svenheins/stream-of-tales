@@ -3,6 +3,7 @@ package de.svenheins.objects;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.math.BigInteger;
 
 import de.svenheins.animation.Animation;
 
@@ -27,7 +28,7 @@ public class Entity extends LocalObject {
 	public final static int DEFAULT_MOVEMENT_ON_X = 300;
 	public final static int DEFAULT_MOVEMENT_ON_Y = 300;
 	
-	public Entity(String src, int id, double x, double y) {
+	public Entity(String src, BigInteger id, float x, float y) {
 		standardAnimation = new String[1];
 		standardAnimation[0] = src;
 		animation = AnimationManager.manager.getAnimation(src);
@@ -44,7 +45,7 @@ public class Entity extends LocalObject {
 		this.width = sprite.getWidth();
 	}
 	
-	public Entity(String[] src, int id, double x, double y) {
+	public Entity(String[] src, BigInteger id, float x, float y) {
 		standardAnimation = src;
 		animation = AnimationManager.manager.getAnimation(src);
 		sprite = SpriteManager.manager.getSprite(src[0]);
@@ -60,7 +61,7 @@ public class Entity extends LocalObject {
 	}
 	
 //	public void moveOnX(long duration){
-//		double movement = duration * mx/1000;
+//		float movement = duration * mx/1000;
 //		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
 //		if(GameStates.getWidth()>0) {
 //			if(x+movement >0 ) {
@@ -76,7 +77,7 @@ public class Entity extends LocalObject {
 //	}
 //	
 //	public void moveOnY(long duration){
-//		double movement = duration * my/1000;
+//		float movement = duration * my/1000;
 //		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
 //		if(GameStates.getHeight() != 0) {
 //			if(y+movement >0 ) {
@@ -92,8 +93,8 @@ public class Entity extends LocalObject {
 //	}
 	
 	public void move(long duration) {
-		double movementX = duration * mx/1000;
-		double movementY = duration * my/1000;
+		float movementX = duration * mx/1000;
+		float movementY = duration * my/1000;
 		// Always update
 		if(GameStates.getWidth()>0 && GameStates.getHeight()>0) {
 			setX(this.getX()+movementX);
@@ -112,8 +113,8 @@ public class Entity extends LocalObject {
 	}
 	
 	public void updateSprite() {
-		double timeNow = System.currentTimeMillis();
-		double complete = timeNow - animation.getInstantOfAnimation();
+		float timeNow = System.currentTimeMillis();
+		float complete = timeNow - animation.getInstantOfAnimation();
 		if (this.animation != AnimationManager.manager.getAnimation(standardAnimation) && complete>0) {
 			if(complete < animation.getLength()*animation.getTimeBetweenAnimation())
 				this.setSprite(animation.getSprite(timeNow, this.standardAnimation));
@@ -131,19 +132,19 @@ public class Entity extends LocalObject {
 		return this.animation;
 	}
 	
-	public void changeAnimation(String[] src, double timeBetweenAnimation, double instantOfAnimation) {
+	public void changeAnimation(String[] src, float timeBetweenAnimation, float instantOfAnimation) {
 		animation = AnimationManager.manager.getAnimation(src);
 		animation.setTimeBetweenAnimation(timeBetweenAnimation);
 		animation.setInstantOfAnimation(instantOfAnimation);
 	}
 	
-	public void changeAnimation(String src, double timeBetweenAnimation, double instantOfAnimation) {
+	public void changeAnimation(String src, float timeBetweenAnimation, float instantOfAnimation) {
 		animation = AnimationManager.manager.getAnimation(src);
 		animation.setTimeBetweenAnimation(timeBetweenAnimation);
 		animation.setInstantOfAnimation(instantOfAnimation);
 	}
 	
-	public void runAnimationOnce(String[] src, double timeBetweenAnimation, double instantOfAnimation){
+	public void runAnimationOnce(String[] src, float timeBetweenAnimation, float instantOfAnimation){
 		animation = AnimationManager.manager.getAnimation(src);
 		animation.setTimeBetweenAnimation(timeBetweenAnimation);
 		animation.setInstantOfAnimation(instantOfAnimation);
@@ -160,7 +161,7 @@ public class Entity extends LocalObject {
 	}
 	
 	@Override
-	public void setY(double d) {
+	public void setY(float d) {
 		this.y = d;
 		this.setZIndex(d+this.getHeight());
 	}
@@ -184,13 +185,13 @@ public class Entity extends LocalObject {
 	}
 	
 	@Override
-	public double getHeight() {
+	public float getHeight() {
 		return this.getSprite().getHeight();
 	}
 	
 	
 	@Override
-	public double getWidth() {
+	public float getWidth() {
 		return this.getSprite().getWidth();
 	}
 	

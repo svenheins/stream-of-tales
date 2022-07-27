@@ -94,7 +94,7 @@ public class Node<DataType> {
         	// DataType == Space
      		if (this.getData() instanceof Space) {
 				Space castSpace = (Space) this.getData();
-     			castSpace.paint(g);
+     			castSpace.paint(g, 0, 0);
 			} else {
 				// TODO: this DataType is not paintable-output
 			}

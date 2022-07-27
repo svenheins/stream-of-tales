@@ -13,10 +13,10 @@ public class ConnectionWindow {
 	
 	public ConnectionWindow() {
 		// Erzeugung eines neuen Dialoges
-	    final JDialog meinJDialog = new JDialog();
-	    meinJDialog.setModal(true);
-	    meinJDialog.setTitle("Connection Settings");
-	    meinJDialog.setSize(450,300);
+	    final JDialog connectionDialog = new JDialog();
+	    connectionDialog.setModal(true);
+	    connectionDialog.setTitle("Connection Settings");
+	    connectionDialog.setSize(450,300);
 	
 	    // Hier erzeugen wir unsere JPanels
 	    JPanel panel = new JPanel();
@@ -33,13 +33,13 @@ public class ConnectionWindow {
 	        	// GameWindow.gw.MessageHandler.login(strHost, strPort);
 	        	GameWindow.gw.login();
 	        	
-	        	meinJDialog.dispose();
+	        	connectionDialog.dispose();
 	        }
 	    });
 	    JButton cancelButton = new JButton("Cancel");
 	    cancelButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent e) {
-	        	meinJDialog.dispose();
+	        	connectionDialog.dispose();
 	        }
 	    });
 	    panel.add(hostField);
@@ -55,8 +55,8 @@ public class ConnectionWindow {
 	    tabpane.addTab("Connection", panel);
 	
 	    // JTabbedPane wird unserem Dialog hinzugefügt
-	    meinJDialog.add(tabpane);
+	    connectionDialog.add(tabpane);
 	    // Wir lassen unseren Dialog anzeigen
-	    meinJDialog.setVisible(true);
+	    connectionDialog.setVisible(true);
 	}
 }

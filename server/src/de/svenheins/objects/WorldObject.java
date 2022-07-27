@@ -22,6 +22,7 @@
 package de.svenheins.objects;
 
 import java.io.Serializable;
+import java.math.BigInteger;
 
 import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.ManagedObject;
@@ -41,18 +42,19 @@ public class WorldObject
     /** The description of this object. */
     private String description;
     
-	protected int id;
+	protected BigInteger id;
     
     /** location of the Object    */
-    protected double x;
+    protected float x;
 
-	protected double y;
+	protected float y;
     
-    protected double zIndex;
-	protected double height, width;
-	protected double mx;
-	protected double my;
-
+    protected float zIndex;
+	protected float height, width;
+	protected float mx;
+	protected float my;
+	
+	protected float speed;
 	
 
     /**
@@ -62,12 +64,12 @@ public class WorldObject
      * @param name the name of this object
      * @param description the description of this object
      */
-    public WorldObject(String name, String description, double x, double y) {
+    public WorldObject(String name, String description, float x, float y) {
         this.name = name;
         this.description = description;
         this.x = x;
         this.y = y;
-        this.id = 0;
+        this.id = BigInteger.valueOf(0);
     }
     
     
@@ -76,7 +78,7 @@ public class WorldObject
         this.description = "description";
         this.x = 0;
         this.y = 0;
-        this.id = 0;
+        this.id = BigInteger.valueOf(0);
     }
 
     /**
@@ -123,73 +125,81 @@ public class WorldObject
         return getName();
     }
     
-    public int getId() {
+    public BigInteger getId() {
     	return this.id;
     }
     
-    public void setId(int id) {
+    public void setId(BigInteger id) {
     	this.id = id;
     }
 
-	public double getX() {
+	public float getX() {
 		return x;
 	}
 
-	public void setX(double x) {
+	public void setX(float x) {
 		this.x = x;
 	}
 
-	public double getY() {
+	public float getY() {
 		return y;
 	}
 
-	public void setY(double y) {
+	public void setY(float y) {
 		this.y = y;
 	}
 	
-	public double getZIndex() {
+	public float getZIndex() {
 		return zIndex;
 	}
 
-	public void setZIndex(double zIndex) {
+	public void setZIndex(float zIndex) {
 		this.zIndex = zIndex;
 	}
 	
-	public void setHorizontalMovement(double hm) {
+	public void setHorizontalMovement(float hm) {
 		mx = hm;
 	}
 	
-	public void setVerticalMovement(double vm) {
+	public void setVerticalMovement(float vm) {
 		my = vm;
 	}
 	
-	public void setMovement(double mx, double my) {
+	public void setMovement(float mx, float my) {
 		this.mx = mx;
 		this.my = my;
 	}
 	
-	public double getHorizontalMovement() {
+	public float getHorizontalMovement() {
 		return mx;
 	}
 	
-	public double getVerticalMovement() {
+	public float getVerticalMovement() {
 		return my;
 	}
 
-	public double getHeight() {
+	public float getHeight() {
 		return this.height;
 	}
 	
 	
-	public void setHeight(double height){
+	public void setHeight(float height){
 		this.height = height;
 	}
 
-	public double getWidth() {
+	public float getWidth() {
 		return this.width;
 	}
 	
-	public void setWidth(double width){
+	public void setWidth(float width){
 		this.width = width;
+	}
+	
+	public float getSpeed() {
+		return speed;
+	}
+	
+	public void setSpeed(float speed) {
+		this.speed = speed;
 	}
 }

@@ -1,5 +1,6 @@
 package de.svenheins.messages;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
 import de.svenheins.objects.Entity;
@@ -14,11 +15,11 @@ public class ServerMessages extends Messages{
      * @param mapname The name of the map to play on.
      * @return The <code>ByteBuffer</code> "new game" packet.
      */
-    public static ByteBuffer createNewGamePkt(int myID, String mapname) {
-        byte[] bytes = new byte[1 + 4 + 4 + mapname.length()];
+    public static ByteBuffer createNewGamePkt(BigInteger myID, String mapname) {
+        byte[] bytes = new byte[1 + 4 + myID.toByteArray().length + mapname.length()];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.NEWGAME.ordinal());
-        buffer.putInt(myID);
+        buffer.put(myID.toByteArray()); // 8 Bytes (?)
         buffer.putInt(mapname.length());
         buffer.put(mapname.getBytes());
         
@@ -28,27 +29,27 @@ public class ServerMessages extends Messages{
     
 
     /** get object state */
-    public static ByteBuffer sendObjectState (OBJECTCODE objCode, int id,  double[] state) {
-        byte[] bytes = new byte[1 + 4 + 4 + 48];
+    public static ByteBuffer sendObjectState (OBJECTCODE objCode, BigInteger id,  float[] state) {
+        byte[] bytes = new byte[1 + 4 + 8 + 24];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.OBJECTSTATE.ordinal());
         
         // insert the Object-Code that identifies the Object 
         buffer.putInt(objCode.ordinal());
         
-        buffer.putInt(id);
+        buffer.putLong(id.longValue()); // 8 Bytes
         // x
-        buffer.putDouble(state[0]);
+        buffer.putFloat(state[0]);
         // y
-        buffer.putDouble(state[1]);
+        buffer.putFloat(state[1]);
         // mx
-        buffer.putDouble(state[2]);
+        buffer.putFloat(state[2]);
         // my
-        buffer.putDouble(state[3]);
+        buffer.putFloat(state[3]);
         // height
-        buffer.putDouble(state[4]);
+        buffer.putFloat(state[4]);
         // width
-        buffer.putDouble(state[5]);
+        buffer.putFloat(state[5]);
         buffer.flip();
         return buffer;
     }
@@ -76,21 +77,22 @@ public class ServerMessages extends Messages{
     	ByteBuffer buffer = null;
     	/** get the length of Bytes that must be reserved for the names */
 		int namesLength = 0;
+		
 		for (int i = 0; i<localObjects.length; i++) {
 			namesLength += localObjects[i].getName().length();
 		}
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 8*localObjects.length + namesLength];
+		bytes = new byte[1 + (12)*localObjects.length + namesLength];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITENTITIES.ordinal());	
         Entity[] lEntity = (Entity[]) localObjects;
         /** place all objects of the specific class */
         for (int i = 0; i<localObjects.length; i++) {
     		Entity e = lEntity[i];
-        	int id = e.getId();
+        	BigInteger id = e.getId();
     		String name = e.getName();
-    		buffer.putInt(id); // 4
+    		buffer.putLong(id.longValue()); // 8
     		buffer.putInt(name.length()); // 4
         	buffer.put(name.getBytes()); // name.length
     	}
@@ -110,7 +112,7 @@ public class ServerMessages extends Messages{
 		}
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 28*localObjects.length + namesLength];
+		bytes = new byte[1 + 36*localObjects.length + namesLength];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITSPACES.ordinal()); 
     	
@@ -118,7 +120,7 @@ public class ServerMessages extends Messages{
         /** place all objects of the specific class */
         int[] rgb_each;
         Space s;
-        int id;
+        BigInteger id;
         String name;
         for (int i = 0; i<localObjects.length; i++) {
     		s = lSpace[i];
@@ -129,7 +131,8 @@ public class ServerMessages extends Messages{
     		if (s.isFilled()) filled = 1;
     		else filled = 0;
     		float trans = s.getTrans();
-    		buffer.putInt(id); // 4
+    		float scale = s.getScale();
+    		buffer.putLong(id.longValue()); // 8
     		buffer.putInt(name.length()); // 4
         	buffer.put(name.getBytes()); // name.length
         	buffer.putInt(rgb_each[0]); // 4
@@ -137,6 +140,7 @@ public class ServerMessages extends Messages{
         	buffer.putInt(rgb_each[2]); // 4
         	buffer.putInt(filled); // 4
         	buffer.putFloat(trans); // 4
+        	buffer.putFloat(scale); // 4
     	} 	
     	buffer.flip();
     		

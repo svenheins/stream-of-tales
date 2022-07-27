@@ -3,6 +3,7 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 
 import javax.swing.JFileChooser;
@@ -48,7 +49,7 @@ public class FileAddAction implements ActionListener {
 		d.showOpenDialog(null);
 		File file = d.getSelectedFile();
 		if(file != null) {
-			spaceAdd = new Space("Zeichnung.svg", 0, new int[]{20, 230, 40}, true, 0.5f);
+			spaceAdd = new Space("Zeichnung.svg", BigInteger.valueOf(0), new int[]{20, 230, 40}, true, 0.5f, 1.0f);
 			try {
 				spaceAdd.setPolygon(file.toURL());
 			} catch (MalformedURLException e1) {

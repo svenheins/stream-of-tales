@@ -23,13 +23,19 @@ public class ConnectionWindow {
 	    
 	    final JTextField hostField = new JTextField("localhost", 30);
 	    final JTextField portField = new JTextField("1139", 6);
+	    final JTextField loginNameField = new JTextField("user1", 10);
+	    final JTextField loginPasswordField = new JTextField("pwd1", 10);
 	    JButton connectButton = new JButton("Connect");
 	    connectButton.addActionListener(new ActionListener() {
 	        public void actionPerformed(ActionEvent e) {
 	        	String strHost = hostField.getText();
 	        	String strPort = portField.getText();
+	        	String strLoginName = loginNameField.getText();
+	        	String strLoginPassword = loginPasswordField.getText();
 	        	GameWindow.gw.setHostName(strHost);
 	        	GameWindow.gw.setPortNumber(strPort);
+	        	GameWindow.gw.setLoginName(strLoginName);
+	        	GameWindow.gw.setLoginPassword(strLoginPassword);
 	        	// GameWindow.gw.MessageHandler.login(strHost, strPort);
 	        	GameWindow.gw.login();
 	        	
@@ -44,6 +50,8 @@ public class ConnectionWindow {
 	    });
 	    panel.add(hostField);
 	    panel.add(portField);
+	    panel.add(loginNameField);
+	    panel.add(loginPasswordField);
 	    panel.add(connectButton);
 	    panel.add(cancelButton);
 	    

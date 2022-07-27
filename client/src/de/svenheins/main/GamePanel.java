@@ -68,6 +68,8 @@ public class GamePanel extends JPanel {
 	private boolean pause, menu;
 	private boolean allwaysAnimated;
 	private int viewPointX, viewPointY;
+	private float zoomFactor;
+	private double rotationDegree;
 	private int maxViewPointX, maxViewPointY, minViewPointX, minViewPointY;
 	
 	public IngameWindow mainMenu;
@@ -116,7 +118,7 @@ public class GamePanel extends JPanel {
 //		s.setY(GameWindow.gw.hoehe-s.getHeight()-30);
 //		s2 = new ShipEntity("ship.png", 600, 0);
 //		s2.setY(GameWindow.gw.hoehe-s2.getHeight()-30);
-		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I));
+		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I, KeyEvent.VK_1, KeyEvent.VK_2));
 //		p2 = new Player("Spieler2", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S,KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_O));
 		players = new Player[]{p}; 
 		playerEntity = new Entity("ship.png", BigInteger.valueOf(0), 500, 200, 0, 0);
@@ -136,7 +138,7 @@ public class GamePanel extends JPanel {
 		
 		// Init the input
 		// Keyboard
-		GameWindow.gw.addKeyListener(p.getInputHandler());
+//		GameWindow.gw.addKeyListener(p.getInputHandler());
 //		gp.addKeyListener(p2.getInputHandler());
 //		gp.addKeyListener(consoleInput);
 		// Mouse
@@ -170,6 +172,8 @@ public class GamePanel extends JPanel {
 		this.minViewPointY = 181;
 		this.maxViewPointX = 34416;
 		this.maxViewPointY = 26169;
+		this.setZoomFactor(1.0f);
+		this.setRotationDegree(0);
 		
 		// Modify the Cursor
 		//Cursor cursor = getToolkit().createCustomCursor(new ImageIcon(getClass().getResource(resourcePath+"images/"+"cursor.png")).getImage(), new Point(0,0), "Cursor");
@@ -189,11 +193,11 @@ public class GamePanel extends JPanel {
 	 * Paints all important Objects to the GamePanel
 	 * depends on the GameModus
 	 */
-	public void paint(Graphics g2){
+	public void paintComponent(Graphics g2){
 		Graphics2D g = (Graphics2D) g2;
 		// Set Options of the Graphics-Object
 		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		super.paint(g);
+		super.paintComponent(g);
 
 		// Paint in each GameModus
 		if (GameModus.modus == GameModus.MAINMENU) {
@@ -222,12 +226,16 @@ public class GamePanel extends JPanel {
 	 * @GAME-Modus
 	 */
 	public void gamePaint(Graphics2D g){
+		g.scale(this.getZoomFactor(), this.getZoomFactor());
+//		g.translate((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2));
+//		setRotationDegree((getRotationDegree()+0.001)%360);
+//		g.rotate(rotationDegree);
 		if (playerEntity != null) {
-			GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
+			GamePanel.gp.setViewPoint((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2)-(int)(GameStates.getWidth()/2/zoomFactor), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2)-(int)(GameStates.getHeight()/2/zoomFactor));
 		}
 //		System.out.println("Viewpoint x="+viewPointX+" y="+viewPointY);
 		/** Paint Spaces */
-		g.setPaintMode();
+		
 		// First sort by Z-index then draw objects
 //		SpaceManager.sortZIndex();
 //		for (int i = 0; i< SpaceManager.sizeSorted(); i++){
@@ -242,6 +250,7 @@ public class GamePanel extends JPanel {
 //		SpaceManager.sortZIndex();
 //		for (int i = 0; i< SpaceManager.size(); i++){
 //		GameWindow.gw.gameInfoConsole.appendInfo("IdList Spaces: "+SpaceManager.idList.size());
+		g.setPaintMode();
 		List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
 		for (BigInteger i: idListTempSpaces){
 			Space space = SpaceManager.get(i);
@@ -290,7 +299,6 @@ public class GamePanel extends JPanel {
 				Entity playerEntity= PlayerManager.get(i);
 				if(playerEntity != null) {
 					if(playerEntity.getSprite().getImage() != null) {
-//						GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
 						g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
 					}
 				}
@@ -298,21 +306,23 @@ public class GamePanel extends JPanel {
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
 			}
 		}
-		
+		/** reset Scale for all GUI-Elements */
 		g.setPaintMode();
 		// paint the Menu
 		if (menu) {
 			mainMenu.paint(g, 0, 0);
 		}
 		// paint the console
-		if (GameWindow.gw.getShowConsole()) {
-			GameWindow.gw.gameConsole.paint(g, 0, 0);
-		}
-		// paint the info-console
-		if (GameWindow.gw.getShowInfoConsole()) {
-//			GameWindow.gw.gameInfoConsole.update();
-			GameWindow.gw.gameInfoConsole.paint(g, 0, 0);
-		}
+//		if (GameWindow.gw.getShowConsole()) {
+//			GameWindow.gw.gameConsole.paint(g, 0, 0);
+//		}
+//		// paint the info-console
+//		if (GameWindow.gw.getShowInfoConsole()) {
+////			GameWindow.gw.gameInfoConsole.update();
+//			GameWindow.gw.gameInfoConsole.paint(g, 0, 0);
+//		}
+//		GameWindow.gw.setFocusable(true);
+		GameWindow.gw.requestFocus();
 	}
 
 	/** load the entities */
@@ -398,5 +408,25 @@ public class GamePanel extends JPanel {
 	
 	public int getViewPointY() {
 		return this.viewPointY;
+	}
+	
+	public Player getPlayer() {
+		return p;
+	}
+	
+	public float getZoomFactor() {
+		return this.zoomFactor;
+	}
+	
+	public void setZoomFactor(float zoomFactor) {
+		this.zoomFactor = zoomFactor;
+	}
+	
+	public void setRotationDegree(double degree) {
+		this.rotationDegree = degree;
+	}
+	
+	public double getRotationDegree() {
+		return this.rotationDegree;
 	}
 }

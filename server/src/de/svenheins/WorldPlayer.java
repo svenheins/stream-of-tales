@@ -323,7 +323,7 @@ public class WorldPlayer
 	    		float objectMY = message.getFloat();
 	    		float objectWidth = message.getFloat();
 	    		float objectHeight = message.getFloat();
-	    		// TODO: Update the entities/ spaces of the WorldRoom
+	    		// Update the entities/ spaces of the WorldRoom
 	    		if (objCode == OBJECTCODE.SPACE) {
 	    			SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
 	    			getRoom().editSpace(objectId, new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});

@@ -39,6 +39,7 @@ import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
 
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
@@ -92,6 +93,7 @@ public class WorldPlayer
      */
     public static WorldPlayer loggedIn(ClientSession session, ManagedReference<Channel> channelRef) {
         String playerBinding = PLAYER_BIND_PREFIX + session.getName();
+        BigInteger id = BigInteger.valueOf(playerBinding.hashCode());
 
         // try to find player object, if non existent then create
         DataManager dataMgr = AppContext.getDataManager();
@@ -102,10 +104,17 @@ public class WorldPlayer
         } catch (NameNotBoundException ex) {
             // this is a new player
             player = new WorldPlayer(playerBinding);
+//        	player = new WorldPlayer("ship.png");
             logger.log(Level.INFO, "New player created: {0}", player);
             dataMgr.setBinding(playerBinding, player);
         }
         player.setSession(session, channelRef);
+        player.setId(id);
+        Entity playerEntity = new Entity("ship.png", player.getId(), player.getX(), player.getY(), player.getHorizontalMovement(), player.getVerticalMovement());
+        if (PlayerManager.add(playerEntity)) {
+	        logger.log(Level.INFO, "New player created: {0}", player.getName());
+	        logger.log(Level.INFO, "# of players: "+PlayerManager.size());
+        }
         return player;
     }
 
@@ -115,7 +124,7 @@ public class WorldPlayer
      * @param name the name of this player
      */
     protected WorldPlayer(String name) {
-        super(name, "Seeker of the Sword", 0, 0);
+        super(name, "PlayerName", 0, 0);
         ready = false;
         initializing= false;
     }
@@ -158,6 +167,7 @@ public class WorldPlayer
             // We look up the second channel by name.
             Channel channel2 = channelMgr.getChannel(World.CHANNEL_2_NAME);
             channel2.join(session);
+           
         }
         
     }
@@ -314,8 +324,18 @@ public class WorldPlayer
 	    		float objectWidth = message.getFloat();
 	    		float objectHeight = message.getFloat();
 	    		// TODO: Update the entities/ spaces of the WorldRoom
-	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
-	    		else if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
+	    		if (objCode == OBJECTCODE.SPACE) {
+	    			SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
+	    			getRoom().editSpace(objectId, new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});
+	    		}
+	    		if (objCode == OBJECTCODE.ENTITY) {
+	    			EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
+	    			getRoom().editEntity(objectId, new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});
+	    		}
+	    		if (objCode == OBJECTCODE.PLAYER) {
+	    			PlayerManager.updatePlayer(this.getId(), objectX, objectY, objectMX, objectMY);
+	    			getRoom().editPlayer(this.getId(), new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});
+	    		}
 	    		
 				break;
 			case RESPAWN:
@@ -350,6 +370,9 @@ public class WorldPlayer
         setSession(null, null);
         logger.log(Level.INFO, "Disconnected: {0}", this);
         getRoom().removePlayer(this);
+        PlayerManager.remove(this.getId());
+        
+        
         setRoom(null);
     }
 

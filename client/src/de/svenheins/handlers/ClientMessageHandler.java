@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
@@ -34,7 +35,16 @@ public class ClientMessageHandler {
 	    		float objectWidth = packet.getFloat();
 	    		float objectHeight = packet.getFloat();
 	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
-	    		else if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
+	    		if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
+	    		if (objCode == OBJECTCODE.PLAYER) {
+	    			if (PlayerManager.idList.contains(objectId)) {
+	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);	
+	    			} else {
+	    				/** new Player logged in (first update of this player)*/
+	    				GameWindow.gw.gameInfoConsole.appendInfo("Login of new Player: ID="+objectId);
+	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);
+	    			}
+	    		}
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
 //					GameWindow.gw.gameInfoConsole.appendInfo("Entity: x="+objectX+" y="+objectY);
 //				}
@@ -100,7 +110,7 @@ public class ClientMessageHandler {
     			byte[] nameBytes = new byte[packet.getInt()];
     			packet.get(nameBytes);
     			name_entity = new String(nameBytes); // name
-    			entityList.add(new Entity(name_entity, id_entity, 0,0));
+    			entityList.add(new Entity(name_entity, id_entity, 0,0, 0, 0));
     		}
     		/** transform list into array */
     		Entity[] entities = new Entity[entityList.size()];
@@ -115,6 +125,20 @@ public class ClientMessageHandler {
 //			if (entities.length>253)
 //			GamePanel.gp.setServerInitialized(true);
 			
+    		break;
+    	case OBJECTDELETE:
+    		if (GamePanel.gp.isServerInitialized()) {
+	    		OBJECTCODE objCode = OBJECTCODE.values()[packet.getInt()];
+	    		BigInteger objectId = BigInteger.valueOf(packet.getLong());;
+	    		
+	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.remove(objectId);
+	    		if (objCode == OBJECTCODE.ENTITY) EntityManager.remove(objectId);
+	    		if (objCode == OBJECTCODE.PLAYER) PlayerManager.remove(objectId);
+	    		GameWindow.gw.gameInfoConsole.appendInfo("Deleted: "+objectId);
+//	    		if(objectId.intValue() == 0 && objectX != 0) {
+//					GameWindow.gw.gameInfoConsole.appendInfo("Entity: x="+objectX+" y="+objectY);
+//				}
+    		}
     		break;
     	case MOVEMOB:
     		break;

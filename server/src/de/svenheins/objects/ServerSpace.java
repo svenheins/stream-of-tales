@@ -53,6 +53,7 @@ public class ServerSpace extends WorldObject{
 		this.lastTimestamp = System.currentTimeMillis();
 	}
 	
+	
 //	public void moveOnX(long duration){
 //		float movement = duration * mx/1000;
 //		setX(getX()+movement);

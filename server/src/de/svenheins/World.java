@@ -46,6 +46,7 @@ import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.Task;
 import com.sun.sgs.app.TaskManager;
 
+import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.SpaceManager;
@@ -72,12 +73,14 @@ public class World
     private static final long serialVersionUID = 1L;
 
     /** The delay before the first run of the task. */
-    public static final int DELAY_MS = 10000;
-    public static final int DELAY_MS_WORLDUPDATE = 10000;
+    public static final int DELAY_MS = 7000;
+    public static final int DELAY_MS_WORLDUPDATE = 7000;
 
     /** The time to wait before repeating the task. */
-    public static final int PERIOD_MS = 50;
-    public static final int PERIOD_MS_WORLDUPDATE = 50;
+    public static final int PERIOD_MS = 200;
+    public static final int PERIOD_MS_WORLDUPDATE = 200;
+    
+//    public static WorldRoom room;
     
     private int initStartIndex = 0;
     private int initEndIndex; 
@@ -95,6 +98,9 @@ public class World
     /** A Set reference to each of the Update Task and the sendTask */
     private Set<ManagedReference<SendUpdatePlayersSpaces>> supsSimple = new HashSet<ManagedReference<SendUpdatePlayersSpaces>>();
     private Set<ManagedReference<UpdateWorldSpaces>> uwsSimple = new HashSet<ManagedReference<UpdateWorldSpaces>>();
+    
+    /** A Set reference to each of the sendTask */
+    private Set<ManagedReference<SendUpdatePlayers>> supPlayers = new HashSet<ManagedReference<SendUpdatePlayers>>();
     
     /** The name of the first channel {@value #CHANNEL_1_NAME} */
     static final String CHANNEL_1_NAME = "Foo";
@@ -159,8 +165,7 @@ public class World
     	logger.info("Initializing World");
 
         // Create the Room
-        WorldRoom room =
-            new WorldRoom("Plain Room", "a nondescript room", 100.222f, 300.333f);
+        WorldRoom room = new WorldRoom("Plain Room", "a nondescript room", 100.222f, 300.333f);
         
         
         BigInteger entityIDIndex = BigInteger.valueOf(0);
@@ -180,7 +185,7 @@ public class World
         	it_s_entity = new ServerEntity(it_s_sprite, entityIDIndex.add(BigInteger.valueOf(1)), it_x, it_y, it_mx, it_my);
         	room.addEntity(it_s_entity);
         	/** Add Entity to the EntityManager, which allows to communicate fastly*/
-        	realEntity = new Entity(it_s_entity.getName(), it_s_entity.getId(), 0, 0);
+        	realEntity = new Entity(it_s_entity.getName(), it_s_entity.getId(), 0, 0, 0, 0);
         	EntityManager.add(realEntity);
         	logger.log(Level.INFO, "EntityManager intitialized: count = " + EntityManager.size());
         }
@@ -191,7 +196,7 @@ public class World
         Sprite it_spriteAgent = SpriteManager.manager.getSprite(iterativSpriteStringAgent);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
-        int numAgentsEntrepreneur = 5000;
+        int numAgentsEntrepreneur = 1000;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgent.getWidth());
@@ -202,7 +207,7 @@ public class World
         	it_s_entityAgent = new ServerAgentEntrepreneur(it_s_spriteAgent, entityIDIndex, it_x, it_y, it_mx, it_my);
         	room.addEntity(it_s_entityAgent);
         	/** Add Entity to the EntityManager, which allows to communicate fastly*/
-        	realAgent = new Entity(it_s_entityAgent.getName(), it_s_entityAgent.getId(), 0, 0);
+        	realAgent = new Entity(it_s_entityAgent.getName(), it_s_entityAgent.getId(), 0, 0, 0, 0);
         	if ( EntityManager.add(realAgent)) {
         		logger.log(Level.INFO, "EntityManager added successfully ID: " +realAgent.getId());
         	}
@@ -225,7 +230,7 @@ public class World
         	it_s_entityAgentEmployee = new ServerAgentEmployee(it_s_spriteAgentEmployee, entityIDIndex, it_x, it_y, it_mx, it_my);
         	room.addEntity(it_s_entityAgentEmployee);
         	/** Add Entity to the EntityManager, which allows to communicate fastly*/
-        	realAgentEmployee = new Entity(it_s_entityAgentEmployee.getName(), it_s_entityAgentEmployee.getId(), 0, 0);
+        	realAgentEmployee = new Entity(it_s_entityAgentEmployee.getName(), it_s_entityAgentEmployee.getId(), 0, 0, 0, 0);
         	if ( EntityManager.add(realAgentEmployee)) {
         		logger.log(Level.INFO, "EntityManager added successfully ID: " +realAgentEmployee.getId());
         	} else {
@@ -238,75 +243,106 @@ public class World
          * ADD: Spaces
          */
         BigInteger spaceIds = BigInteger.valueOf(0);
-        /** Create Konvergenzregion */
-        String konvString = "Konvergenzregion1.svg";
-        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-        Space konvSpace = new Space(konvString, spaceIds, new int[]{95, 208, 95}, true, 1.0f, 2.0f);
-        konvSpace.setAllXY(0, 0);
-        konvSpace.setMovement(0, 0);
-        float climateKonvergenzregion = 0.0f;
-        int capacityKonvergenzregion = 9000;
-        ServerRegion s_konvSpace = new ServerRegion(konvSpace, climateKonvergenzregion, capacityKonvergenzregion);
-        room.addSpace(s_konvSpace);
-        konvSpace.setId(s_konvSpace.getId());
-        SpaceManager.add(konvSpace);
-        /** Create Hamburg */
-        String hamburgString = "Hamburg1.svg";
-        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-        Space hamburgSpace = new Space(hamburgString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
-        hamburgSpace.setAllXY(454, 87);
-        hamburgSpace.setMovement(0, 0);
-        float climate = 1.0f;
-        int capacity = 20;
-        ServerRegion s_hamburgSpace = new ServerRegion(hamburgSpace, climate, capacity);
-        room.addSpace(s_hamburgSpace);
-        hamburgSpace.setId(s_hamburgSpace.getId());
-        SpaceManager.add(hamburgSpace);
-        /** Create Bremen */
-        String bremenString = "Bremen1.svg";
-        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-        Space bremenSpace = new Space(bremenString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
-        bremenSpace.setAllXY(-11, 363);
-        bremenSpace.setMovement(0, 0);
-        climate = 1.0f;
-        capacity = 15;
-        ServerRegion s_bremenSpace = new ServerRegion(bremenSpace, climate, capacity);
-        room.addSpace(s_bremenSpace);
-        bremenSpace.setId(s_bremenSpace.getId());
-        SpaceManager.add(bremenSpace);
-        /** Create Zwischenstueck nach Hannover */
-        String zwString = "ZwHannover.svg";
-        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-        Space zwSpace = new Space(zwString, spaceIds, new int[]{99, 123, 151}, true, 0.5f, 2.0f);
-        zwSpace.setAllXY(431, 765);
-        zwSpace.setMovement(0, 0);
-        ServerSpace s_zwSpace = new ServerSpace(zwSpace);
-        room.addSpace(s_zwSpace);
-        zwSpace.setId(s_zwSpace.getId());
-        SpaceManager.add(zwSpace);
-        /** Create Hannover */
-        String hannoverString = "Hannover1.svg";
-        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-        Space hannoverSpace = new Space(hannoverString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
-        hannoverSpace.setAllXY(384, 865);
-        hannoverSpace.setMovement(0, 0);
-        climate = 1.0f;
-        capacity = 15;
-        ServerRegion s_hannoverSpace = new ServerRegion(hannoverSpace, climate, capacity);
-        room.addSpace(s_hannoverSpace);
-        hannoverSpace.setId(s_hannoverSpace.getId());
-        SpaceManager.add(hannoverSpace);
+        /** Create World-Plates */
+        String hexaString = "Sechseck.svg";
+        Space hexaSpace;
+        int rowsHexagons = 10;
+        int colsHexagons = 10;
+        float hexX, hexY, hexMX, hexMY;
+        float climateHexagon;
+        int capacityHexagon;
+        for (int i = 0; i<rowsHexagons*colsHexagons; i++) {
+        	spaceIds = spaceIds.add(BigInteger.valueOf(1));
+        	int[] rgb = MyUtil.niceColorGenerator();
+//        	int red = 25*(int) (Math.random()*10);
+//        	int green = red/10;
+//        	int blue = red / 2;
+            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 6.0f);
+            hexX = (float) (i % colsHexagons)*hexaSpace.getWidth();
+            hexY = (float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.75f));
+            if ((i/colsHexagons) % 2 == 0) hexX += hexaSpace.getWidth()/2;
+            hexMX = 0;//Math.random()*50+0;
+            hexMY = 0;//Math.random()*50+0;
+	      	hexaSpace.setAllXY(hexX, hexY);
+	      	hexaSpace.setMovement(0, 0);
+	      	climateHexagon = 0.0f;
+	        capacityHexagon = 50;
+	        ServerRegion s_hexaSpace = new ServerRegion(hexaSpace, climateHexagon, capacityHexagon);
+	        room.addSpace(s_hexaSpace);
+	        hexaSpace.setId(s_hexaSpace.getId());
+	        SpaceManager.add(hexaSpace);	
+	        logger.log(Level.INFO, "SpacePlates intitialized: count = " + SpaceManager.size());
+        }
         
+//        /** Create Konvergenzregion */
+//        String konvString = "Konvergenzregion1.svg";
+//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
+//        Space konvSpace = new Space(konvString, spaceIds, new int[]{95, 208, 95}, true, 1.0f, 2.0f);
+//        konvSpace.setAllXY(0, 0);
+//        konvSpace.setMovement(0, 0);
+//        float climateKonvergenzregion = 0.0f;
+//        int capacityKonvergenzregion = numAgentsEntrepreneur-50;
+//        ServerRegion s_konvSpace = new ServerRegion(konvSpace, climateKonvergenzregion, capacityKonvergenzregion);
+//        room.addSpace(s_konvSpace);
+//        konvSpace.setId(s_konvSpace.getId());
+//        SpaceManager.add(konvSpace);
+//        /** Create Hamburg */
+//        String hamburgString = "Hamburg1.svg";
+//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
+//        Space hamburgSpace = new Space(hamburgString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
+//        hamburgSpace.setAllXY(454, 87);
+//        hamburgSpace.setMovement(0, 0);
+//        float climate = 1.0f;
+//        int capacity = 20;
+//        ServerRegion s_hamburgSpace = new ServerRegion(hamburgSpace, climate, capacity);
+//        room.addSpace(s_hamburgSpace);
+//        hamburgSpace.setId(s_hamburgSpace.getId());
+//        SpaceManager.add(hamburgSpace);
+//        /** Create Bremen */
+//        String bremenString = "Bremen1.svg";
+//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
+//        Space bremenSpace = new Space(bremenString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
+//        bremenSpace.setAllXY(-11, 363);
+//        bremenSpace.setMovement(0, 0);
+//        climate = 1.0f;
+//        capacity = 15;
+//        ServerRegion s_bremenSpace = new ServerRegion(bremenSpace, climate, capacity);
+//        room.addSpace(s_bremenSpace);
+//        bremenSpace.setId(s_bremenSpace.getId());
+//        SpaceManager.add(bremenSpace);
+//        /** Create Zwischenstueck nach Hannover */
+//        String zwString = "ZwHannover.svg";
+//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
+//        Space zwSpace = new Space(zwString, spaceIds, new int[]{99, 123, 151}, true, 0.5f, 2.0f);
+//        zwSpace.setAllXY(431, 765);
+//        zwSpace.setMovement(0, 0);
+//        ServerSpace s_zwSpace = new ServerSpace(zwSpace);
+//        room.addSpace(s_zwSpace);
+//        zwSpace.setId(s_zwSpace.getId());
+//        SpaceManager.add(zwSpace);
+//        /** Create Hannover */
+//        String hannoverString = "Hannover1.svg";
+//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
+//        Space hannoverSpace = new Space(hannoverString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
+//        hannoverSpace.setAllXY(384, 865);
+//        hannoverSpace.setMovement(0, 0);
+//        climate = 1.0f;
+//        capacity = 15;
+//        ServerRegion s_hannoverSpace = new ServerRegion(hannoverSpace, climate, capacity);
+//        room.addSpace(s_hannoverSpace);
+//        hannoverSpace.setId(s_hannoverSpace.getId());
+//        SpaceManager.add(hannoverSpace);
+//        
         /** Keep a reference to the Room */
         setRoom(room);
 
         /** create Entity-Tasks */
         int begin = 0;
-        int countPackets = (1+(room.getCountEntities()/2000));
+        int countPackets = 2;//(1+(room.getCountEntities()/2000));
         logger.log(Level.INFO, "countPackets: "+countPackets);
         int end = room.getCountEntities()/countPackets + (room.getCountEntities() % countPackets);
         logger.log(Level.INFO, "end: "+end);
-        int packageSize = 2;
+        int packageSize = 20;
         /** UpdateTask (moving, collision, ...) and SendTask (send updates to all players)*/
         UpdateWorldTaskSimple uwt;
         SendUpdatePlayersTaskSimple sup;
@@ -323,7 +359,8 @@ public class World
        
         /** create Space-Tasks */
         begin = 0;
-        countPackets = (1+(room.getCountSpaces()/200));
+        countPackets = 4;//(1+(room.getCountSpaces()/200));
+        packageSize = 10;
         logger.log(Level.INFO, "countPackets: "+countPackets);
         end = room.getCountSpaces()/countPackets + (room.getCountSpaces() % countPackets);
         logger.log(Level.INFO, "end: "+end);
@@ -331,13 +368,34 @@ public class World
         UpdateWorldSpaces uws;
         SendUpdatePlayersSpaces sups;
         for (int i = 0; i< countPackets; i++) {
-        	uws = new UpdateWorldSpaces(room, begin, end);
+        	uws = new UpdateWorldSpaces(room, begin, end, packageSize);
         	addUpdateTaskSpaces(uws);
-        	sups = new SendUpdatePlayersSpaces(room, begin, end);
+        	sups = new SendUpdatePlayersSpaces(room, begin, end, packageSize);
         	addSendTaskSpaces(sups);
         	begin = end;
         	logger.log(Level.INFO, "begin: "+begin);
         	end = end + (room.getCountSpaces()/countPackets);
+        	logger.log(Level.INFO, "end: "+end);
+        }
+        
+        /** create PlayersSend-Tasks */
+        begin = 0;
+        countPackets = 1;//(1+(room.getCountSpaces()/200));
+        packageSize = 100;
+        logger.log(Level.INFO, "countPackets: "+countPackets);
+        end = 100;//room.getCountSpaces()/countPackets + (room.getCountSpaces() % countPackets);
+        logger.log(Level.INFO, "end: "+end);
+        /** UpdateTask (moving, collision, ...) and SendTask (send updates to all players)*/
+//        UpdateWorldSpaces uws;
+        SendUpdatePlayers supPlayer;
+        for (int i = 0; i< countPackets; i++) {
+        	supPlayer = new SendUpdatePlayers(room, begin, end, packageSize);
+        	addSendTaskPlayers(supPlayer);
+//        	sups = new SendUpdatePlayersSpaces(room, begin, end, packageSize);
+//        	addSendTaskSpaces(sups);
+        	begin = end;
+        	logger.log(Level.INFO, "begin: "+begin);
+        	end = end + packageSize;
         	logger.log(Level.INFO, "end: "+end);
         }
        
@@ -411,7 +469,7 @@ public class World
     	if (SpaceManager.size() < roomRef.get().getSpaces().size()) {	
     	/** check if the EntityManger is still in the filling process (so the last item should be null) */
 //        	if (EntityManager.get(EntityManager.idList.get(roomRef.get().getEntities().size()-1)) == null) {
-            if( EntityManager.size() < roomRef.get().getEntities().size()) {
+            if( EntityManager.size() < roomRef.get().getEntities().get().size()) {
         		if (EntityManager.entityList.size() == 0) {
             		logger.log(Level.INFO, "Init for the first time");
             		/** init for the first time */
@@ -429,18 +487,18 @@ public class World
             		this.initEndIndex = 0;
             	}
             	/** we must create our entityArray in each step */
-        		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(roomRef.get().getEntities());
+        		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(roomRef.get().getEntities().get().values());
         		logger.log(Level.INFO, "EntityArray-Size: "+ entitiesArray.size());
         		
         		/** set the actual endIndex */
         		this.initEndIndex = this.initStartIndex + this.initPackageSize;
-            	if (this.initEndIndex > roomRef.get().getEntities().size()) this.initEndIndex = entitiesArray.size();
+            	if (this.initEndIndex > roomRef.get().getEntities().get().size()) this.initEndIndex = entitiesArray.size();
 
             	/** now loop through the package and add each Entity of the persistent data to the sending-relevant EntityManager */
 	        	for (int i = this.initStartIndex; i<this.initEndIndex; i++) {
 	    			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
 	        		ServerEntity se = entity.get();
-	        		Entity realEntity = new Entity(se.getName(), se.getId(), 0, 0);
+	        		Entity realEntity = new Entity(se.getName(), se.getId(), 0, 0, 0, 0);
 	            	/** after restart there can appear a duplicated entry */
 	        		if(!EntityManager.add(realEntity)) {
 	            		/** something went wrong -> RESTART!!! */
@@ -478,7 +536,7 @@ public class World
             		this.restartDuplicated = false;
 	        	}
 	        	/** we must create our spacesArray in each step */
-        		spacesArray = new ArrayList<ManagedReference<ServerSpace>>(roomRef.get().getSpaces());
+        		spacesArray = new ArrayList<ManagedReference<ServerSpace>>(roomRef.get().getSpaces().values());
 	        	
         		/** set the actual endIndex */
         		this.initEndIndex = this.initStartIndex + this.initPackageSize;
@@ -525,6 +583,7 @@ public class World
         } else {
         	/** Here everything is already initialized, so we can start computing*/
 	    	
+        	/** Start Entity Tasks */
         	UpdateWorldTaskSimple uwtReal;
 	    	for(ManagedReference<UpdateWorldTaskSimple> uwt: uwtSimple) {
 	    		uwtReal = uwt.get();
@@ -546,6 +605,13 @@ public class World
 	    	for (ManagedReference<SendUpdatePlayersSpaces> sups : supsSimple) {
 	    		supsReal = sups.get();
 	    		supsReal.run();
+	    	}
+	    	
+	    	/** Start Players Task */
+	    	SendUpdatePlayers supPlayer;
+	    	for (ManagedReference<SendUpdatePlayers> supPl : supPlayers) {
+	    		supPlayer = supPl.get();
+	    		supPlayer.run();
 	    	}
         }
     }
@@ -609,5 +675,20 @@ public class World
 
         return supsSimple.add(dataManager.createReference(sups));
 	}
+	
+	 /** add an additional SendTask (size depends on Entities) */
+		public boolean addSendTaskPlayers(SendUpdatePlayers supPlayer) {
+	        logger.log(Level.INFO, "{0} placed in {1}",
+	            new Object[] { supPlayer, this });
+
+	        // NOTE: we can't directly save the item in the list, or
+	        // we'll end up with a local copy of the item. Instead, we
+	        // must save a ManagedReference to the item.
+
+	        DataManager dataManager = AppContext.getDataManager();
+	        dataManager.markForUpdate(this);
+
+	        return supPlayers.add(dataManager.createReference(supPlayer));
+		}
 	 
 }

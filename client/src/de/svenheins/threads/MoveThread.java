@@ -94,6 +94,21 @@ public class MoveThread implements Runnable {
 					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
 				}
 				
+				GamePanel.gp.playerEntity.move(duration);
+				
+				/** PlayerManager move */
+//				for (int i = 0; i<EntityManager.size(); i++){
+				List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
+				for (BigInteger i: idListTempPlayers) {
+					Entity e= PlayerManager.get(i);
+//					if(e.getHorizontalMovement() != 0) e.moveOnX(duration);
+//					if(e.getVerticalMovement()!=0) e.moveOnY(duration);
+					if (e != null) { 
+						e.move(duration);
+					}
+					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
+				}
+				
 				/** InfoConsole Update */
 				GameWindow.gw.gameInfoConsole.update();
 				// Handle Enemy-entities

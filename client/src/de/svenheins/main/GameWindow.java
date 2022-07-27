@@ -123,7 +123,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 
 		
 		panel = new GamePanel();
-		panel.setBackground(new Color(30,30,30));
+		panel.setBackground(new Color(0,0,0));
 		panel.setDoubleBuffered(true);
 		
 		JInternalFrame frame1;
@@ -146,7 +146,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
  
 		consoleInput = new ConsoleInputHandler();
 		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-60, new int[]{120, 120, 220}, 0.75f, true, 20);
-		gw.addKeyListener(consoleInput);
+		this.addKeyListener(consoleInput);
 		this.showConsole = false;
 		
 		/** InfoConsole */
@@ -215,7 +215,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		mbar.add(menu);
 		mbar.add(menu2);
 		// Comment to unsupport Menu
-		this.setJMenuBar(mbar);
+//		this.setJMenuBar(mbar);
 //		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		
 		setVisible(true);
@@ -334,8 +334,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      */
     public PasswordAuthentication getPasswordAuthentication() {
         this.player = "guest-" + random.nextInt(1000);
+//    	this.player = "player";
         setStatus("Logging in as " + player);
-        String password = "guest";
+        String password = "123";
         return new PasswordAuthentication(player, password.toCharArray());
     	
     }

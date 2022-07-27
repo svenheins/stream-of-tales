@@ -10,6 +10,7 @@ import java.util.logging.Level;
 
 import com.sun.sgs.app.ManagedReference;
 
+import de.svenheins.World;
 import de.svenheins.functions.MyMath;
 public class ServerAgentEmployee extends ServerAgent  {
 
@@ -37,7 +38,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 				/** be lucky and stay here */
 				setDesiredPosition((float)this.getX(), (float)this.getY());
 				setMovement(0, 0);
-				if( this.getRegion().addResident(new Point((int) this.getX(), (int) this.getY()))) {
+				if( ((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).getForUpdate()).addResident(new Point((int) this.getX(), (int) this.getY()))) {
 					/** be happy */
 					this.setSatisfaction(1.0f);
 					this.setSettled(true);
@@ -90,7 +91,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 		float desY = localY;
 		float distance = this.range;
 		float tempDistance =0;
-		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces()) {
+		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces().values()) {
 //			if(new Random().nextBoolean()) continue;
 			ServerSpace s_space = serverSpace.get();
 			
@@ -145,7 +146,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 					desX = (float) potentialPoint.x;
 					desY = (float) potentialPoint.y;
 					setDesiredPosition(desX, desY);
-					this.setRegion((ServerRegion) s_space);
+					this.setRegion(s_space.getId());
 					return;
 //						}
 						/** if we come here, no free point was found inside the POLYGON*/

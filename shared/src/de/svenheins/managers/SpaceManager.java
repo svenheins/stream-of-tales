@@ -20,7 +20,8 @@ public class SpaceManager{
 	
 	public static List<BigInteger> idList = new ArrayList<BigInteger>();
 	
-	public static void remove(int index) {
+	public static void remove(BigInteger index) {
+		idList.remove(index);
 		spaceList.remove(index);
 	}
 	

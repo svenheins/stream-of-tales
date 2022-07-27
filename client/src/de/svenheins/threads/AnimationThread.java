@@ -25,10 +25,10 @@ public class AnimationThread implements Runnable {
 //					Entity e= EnemyManager.get(i);
 //					if(e != null) e.updateSprite();
 //				}
-				for (int j=PlayerManager.size()-1;j>=0; j--){
-					Entity e2 = PlayerManager.get(j);
-					if(e2 != null) e2.updateSprite(); 
-				}
+//				for (int j=PlayerManager.size()-1;j>=0; j--){
+//					Entity e2 = PlayerManager.get(j);
+//					if(e2 != null) e2.updateSprite(); 
+//				}
 //				for (int k = SpaceManager.size()-1; k >=0; k--) {
 				for (BigInteger k : SpaceManager.idList) {
 					Space space = SpaceManager.get(k);

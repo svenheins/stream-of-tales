@@ -28,7 +28,7 @@ public class Entity extends LocalObject {
 	public final static int DEFAULT_MOVEMENT_ON_X = 300;
 	public final static int DEFAULT_MOVEMENT_ON_Y = 300;
 	
-	public Entity(String src, BigInteger id, float x, float y) {
+	public Entity(String src, BigInteger id, float x, float y, float mx, float my) {
 		standardAnimation = new String[1];
 		standardAnimation[0] = src;
 		animation = AnimationManager.manager.getAnimation(src);
@@ -39,8 +39,8 @@ public class Entity extends LocalObject {
 		this.setName(src);
 		//my = DEFAULT_MOVEMENT_ON_Y;
 		//mx = DEFAULT_MOVEMENT_ON_X;
-		my = 0;
-		mx = 0;
+		this.my = my;
+		this.mx = mx;
 		this.height = sprite.getHeight();
 		this.width = sprite.getWidth();
 	}

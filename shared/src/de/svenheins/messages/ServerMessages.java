@@ -146,6 +146,20 @@ public class ServerMessages extends Messages{
     		
         return buffer;
     }
+    
+    /** get object state */
+    public static ByteBuffer sendDelete (OBJECTCODE objCode, BigInteger id) {
+        byte[] bytes = new byte[1 + 4 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.OBJECTDELETE.ordinal());
+        
+        // insert the Object-Code that identifies the Object 
+        buffer.putInt(objCode.ordinal());
+        
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
 
 //    /**
 //     * Create a "start game" packet which notifies the client to start the battle.

@@ -26,7 +26,7 @@ public class ServerAgent extends ServerEntity {
 	protected float desiredY;
 	protected boolean goal;
 	protected float range;
-	protected ManagedReference<ServerRegion> regionRef = null;
+	protected BigInteger regionID = null;
 
 	public ServerAgent(ServerSprite sprite, BigInteger id, float x, float y,
 			float mx, float my) {
@@ -102,23 +102,23 @@ public class ServerAgent extends ServerEntity {
 	}
 	
 	/** set a new region (if not null) */
-	protected void setRegion(ServerRegion region) {
-        DataManager dataManager = AppContext.getDataManager();
-        dataManager.markForUpdate(this);
+	protected void setRegion(BigInteger regionID) {
+//        DataManager dataManager = AppContext.getDataManager();
+//        dataManager.markForUpdate(this);
 
-        if (region == null) {
-            regionRef = null;
+        if (regionID == null) {
+            this.regionID = null;
             return;
         }
-        regionRef = dataManager.createReference(region);
+        this.regionID = regionID;
     }
 	
 	/** get the current region of the agent */
-	protected ServerRegion getRegion() {
-        if (regionRef == null) {
+	protected BigInteger getRegion() {
+        if (this.regionID == null) {
             return null;
         }
 
-        return regionRef.get();
+        return regionID;
     }
 }

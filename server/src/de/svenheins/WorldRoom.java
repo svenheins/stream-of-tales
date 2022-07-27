@@ -36,10 +36,12 @@ import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.Task;
+import com.sun.sgs.app.util.ScalableHashMap;
 import com.sun.sgs.app.util.ScalableHashSet;
 
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.ServerMessages;
@@ -48,6 +50,7 @@ import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
 import de.svenheins.objects.ServerAgentEntrepreneur;
 import de.svenheins.objects.ServerEntity;
+import de.svenheins.objects.ServerRegion;
 import de.svenheins.objects.ServerSpace;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.WorldObject;
@@ -73,27 +76,20 @@ public class WorldRoom extends WorldObject
         new HashSet<ManagedReference<WorldObject>>();
     
     /** The set of entities in this room. */
-    private final Set<ManagedReference<ServerEntity>> entities =
-        new HashSet<ManagedReference<ServerEntity>>();
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> entities;// =
+//        new ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>>();
     
-    private static List<ManagedReference<ServerEntity>> entitiesArray = null;
-    
-//    /** The set of sprites in this room. */
-//    private final Set<ManagedReference<ServerSprite>> sprites =
-//        new HashSet<ManagedReference<ServerSprite>>();
+//    private static List<ManagedReference<ServerEntity>> entitiesArray = null;
     
     /** The set of sprites in this room. */
-    private final Set<ManagedReference<ServerSpace>> spaces =
-        new HashSet<ManagedReference<ServerSpace>>();
+    private final HashMap<BigInteger, ManagedReference<ServerSpace>> spaces =
+        new HashMap<BigInteger, ManagedReference<ServerSpace>>();
     
-    private static List<ManagedReference<ServerSpace>> spacesArray = null;
+//    private static List<ManagedReference<ServerSpace>> spacesArray = null;
 
     /** The set of players in this room. */
-    private final Set<ManagedReference<WorldPlayer>> players =
-        new HashSet<ManagedReference<WorldPlayer>>();
-    
-//    private Iterator<ManagedReference<ServerEntity>> entityIterator;
-//    private int entityIteratorIndex;
+    private final HashMap<BigInteger, ManagedReference<WorldPlayer>> players =
+        new HashMap<BigInteger, ManagedReference<WorldPlayer>>();
     
 
     private long duration, last; 
@@ -110,6 +106,9 @@ public class WorldRoom extends WorldObject
         super(name, description, x, y);
         this.last = System.currentTimeMillis();
 //        this.entityIteratorIndex = 0;
+        DataManager dm = AppContext.getDataManager();
+        ScalableHashMap<BigInteger, ManagedReference<ServerEntity>> tempEntities = new ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>();
+        entities = dm.createReference(tempEntities);
     }
 
     /**
@@ -139,44 +138,42 @@ public class WorldRoom extends WorldObject
      * @param item the entity to add to this room.
      * @return {@code true} if the item was added to the room
      */
-    public boolean addEntity(ServerEntity entity) {
-        logger.log(Level.INFO, "{0} placed in {1}",
-            new Object[] { entity, this });
-
-        DataManager dataManager = AppContext.getDataManager();
+    public void addEntity(ServerEntity entity) {
+    	DataManager dataManager = AppContext.getDataManager();
         dataManager.markForUpdate(this);
-
-        entity.setRoom(this);
         
         ManagedReference<ServerEntity> refEnt = dataManager.createReference(entity);
         BigInteger entID = dataManager.getObjectId(entity);
         refEnt.getForUpdate().setId(entID);
-        
-        if (entities.add(refEnt) == true) {
-        	entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities);
-        	
-        	//logger.log(Level.INFO, "entity placed");
-        	
-        	return true;
-        } else
-        	return false;
+    	logger.log(Level.INFO, "{0} placed in {1}",
+                    new Object[] { entity, this });
+	        
+        entity.setRoom(this);
+        entities.get().put(refEnt.getId(),refEnt);
+//        entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
     }
     
     /**
-     * Adds an sprite to this room.
+     * Edits an entity in this room.
      * 
-     * @param item the entity to add to this room.
-     * @return {@code true} if the item was added to the room
+     * @param id: entity to edit
+     * @return {@code true} if the entity was edited with success
      */
-//    public boolean addSprite(ServerSprite sprite) {
-//        logger.log(Level.INFO, "{0} placed in {1}",
-//            new Object[] { sprite, this });
-//
-//        DataManager dataManager = AppContext.getDataManager();
-//        dataManager.markForUpdate(this);
-//
-//        return sprites.add(dataManager.createReference(sprite));
-//    }
+    public boolean editEntity(BigInteger id, float[] state) {
+       if ( entities.get().containsKey(id)) {
+    	   ServerEntity entity = entities.get().get(id).getForUpdate();
+    	   entity.setX(state[0]);
+    	   entity.setY(state[1]);
+    	   entity.setMovement(state[2], state[3]);
+    	   entity.setHeight(state[4]);
+    	   entity.setWidth(state[5]);
+    	   //entities.put(id, entity);
+    	   return true;
+       } else {
+    	   return false;
+       }
+    	   
+    }
     
     
     /**
@@ -185,24 +182,46 @@ public class WorldRoom extends WorldObject
      * @param the space to add to this room.
      * @return {@code true} if the space was added to the room
      */
-    public boolean addSpace(ServerSpace space) {
+    public void addSpace(ServerSpace space) {
         logger.log(Level.INFO, "{0} placed in {1}",
             new Object[] { space, this });
-
-        DataManager dataManager = AppContext.getDataManager();
-        dataManager.markForUpdate(this);
-        
-        ManagedReference<ServerSpace> refSpace = dataManager.createReference(space);
-        BigInteger spaceID = dataManager.getObjectId(space);
-        refSpace.getForUpdate().setId(spaceID);
-
-        if (spaces.add(refSpace) == true) {
-        	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces);
-        	//logger.log(Level.INFO, "entity placed");
-        	return true;
-        } else
-        	return false;
+//        if (!spaces.containsKey(space.getId())) {
+	        DataManager dataManager = AppContext.getDataManager();
+	        dataManager.markForUpdate(this);
+	        
+	        ManagedReference<ServerSpace> refSpace = dataManager.createReference(space);
+	        BigInteger spaceID = dataManager.getObjectId(space);
+	        refSpace.getForUpdate().setId(spaceID);
+	        
+	        spaces.put(refSpace.getId(), refSpace);
+//	        spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
+	        	//logger.log(Level.INFO, "entity placed");
+//	        return true;
+//	     } else
+//	        	return false;
 //        return spaces.add(dataManager.createReference(space));
+    }
+    
+    /**
+     * Edits an entity in this room.
+     * 
+     * @param id: entity to edit
+     * @return {@code true} if the entity was edited with success
+     */
+    public boolean editSpace(BigInteger id, float[] state) {
+       if ( spaces.containsKey(id)) {
+    	   ServerSpace space = spaces.get(id).getForUpdate();
+    	   space.setX(state[0]);
+    	   space.setY(state[1]);
+    	   space.setMovement(state[2], state[3]);
+    	   space.setHeight(state[4]);
+    	   space.setWidth(state[5]);
+    	   //entities.put(id, entity);
+    	   return true;
+       } else {
+    	   return false;
+       }
+    	   
     }
 
     /**
@@ -211,14 +230,60 @@ public class WorldRoom extends WorldObject
      * @param player the player to add
      * @return {@code true} if the player was added to the room
      */
-    public boolean addPlayer(WorldPlayer player) {
+    public void addPlayer(WorldPlayer player) {
         logger.log(Level.INFO, "{0} enters {1}",
             new Object[] { player, this });
-
-        DataManager dataManager = AppContext.getDataManager();
-        dataManager.markForUpdate(this);
-
-        return players.add(dataManager.createReference(player));
+//        if ( !players.containsValue(player)) {
+	        DataManager dataManager = AppContext.getDataManager();
+	        dataManager.markForUpdate(this);
+	        
+	        ManagedReference<WorldPlayer> refPlayer = dataManager.createReference(player);
+	        BigInteger playerID = dataManager.getObjectId(player);
+	        refPlayer.getForUpdate().setId(playerID);
+	        
+	        players.put(refPlayer.getId(), refPlayer);
+	        
+	        Entity playerEntity = new Entity("ship.png", playerID, player.getX(), player.getY(), player.getMX(), player.getMY());
+	        
+	        if (PlayerManager.add(playerEntity)) {
+	        	logger.log(Level.INFO, "{0} is added to the PlayerManager",
+	                    new Object[] { player});
+	        } else
+	        {
+	        	logger.log(Level.INFO, "{0} is NOT added to the PlayerManager",
+	                    new Object[] { player});
+	        }
+//        }
+//        return players.add(dataManager.createReference(player));
+    }
+    
+    /**
+     * Edits an entity in this room.
+     * 
+     * @param id: entity to edit
+     * @return {@code true} if the entity was edited with success
+     */
+    public boolean editPlayer(BigInteger id, float[] state) {
+       if ( players.containsKey(id)) {
+    	   WorldPlayer player = players.get(id).getForUpdate();
+    	   player.setX(state[0]);
+    	   player.setY(state[1]);
+    	   player.setMovement(state[2], state[3]);
+    	   player.setHeight(state[4]);
+    	   player.setWidth(state[5]);
+    	   
+    	   /** PlayerManager update */
+    	   PlayerManager.get(id).setX(state[0]);
+    	   PlayerManager.get(id).setY(state[1]);
+    	   PlayerManager.get(id).setMovement(state[2], state[3]);
+    	   PlayerManager.get(id).setHeight(state[4]);
+    	   PlayerManager.get(id).setWidth(state[5]);
+    	   //entities.put(id, entity);
+    	   return true;
+       } else {
+    	   return false;
+       }
+    	   
     }
 
     /**
@@ -230,100 +295,22 @@ public class WorldRoom extends WorldObject
     public boolean removePlayer(WorldPlayer player) {
         logger.log(Level.INFO, "{0} leaves {1}",
             new Object[] { player, this });
-
-        DataManager dataManager = AppContext.getDataManager();
-        dataManager.markForUpdate(this);
-
-        return players.remove(dataManager.createReference(player));
+        if (players.containsKey(player.getId())) {
+	        DataManager dataManager = AppContext.getDataManager();
+	        dataManager.markForUpdate(this);
+	
+	//        return players.get(player.getId()).remove(dataManager.createReference(player));
+	        players.remove(player.getId());
+	        PlayerManager.remove(player.getId());
+	        this.updateSendLogout(player.getId());
+	        return true;
+        } else {
+        	logger.log(Level.INFO, "{0} with ID={1} was not found inside the HashMap players",
+                    new Object[] { player, player.getId() });
+        	return false;
+        }
     }
 
-    /**
-     * Returns a description of what the given player sees in this room.
-     *
-     * @param looker the player looking in this room
-     * @return a description of what the given player sees in this room
-     */
-    public String look(WorldPlayer looker) {
-        logger.log(Level.INFO, "{0} looks at {1}",
-            new Object[] { looker, this });
-
-        StringBuilder output = new StringBuilder();
-        output.append("You are in ").append(getDescription()).append(".\n");
-
-        List<WorldPlayer> otherPlayers =
-            getPlayersExcluding(looker);
-
-        if (!otherPlayers.isEmpty()) {
-            output.append("Also in here are ");
-            appendPrettyList(output, otherPlayers);
-            output.append(".\n");
-        }
-
-        if (!items.isEmpty()) {
-            output.append("On the floor you see:\n");
-            for (ManagedReference<WorldObject> itemRef : items) {
-                WorldObject item = itemRef.get();
-                float x = item.getX();
-                float y = item.getY();
-                output.append(item.getDescription()).append(" at position ").append(x).append(' ').append(y).append('\n');
-            }
-        }
-//        if (!sprites.isEmpty()) {
-//            output.append("And you see the following sprites:\n");
-//            for (ManagedReference<ServerSprite> spriteRef : sprites) {
-//            	ServerSprite sprite = spriteRef.get();
-//                float h = sprite.getHeight();
-//                float w = sprite.getWidth();
-//                output.append("Height: ").append(h).append(" Width: ").append(w).append('\n');
-//            }
-//        }
-        if (!entities.isEmpty()) {
-            output.append("And you see the following entities:\n");
-            for (ManagedReference<ServerEntity> entityRef : entities) {
-            	ServerEntity entity = entityRef.get();
-                float h = entity.getHeight();
-                float w = entity.getWidth();
-                float x = entity.getX();
-                float y = entity.getY();
-                output.append("Height: ").append(h).append(" Width: ").append(w).append(" X: ").append(x).append(" Y: ").append(y).append('\n');
-            }
-        }
-        
-        return output.toString();
-    }
-
-    /**
-     * Appends the names of the {@code WorldObject}s in the list
-     * to the builder, separated by commas, with an "and" before the final
-     * item.
-     *
-     * @param builder the {@code StringBuilder} to append to
-     * @param list the list of items to format
-     */
-    private void appendPrettyList(StringBuilder builder,
-        List<? extends WorldObject> list)
-    {
-        if (list.isEmpty()) {
-            return;
-        }
-
-        int lastIndex = list.size() - 1;
-        WorldObject last = list.get(lastIndex);
-
-        Iterator<? extends WorldObject> it =
-            list.subList(0, lastIndex).iterator();
-        if (it.hasNext()) {
-            WorldObject other = it.next();
-            builder.append(other.getName());
-            while (it.hasNext()) {
-                other = it.next();
-                builder.append(" ,");
-                builder.append(other.getName());
-            }
-            builder.append(" and ");
-        }
-        builder.append(last.getName());
-    }
 
     /**
      * Returns a list of players in this room excluding the given
@@ -332,147 +319,26 @@ public class WorldRoom extends WorldObject
      * @param player the player to exclude
      * @return the list of players
      */
-    private List<WorldPlayer>
-            getPlayersExcluding(WorldPlayer player)
-    {
-        if (players.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        ArrayList<WorldPlayer> otherPlayers =
-            new ArrayList<WorldPlayer>(players.size());
-
-        for (ManagedReference<WorldPlayer> playerRef : players) {
-            WorldPlayer other = playerRef.get();
-            if (!player.equals(other)) {
-                otherPlayers.add(other);
-            }
-        }
-
-        return Collections.unmodifiableList(otherPlayers);
-    }
-    
-    
-//    public float[] getEntityState(WorldPlayer looker, int entityId) {
-//    	float[] retState = new float[]{0,0,0,0};
-//        for (ManagedReference<ServerEntity> entity : entities) {
-//        	//TODO: ineffective
-//        	if (entity.get().getId() == entityId) {
-//        		retState = new float[]{entity.get().getX(), entity.get().getY(),entity.get().getHorizontalMovement(),entity.get().getVerticalMovement()};
-//        	}
+//    private List<WorldPlayer>
+//            getPlayersExcluding(WorldPlayer player)
+//    {
+//        if (players.isEmpty()) {
+//            return Collections.emptyList();
 //        }
-//    	return retState;
-//    }
 //
-//    
-//    public float[] getSpaceState(WorldPlayer looker, int spaceId) {
-//    	float[] retState = new float[]{0,0,0,0};
-//        for (ManagedReference<ServerSpace> space : spaces) {
-//        	//TODO: ineffective
-//        	if (space.get().getId() == spaceId) {
-//        		retState = new float[]{space.get().getX(), space.get().getY(),space.get().getHorizontalMovement(),space.get().getVerticalMovement()};
-//        	}
+//        ArrayList<WorldPlayer> otherPlayers =
+//            new ArrayList<WorldPlayer>(players.size());
+//
+//        for (ManagedReference<WorldPlayer> playerRef : players) {
+//            WorldPlayer other = playerRef.get();
+//            if (!player.equals(other)) {
+//                otherPlayers.add(other);
+//            }
 //        }
-//    	return retState;
+//
+//        return Collections.unmodifiableList(otherPlayers);
 //    }
     
-//    /**
-//     * 
-//     * @param objCode 
-//     * @param worldPlayer: the player who asked for the status
-//     * @param object_id: the object-id that was requested
-//     * @return the status of the object: x, y, mx (velocity in x direction), my (velocity in y direction), width, height
-//     */
-//    public float[] getObjectState(OBJECTCODE objCode, WorldPlayer worldPlayer, int object_id) {
-//		float[] retState = new float[6];
-//		switch (objCode) {
-//			case SPACE:
-//			{
-//				for (ManagedReference<ServerSpace> space : spaces) {
-//					//TODO: ineffective
-//					if (space.get().getId() == object_id) {
-//						retState = new float[]{space.get().getX(), space.get().getY(),space.get().getHorizontalMovement(),space.get().getVerticalMovement(), space.get().getWidth(), space.get().getHeight()};
-//					}
-//				}
-//				break;
-//			}
-//			case ENTITY:
-//			{
-//				for (ManagedReference<ServerEntity> entity : entities) {
-//					//TODO: ineffective
-//					if (entity.get().getId() == object_id) {
-//		        		retState = new float[]{entity.get().getX(), entity.get().getY(),entity.get().getHorizontalMovement(),entity.get().getVerticalMovement(), entity.get().getWidth(), entity.get().getHeight()};
-//		        	}
-//				}
-//				break;
-//			}
-//		}
-//    	return retState;
-//	}
-//    
-//    /** return Name of Object */
-//    public String getObjectName(OBJECTCODE objCode, WorldPlayer worldPlayer, int object_id) {
-//		String retName = "";
-//		switch (objCode) {
-//			case SPACE:
-//			{
-//				for (ManagedReference<ServerSpace> space : spaces) {
-//					//TODO: ineffective
-//					if (space.get().getId() == object_id) {
-//						retName = space.get().getName();
-//					}
-//				}
-//				break;
-//			}
-//			case ENTITY:
-//			{
-//				for (ManagedReference<ServerEntity> entity : entities) {
-//					//TODO: ineffective
-//					if (entity.get().getId() == object_id) {
-//						retName = entity.get().getName();	
-//					}
-//				}
-//				break;
-//			}
-//		}
-//    	return retName;
-//	}
-    
-//    /** return Ids for Entities and Spaces*/
-//    public LocalObject[] getLocalObjects(OBJECTCODE objCode, WorldPlayer worldPlayer) {
-//    	ArrayList<LocalObject> objectList = new ArrayList<LocalObject>();
-//    	switch (objCode) {
-//    	case ENTITY:
-////    		Entity[] retObjects = ;
-//    		/** for each entity add the corresponding id to the intList */
-//    		for (ManagedReference<ServerEntity> entity : entities) {
-//				Entity realEntity = new Entity(entity.get().getName(), entity.get().getId(), 0, 0);
-//    			objectList.add(realEntity);
-//			}
-////    		ret = new int[intList.size()];
-////    	    for (int i=0; i < ret.length; i++)
-////    	    {
-////    	        ret[i] = intList.get(i).intValue();
-////    	    }	
-//    		break;
-//    	case SPACE:
-//    		for (ManagedReference<ServerSpace> space : spaces) {
-//    			ServerSpace s_space = space.get();
-//    			//Color color = new Color(s_space.getRGB()[0], s_space.getRGB()[1], s_space.getRGB()[2]);
-//    			Space realSpace = new Space(s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans());
-//    			objectList.add(realSpace);
-//			}
-////    		ret = new int[intList.size()];
-////    	    for (int i=0; i < ret.length; i++)
-////    	    {
-////    	        ret[i] = intList.get(i).intValue();
-////    	    }
-//    		break;
-//    	default:
-//    			;
-//    	}
-//    	return (LocalObject[]) objectList.toArray();    	
-//    }
     
     /** return Spaces*/
     public Space[] getSpaces(WorldPlayer worldPlayer, int begin, int end) {
@@ -505,11 +371,11 @@ public class WorldRoom extends WorldObject
     	return objectList;    	
     }
     
-    public Set<ManagedReference<ServerEntity>> getEntities() {
+    public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> getEntities() {
     	return entities;
     }
     
-    public Set<ManagedReference<ServerSpace>> getSpaces() {
+    public HashMap<BigInteger, ManagedReference<ServerSpace>> getSpaces() {
     	return spaces;
     }
     
@@ -520,39 +386,17 @@ public class WorldRoom extends WorldObject
      */
     public void updateEntities(int begin, int end) {
     	long timestamp;
-//		entityIterator = entities.iterator();
-//		while (entityIterator.hasNext()) {
-//			ServerEntity se = entityIterator.next().getForUpdate();
-//			entityIteratorIndex++;
-//			if(se.getHorizontalMovement() != 0 || se.getVerticalMovement()!=0) se.move(duration);
-//			if(se.getX() < 0) {se.setHorizontalMovement(Math.abs(se.getHorizontalMovement()));}
-//			if(se.getX() > GameStates.getWidth()) {se.setHorizontalMovement(-Math.abs(se.getHorizontalMovement()));}
-//			if(se.getY() < 0) {se.setVerticalMovement(Math.abs(se.getVerticalMovement()));}
-//			if(se.getY() > GameStates.getHeight()) {se.setVerticalMovement(-Math.abs(se.getVerticalMovement()));}
-//			
-//			if (!AppContext.getTaskManager().shouldContinue()) {
-//			    AppContext.getTaskManager().scheduleTask(task.get());
-//			    return;
-//			}
-//		}
-//		entityIteratorIndex = 0;
-//		entityIterator = entities.iterator();
-//		if (entitiesArray.size() == 0 || entitiesArray.get(0) == null) {
-		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities);
-//		}
+//		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
 		Entity realEntity;
 		for (int i = begin; i<end; i++) {
-			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
-    		ServerEntity se = entity.getForUpdate();
+//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
+			ServerEntity se = entities.get().get(EntityManager.idList.get(i)).getForUpdate(); 
+//					EntityManager.get(EntityManager.idList.get(i)); 
+//    		ServerEntity se = entity.getForUpdate();
     		
     		timestamp = System.currentTimeMillis();
     		se.move(timestamp);
     		
-//    		if(se.getHorizontalMovement() != 0 || se.getVerticalMovement()!=0) se.move(duration);
-//    		logger.log(Level.INFO, "y: {0}  height: {1}",
-//    				new Object[] {se.getY(),  GameStates.getHeight()});
-			
-			
 			if(se instanceof ServerAgentEntrepreneur) {
 //				logger.log(Level.INFO, "Agent gefunden!");
 				((ServerAgentEntrepreneur) se).updateLocation();
@@ -565,7 +409,7 @@ public class WorldRoom extends WorldObject
 				if(se.getY() < 0) {se.setVerticalMovement(Math.abs(se.getVerticalMovement()));}
 				if(se.getY() > GameStates.getHeight()) {se.setVerticalMovement(-Math.abs(se.getVerticalMovement()));}
 			}
-			realEntity = new Entity(se.getName(), se.getId(), se.getX(), se.getY());
+			realEntity = new Entity(se.getName(), se.getId(), se.getX(), se.getY(), se.getHorizontalMovement(), se.getVerticalMovement());
     		if ( EntityManager.overwrite(realEntity) ) {
 //    			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
     		} else {
@@ -573,60 +417,54 @@ public class WorldRoom extends WorldObject
     		}
     	}
     	
-//    	long durationOfUpdate = System.currentTimeMillis()-last;
-//    	logger.log(Level.INFO, "update needs {0} millis",
-//                new Object[] { durationOfUpdate });
     }
     
     public void updateSpaces(int begin, int end) {
     	long timestamp;
-//    	for (ManagedReference<ServerSpace> space : spaces) {
-//    		ServerSpace s_space = space.getForUpdate();
-//    		if(s_space.getHorizontalMovement() != 0 || s_space.getVerticalMovement()!=0) s_space.move(duration);
-//			if(s_space.getX() < 0) {s_space.setHorizontalMovement(Math.abs(s_space.getHorizontalMovement()));}
-//			if(s_space.getX()+s_space.getWidth() > GameStates.getWidth()) {s_space.setHorizontalMovement(-Math.abs(s_space.getHorizontalMovement()));}
-//			if(s_space.getY() < 0) {s_space.setVerticalMovement(Math.abs(s_space.getVerticalMovement()));}
-//			if(s_space.getY()+s_space.getHeight() > GameStates.getHeight()) {s_space.setVerticalMovement(-Math.abs(s_space.getVerticalMovement()));}
-//    	}
-    	
-    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces);
-//		}
+//    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
+
 		for (int i = begin; i<end; i++) {
-			ManagedReference<ServerSpace> space = spacesArray.get(i);
-    		ServerSpace s_space = space.getForUpdate();
+//			ManagedReference<ServerSpace> space = spacesArray.get(i);
+    		ServerSpace s_space = spaces.get(SpaceManager.idList.get(i)).getForUpdate();//space.getForUpdate();
     		
-    		timestamp = System.currentTimeMillis();
-    		/** Spaces can move without limitations (_IF_ they move) */
-    		if(s_space.getHorizontalMovement() != 0 || s_space.getVerticalMovement()!=0) s_space.move(timestamp);
-    		Space realSpace = new Space(s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale());
-    		if ( SpaceManager.overwrite(realSpace) ) {
-//    			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
+    		if (s_space instanceof ServerRegion) {
+    			/** do nothing */
     		} else {
-    			logger.log(Level.INFO, "Overwrite error - space is not existent!");
+    			timestamp = System.currentTimeMillis();
+        		/** Spaces can move without limitations (_IF_ they move) */
+//        		if(s_space.getHorizontalMovement() != 0 || s_space.getVerticalMovement()!=0) 
+        		s_space.move(timestamp);
+        		Space realSpace = new Space(s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale());
+        		if ( SpaceManager.overwrite(realSpace) ) {
+//        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
+        		} else {
+        			logger.log(Level.INFO, "Overwrite error - space is not existent!");
+        		}
     		}
-    			
-    			    		
-////    		logger.log(Level.INFO, "y: {0}  height: {1}",
-////    				new Object[] {se.getY(),  GameStates.getHeight()});
-//			if(s_space.getX() < 0) {s_space.setHorizontalMovement(Math.abs(s_space.getHorizontalMovement()));}
-//			if(s_space.getX() > GameStates.getWidth()) {s_space.setHorizontalMovement(-Math.abs(s_space.getHorizontalMovement()));}
-//			if(s_space.getY() < 0) {s_space.setVerticalMovement(Math.abs(s_space.getVerticalMovement()));}
-//			if(s_space.getY() > GameStates.getHeight()) {s_space.setVerticalMovement(-Math.abs(s_space.getVerticalMovement()));}
+    		
     	}
     }
 
     /** send all Entities to all Players */
     public void updateSendPlayersEntities(int begin, int end) {
     	for (int i = begin; i<end; i++) {
-			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
-    		for (ManagedReference<WorldPlayer> player : players) {
-    			if (player.get().isReady()) {
+			ManagedReference<ServerEntity> entity = entities.get().get(EntityManager.idList.get(i));//entitiesArray.get(i);
+			for (BigInteger playerID : players.keySet()) {
+				if (players.get(playerID).get().isReady()) {
 	    			BigInteger object_id = entity.get().getId();
 	    			// get the six object-states: x,y,mx,my,width,height
 	    			float[] object_state = new float[]{entity.get().getX(), entity.get().getY(),entity.get().getHorizontalMovement(),entity.get().getVerticalMovement(), entity.get().getWidth(), entity.get().getHeight()};
-	    			player.get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.ENTITY, object_id, object_state));
+	    			players.get(playerID).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.ENTITY, object_id, object_state));
     			}
-    		}
+			}
+//    		for (ManagedReference<WorldPlayer> player : players) {
+//    			if (player.get().isReady()) {
+//	    			BigInteger object_id = entity.get().getId();
+//	    			// get the six object-states: x,y,mx,my,width,height
+//	    			float[] object_state = new float[]{entity.get().getX(), entity.get().getY(),entity.get().getHorizontalMovement(),entity.get().getVerticalMovement(), entity.get().getWidth(), entity.get().getHeight()};
+//	    			player.get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.ENTITY, object_id, object_state));
+//    			}
+//    		}
     	}
     	
 //    	long durationOfUpdate = System.currentTimeMillis()-last;
@@ -635,66 +473,100 @@ public class WorldRoom extends WorldObject
     }
 
     
-    public void updateSendPlayersSpaces(long delta, int begin, int end) {
+    public void updateSendPlayersSpaces(int begin, int end) {
     	for (int i = begin; i<end; i++) {
-			ManagedReference<ServerSpace> space = spacesArray.get(i);
-    		for (ManagedReference<WorldPlayer> player : players) {
-    			if (player.get().isReady()) {
-	    			BigInteger object_id = space.get().getId();
+			ServerSpace space = spaces.get(SpaceManager.idList.get(i)).get(); //spacesArray.get(i);
+			for (BigInteger playerID : players.keySet()) {
+				if (players.get(playerID).get().isReady()) {
+	    			BigInteger object_id = space.getId();
 	    			// get the six object-states: x,y,mx,my,width,height
-	    			float[] object_state = new float[]{space.get().getX(), space.get().getY(),space.get().getHorizontalMovement(),space.get().getVerticalMovement(), space.get().getWidth(), space.get().getHeight()};
-	    			player.get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.SPACE, object_id, object_state));
+	    			float[] object_state = new float[]{space.getX(), space.getY(),space.getHorizontalMovement(),space.getVerticalMovement(), space.getWidth(), space.getHeight()};
+	    			players.get(playerID).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.SPACE, object_id, object_state));
     			}
-    		}
-    	}
-    	
-//    	for (ManagedReference<ServerSpace> space : spaces) {
+			}
 //    		for (ManagedReference<WorldPlayer> player : players) {
-//    			int object_id = space.get().getId();
-//    			// get the six object-states: x,y,mx,my,width,height
-//    			float[] object_state = new float[]{space.get().getX(), space.get().getY(),space.get().getHorizontalMovement(),space.get().getVerticalMovement(), space.get().getWidth(), space.get().getHeight()};
-//	        	
-//    			player.get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.SPACE, object_id, object_state));
+//    			if (player.get().isReady()) {
+//	    			BigInteger object_id = space.getId();
+//	    			// get the six object-states: x,y,mx,my,width,height
+//	    			float[] object_state = new float[]{space.getX(), space.getY(),space.getHorizontalMovement(),space.getVerticalMovement(), space.getWidth(), space.getHeight()};
+//	    			player.get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.SPACE, object_id, object_state));
+//    			}
 //    		}
-//    	}
+    	}
     }
     
     
-//    /** send all Entities-names and Spaces-names to all Players */
-//    public void updateNameSendPlayers(long delta) {
-//    	for (ManagedReference<ServerEntity> entity : entities) {
-//    		for (ManagedReference<WorldPlayer> player : players) {
-//    			int object_id = entity.get().getId();
-//    			// get the six object-states: x,y,mx,my,width,height
-//    			String objectName = this.getObjectName(OBJECTCODE.ENTITY, player.get(), object_id);
-//    			player.get().getSession().send(ServerMessages.sendObjectName(OBJECTCODE.ENTITY, object_id, objectName));
-//    		}
-//    	}
-//    	for (ManagedReference<ServerSpace> space : spaces) {
-//    		for (ManagedReference<WorldPlayer> player : players) {
-//    			int object_id = space.get().getId();
-//    			// get the six object-states: x,y,mx,my,width,height
-//    			String objectName = this.getObjectName(OBJECTCODE.SPACE, player.get(), object_id);
-//    			player.get().getSession().send(ServerMessages.sendObjectName(OBJECTCODE.SPACE, object_id, objectName));
-//    		}
-//    	}
-//    }
-    
     public int getCountEntities() {
-    	return this.entities.size();
+    	return this.entities.get().size();
     }
     
     public int getCountSpaces() {
     	return this.spaces.size();
     }
+
+	public void updateSendPlayers(int index, int endIndex) {
+		if (players.size()<index+2 || players.size() <=1) {
+			/** do nothing, because there are not enough players logged in */
+		} else
+		{
+			WorldPlayer worldPlayer;
+		//			if (endIndex > players.size()) endIndex = players.size();
+//			for (int i = index; i<2; i++) {
+			for(BigInteger playerIDfrom: players.keySet()) {
+//				WorldPlayer worldPlayer = players.get(PlayerManager.idList.get(i)).get(); //spacesArray.get(i);
+				for (BigInteger playerIDto : players.keySet()) {
+					/** send only if ready && not the same player */
+					if (players.get(playerIDto).get().isReady() && playerIDto != playerIDfrom) {
+		    			BigInteger object_id = playerIDfrom;
+		    			// get the six object-states: x,y,mx,my,width,height
+		    			worldPlayer = players.get(playerIDfrom).get();
+		    			float[] object_state = new float[]{worldPlayer.getX(), worldPlayer.getY(),worldPlayer.getHorizontalMovement(),worldPlayer.getVerticalMovement(), worldPlayer.getWidth(), worldPlayer.getHeight()};
+		    			players.get(playerIDto).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.PLAYER, object_id, object_state));
+	    			}
+				}
+//	    	}
+			}
+		}
+	}
+	
+	public void updateSendLogout(BigInteger playerID) {
+		/** TODO: LOGOUT message */
+		for(BigInteger playerIDto: players.keySet()) {
+			if (players.get(playerIDto).get().isReady() && playerIDto != playerID) {
+				players.get(playerIDto).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.PLAYER, playerID));
+			}
+		}
+//		if (players.size()<index+2 || players.size() <=1) {
+//			/** do nothing, because there are not enough players logged in */
+//		} else
+//		{
+//			WorldPlayer worldPlayer;
+//		//			if (endIndex > players.size()) endIndex = players.size();
+////			for (int i = index; i<2; i++) {
+//			for(BigInteger playerIDfrom: players.keySet()) {
+////				WorldPlayer worldPlayer = players.get(PlayerManager.idList.get(i)).get(); //spacesArray.get(i);
+//				for (BigInteger playerIDto : players.keySet()) {
+//					/** send only if ready && not the same player */
+//					if (players.get(playerIDto).get().isReady() && playerIDto != playerIDfrom) {
+//		    			BigInteger object_id = playerIDfrom;
+//		    			// get the six object-states: x,y,mx,my,width,height
+//		    			worldPlayer = players.get(playerIDfrom).get();
+//		    			float[] object_state = new float[]{worldPlayer.getX(), worldPlayer.getY(),worldPlayer.getHorizontalMovement(),worldPlayer.getVerticalMovement(), worldPlayer.getWidth(), worldPlayer.getHeight()};
+//		    			players.get(playerIDto).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.PLAYER, object_id, object_state));
+//	    			}
+//				}
+////	    	}
+//			}
+//		}
+	}
     
-    /** Update entityArray */
-    public void updateEntityArray() {
-    	entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities);
-    }
-    
-    /** Update spacesArray */
-    public void updateSpaceArray() {
-    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces);
-    }
+//    /** Update entityArray */
+//    public void updateEntityArray() {
+//    	entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
+//    }
+//    
+//    /** Update spacesArray */
+//    public void updateSpaceArray() {
+//    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
+//    }
 }

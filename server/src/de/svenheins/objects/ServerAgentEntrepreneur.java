@@ -9,6 +9,7 @@ import java.util.logging.Level;
 
 import com.sun.sgs.app.ManagedReference;
 
+import de.svenheins.World;
 import de.svenheins.functions.MyMath;
 
 public class ServerAgentEntrepreneur extends ServerAgent {
@@ -50,7 +51,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 			{
 				if(!hasGoal()){
 					/** find a better place */
-					searchBetterLocation();
+//					searchBetterLocation();
 					/** reset Movement speed to max speed*/
 //					this.setHorizontalMovement(this.getSpeed()/2);
 //					this.setVerticalMovement(this.getSpeed()/2);
@@ -90,7 +91,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 		float desY = localY;
 		float distance = this.range;
 		float tempDistance =0;
-		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces()) {
+		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces().values()) {
 			ServerSpace s_space = serverSpace.get();
 			if(s_space instanceof ServerRegion) {
 				/** Create a Space, to compute some stuff (faster and fewer errors) */
@@ -155,8 +156,8 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 								desX = (float) potentialPoint.x;
 								desY = (float) potentialPoint.y;
 								setDesiredPosition(desX, desY);
-								this.setRegion((ServerRegion) s_space);
-								if( this.getRegion().addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
+								this.setRegion( s_space.getId());
+								if( ((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).getForUpdate()).addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
 									/** be happy */
 									this.setSatisfaction(1.0f);
 									this.setSettled(true);
@@ -200,7 +201,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 		float mySize = Math.max(this.height, this.width);
 		
 		boolean blocked = false;
-		ArrayList<Point> blockedPoints = this.getRegion().getBlockedPoints();
+		ArrayList<Point> blockedPoints = ((ServerRegion)  this.getRoom().getSpaces().get(this.getRegion()).getForUpdate()).getBlockedPoints();
 		for(Point blockedPoint : blockedPoints) {
 			/** check if any blocked Position gets in the way */			
 			if (MyMath.getDistance(blockedPoint, myPosition)< mySize) {
@@ -232,7 +233,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 //				}
 //			}
 //		}
-		if( this.getRegion().addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
+		if( ((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).getForUpdate()).addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
 			/** be happy */
 			this.setSatisfaction(1.0f);
 			this.setSettled(true);

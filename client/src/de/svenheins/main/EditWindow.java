@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.math.BigInteger;
 
 import javax.swing.JButton;
 import javax.swing.JColorChooser;
@@ -14,6 +15,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import de.svenheins.functions.MyStrings;
@@ -23,6 +25,8 @@ import de.svenheins.animation.SpaceAnimation;
 import de.svenheins.animation.SpaceDisappear;
 
 import de.svenheins.managers.EntityManager;
+import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.Space;
@@ -176,17 +180,22 @@ public class EditWindow {
         JPanel panelGreen = new JPanel();
         JPanel panelDark = new JPanel();
         
-        final JTextField textField = new JTextField(""+entity.getY(), 10);
+        final JTextField textFieldX = new JTextField(""+(int)entity.getX(), 6);
+        final JTextField textFieldY = new JTextField(""+(int)entity.getY(), 6);
         JButton button1 = new JButton("Ok");
         button1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-            	String str = textField.getText();
+            	String strX = textFieldX.getText();
+            	String strY = textFieldY.getText();
     			try {
-    				int editY = Integer.parseInt(str);
+    				int editY = Integer.parseInt(strY);
+    				int editX = Integer.parseInt(strX);
     				if (GameWindow.gw.isLoggedIn()) {
     					/** here we are connected */
     					// TODO: request edit from server
+    					entity.setX((float) editX);
     					entity.setY((float) editY);
+    					GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.ENTITY, entity.getId(),  new float[]{editX, editY, entity.getMX(), entity.getMY(), entity.getHeight(), entity.getWidth()}));
     				} else
     				{
     					/** we launch a standalone-Client */
@@ -213,7 +222,10 @@ public class EditWindow {
 				meinJDialog.dispose();
             }
         });
-        panelBlue.add(textField);
+        panelBlue.add(new JTextArea("X:"));
+        panelBlue.add(textFieldX);
+        panelBlue.add(new JTextArea("Y:"));
+        panelBlue.add(textFieldY);
         panelBlue.add(button1);
         panelBlue.add(button2);
         panelBlue.add(deleteButton);

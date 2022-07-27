@@ -1,2 +1,2 @@
 # stream-of-tales
-Java 2D sandbox survival game based on project red darf
+Java 2D sandbox survival game based on project red dwarf

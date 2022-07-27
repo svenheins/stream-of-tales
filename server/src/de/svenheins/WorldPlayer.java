@@ -21,11 +21,13 @@
 
 package de.svenheins;
 
+
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//import com.sun.darkstar.example.snowman.common.protocol.enumn.EOPCODE;
 import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.Channel;
 import com.sun.sgs.app.ChannelManager;
@@ -34,6 +36,13 @@ import com.sun.sgs.app.ClientSessionListener;
 import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
+
+import de.svenheins.messages.OBJECTCODE;
+import de.svenheins.messages.OPCODE;
+import de.svenheins.messages.ServerMessages;
+import de.svenheins.objects.Entity;
+import de.svenheins.objects.Space;
+import de.svenheins.objects.WorldObject;
 
 /**
  * Represents a player in the {@link World} example MUD.
@@ -60,6 +69,11 @@ public class WorldPlayer
 
     /** The {@link WorldRoom} this player is in, or null if none. */
     private ManagedReference<WorldRoom> currentRoomRef = null;
+    
+    /**
+     * Reference to the game channel used for communications
+     */
+    private ManagedReference<Channel> channelRef = null;
 
     /**
      * Find or create the player object for the given session, and mark
@@ -68,7 +82,7 @@ public class WorldPlayer
      * @param session which session to find or create a player for
      * @return a player for the given session
      */
-    public static WorldPlayer loggedIn(ClientSession session, ManagedReference<Channel> channel1) {
+    public static WorldPlayer loggedIn(ClientSession session, ManagedReference<Channel> channelRef) {
         String playerBinding = PLAYER_BIND_PREFIX + session.getName();
 
         // try to find player object, if non existent then create
@@ -83,7 +97,7 @@ public class WorldPlayer
             logger.log(Level.INFO, "New player created: {0}", player);
             dataMgr.setBinding(playerBinding, player);
         }
-        player.setSession(session, channel1);
+        player.setSession(session, channelRef);
         return player;
     }
 
@@ -114,11 +128,11 @@ public class WorldPlayer
      *
      * @param session the session this player is logged in on
      */
-    protected void setSession(ClientSession session, ManagedReference<Channel> channel1) {
+    protected void setSession(ClientSession session, ManagedReference<Channel> channelRef) {
         DataManager dataMgr = AppContext.getDataManager();
         dataMgr.markForUpdate(this);
 
-        if (session != null && channel1 != null) {
+        if (session != null && channelRef != null) {
         	currentSessionRef = dataMgr.createReference(session);
             logger.log(Level.INFO,
                 "Set session for {0} to {1}",
@@ -128,7 +142,8 @@ public class WorldPlayer
             ChannelManager channelMgr = AppContext.getChannelManager();
             
             // We were passed a reference to the first channel.
-            channel1.get().join(session);
+            this.channelRef = channelRef;
+            this.channelRef.get().join(session);
             
             // We look up the second channel by name.
             Channel channel2 = channelMgr.getChannel(World.CHANNEL_2_NAME);
@@ -149,32 +164,126 @@ public class WorldPlayer
         room.addPlayer(this);
         setRoom(room);
     }
+    
+    /** {@inheritDoc} */
+    public void send(ByteBuffer byteBuffer) {
+        currentSessionRef.get().send(byteBuffer);
+    }
+    
+    public void sendAll(ByteBuffer byteBuffer) {
+    	channelRef.get().send(null, byteBuffer);
+    }
 
     /** {@inheritDoc} */
     public void receivedMessage(ByteBuffer message) {
-        String command = decodeString(message);
+        //TODO: neu schreiben, ersten Byte vom ByteBuffer holen und in enum konvertieren
+    	// dann: receivedMessage(ENUM, ByteBuffer)
+    	OPCODE code = this.getOpCode(message);
+    	this.receivedMessage(code, message);
+    	
+    	
+//    	String command = decodeString(message);
 
-        logger.log(Level.INFO,
-            "{0} received command: {1}",
-            new Object[] { this, command }
-        );
+//        logger.log(Level.INFO,
+//            "{0} received command: {1}",
+//            new Object[] { this, command }
+//        );
 
-        if (command.equalsIgnoreCase("look")) {
-            String reply = getRoom().look(this);
-            getSession().send(encodeString(reply));
-        } else  if (command.equalsIgnoreCase("+")) {
-            
-        	String reply = getRoom().addOne(this);
-            getSession().send(encodeString(reply));
-        } else {
-            logger.log(Level.WARNING,
-                "{0} unknown command: {1}",
-                new Object[] { this, command }
-            );
+//        if (command.equalsIgnoreCase("look")) {
+//            String reply = getRoom().look(this);
+//            getSession().send(encodeString(reply));
+//        } else  if (command.equalsIgnoreCase("+")) {
+//        	String reply = getRoom().addOne(this);
+//            getSession().send(encodeString(reply));
+//        } else  if (command.equalsIgnoreCase("eye")) {
+//        	String reply = "eye:"+getRoom().getEye(this);
+//            getSession().send(encodeString(reply));
+//        } else {
+//            logger.log(Level.WARNING,
+//                "{0} unknown command: {1}",
+//                new Object[] { this, command }
+//            );
             // We could disconnect the rogue player at this point.
             //currentSession.disconnect();
-        }
+//        }
     }
+
+	public void receivedMessage(OPCODE opCode, ByteBuffer message) {
+//		OBJECTCODE objCode = getObjectCode(message);
+		switch (opCode) {
+//			case EYE:
+//				int id = message.getInt();
+//				double[] state = getRoom().getEntityState(this, id);
+//				getSession().send(ServerMessages.sendEntityState(id, state[0], state[1], state[2], state[3]));
+//				break;
+//			case SPACE:
+//				int space_id = message.getInt();
+//				double[] space_state = getRoom().getSpaceState(this, space_id);
+//				getSession().send(ServerMessages.sendSpaceState(space_id, space_state[0], space_state[1], space_state[2], space_state[3]));
+//				break;
+			case OBJECTSTATE:
+				int object_id = message.getInt();
+				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
+				/** get the six object-states: x,y,mx,my,width,height */
+				double[] object_state = getRoom().getObjectState(objCode, this, object_id);
+				getSession().send(ServerMessages.sendObjectState(objCode, object_id, object_state));
+				break;
+			case INITENTITIES:
+				Entity[] entityArray = getRoom().getEntities(this);
+				getSession().send(ServerMessages.sendEntities(entityArray));
+				break;
+			case INITSPACES:
+				Space[] spaceArray = getRoom().getSpaces(this);
+				getSession().send(ServerMessages.sendSpaces(spaceArray));
+				break;
+//				OBJECTCODE objInitCode = OBJECTCODE.values()[message.getInt()];
+//				/** get the six object-states: x,y,mx,my,width,height */
+//				if (objInitCode == OBJECTCODE.ENTITY) {
+//					Entity[] entityArray = getRoom().getEntities(this);
+//					getSession().send(ServerMessages.sendEntities(entityArray));
+//				} else if (objInitCode == OBJECTCODE.SPACE) {
+//					Space[] spaceArray = getRoom().getSpaces(this);
+//					getSession().send(ServerMessages.sendSpaces(spaceArray));
+//				}
+				
+//				logger.log(Level.INFO,
+//		                "Ids: {0} and {1}",
+//		                new Object[] {ids[0], ids[1]}
+//		            );
+//				break;
+//			case OBJECTNAME:
+//				int objectNameId = message.getInt();
+//				OBJECTCODE objCodeName = OBJECTCODE.values()[message.getInt()];
+//				/** get the six object-states: x,y,mx,my,width,height */
+//				String objectName = getRoom().getObjectName(objCodeName, this, objectNameId);
+//				getSession().send(ServerMessages.sendObjectName(objCodeName, objectNameId, objectName));
+//				break;
+			case RESPAWN:
+	//		    int respawnId = packet.getInt();
+	//		    float respawnX = packet.getFloat();
+	//		    float respawnY = packet.getFloat();
+	//		    logger.log(Level.FINEST, "Processing {0} packet : {1}, {2}, {3}",
+	//		               new Object[]{code, respawnId, respawnX, respawnY});
+	//		    unit.respawn(respawnId,
+	//		                 respawnX,
+	//		                 respawnY);
+			    break;
+			case CHAT:
+	//		    int sourceID = message.getInt();
+	//		    byte[] messageBytes = new byte[message.getInt()];
+	//		    message.get(messageBytes);
+	//		    String strMessage = new String(messageBytes);
+	//		    logger.log(Level.FINEST, "Processing {0} packet : {1}, {2}",
+	//		               new Object[]{opCode, sourceID, strMessage});
+	//		    unit.chatMessage(sourceID,
+	//		                     strMessage);
+				break;
+			default:
+			    //divert to common parser
+	//		    this.parseCommonPacket(opCode, message);
+				;
+			}
+	}
 
     /** {@inheritDoc} */
     public void disconnected(boolean graceful) {
@@ -284,4 +393,39 @@ public class WorldPlayer
     protected static int decodeInteger(ByteBuffer message) {
         return message.getInt();
     }
+    
+    /**
+     * Get the OPCODE from the packet
+     * @param packet
+     * @return
+     */
+    private OPCODE getOpCode(ByteBuffer packet) 
+    {
+        byte opbyte = packet.get();
+        if ((opbyte < 0) || (opbyte > OPCODE.values().length - 1)) {
+            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        OPCODE code = OPCODE.values()[opbyte];
+        
+        return code;
+    }
+    
+//    /**
+//     * Get the OPCODE from the packet
+//     * @param packet
+//     * @return
+//     */
+//    private OBJECTCODE getObjectCode(ByteBuffer packet) 
+//    {
+//       // byte opbyte = packet.get();
+//        byte objbyte = packet.get(1);
+//        if ((objbyte < 0) || (objbyte > OBJECTCODE.values().length - 1)) {
+//            logger.severe("Unknown op value: " + objbyte);
+//            return null;
+//        }
+//        OBJECTCODE code = OBJECTCODE.values()[objbyte];
+//        
+//        return code;
+//    }
 }

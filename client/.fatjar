@@ -1,0 +1,14 @@
+#Fat Jar Configuration File
+#Fri Sep 07 15:42:08 CEST 2012
+onejar.license.required=true
+manifest.classpath=
+manifest.removesigners=true
+onejar.checkbox=false
+jarname=rd08_client_fat.jar
+manifest.mergeall=true
+manifest.mainclass=de.svenheins.main.GUI
+manifest.file=<createnew>
+jarname.isextern=false
+onejar.expand=
+excludes=
+includes=

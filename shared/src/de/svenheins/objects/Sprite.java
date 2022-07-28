@@ -1,20 +1,22 @@
 package de.svenheins.objects;
 
- import java.awt.Image;
+import java.awt.image.BufferedImage;
+
+// import java.awt.Image;
 
 public class Sprite {
 
-	private Image img;
+	private BufferedImage img;
 	
-	public Sprite(Image img){
+	public Sprite(BufferedImage img){
 		this.img = img;
 	}
 
-	public Image getImage(){
+	public BufferedImage getImage(){
 		return img;
 	}
 	
-	public void setImg(Image img) {
+	public void setImg(BufferedImage img) {
 		this.img = img;
 	}
 	

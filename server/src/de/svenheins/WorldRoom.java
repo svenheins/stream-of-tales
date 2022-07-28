@@ -44,16 +44,23 @@ import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.SpriteManager;
+import de.svenheins.managers.TileSetManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
 import de.svenheins.objects.ServerAgentEntrepreneur;
 import de.svenheins.objects.ServerEntity;
+import de.svenheins.objects.ServerPlayer;
 import de.svenheins.objects.ServerRegion;
 import de.svenheins.objects.ServerSpace;
+import de.svenheins.objects.ServerSprite;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.Sprite;
+import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldObject;
 
 /**
@@ -92,6 +99,9 @@ public class WorldRoom extends WorldObject
     private final HashMap<BigInteger, ManagedReference<WorldPlayer>> players =
         new HashMap<BigInteger, ManagedReference<WorldPlayer>>();
     
+    /** The set of corresponding player-entities in this room. */
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerPlayer>>> serverPlayers;// = new HashMap<BigInteger, ManagedReference<ServerPlayer>>();
+    
 
     private long duration, last; 
 	private long millis, frames;
@@ -114,6 +124,9 @@ public class WorldRoom extends WorldObject
         DataManager dm = AppContext.getDataManager();
         ScalableHashMap<BigInteger, ManagedReference<ServerEntity>> tempEntities = new ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>();
         entities = dm.createReference(tempEntities);
+        
+        ScalableHashMap<String, ManagedReference<ServerPlayer>> tempPlayers = new ScalableHashMap<String, ManagedReference<ServerPlayer>>();
+        serverPlayers = dm.createReference(tempPlayers);
     }
 
     /**
@@ -159,6 +172,26 @@ public class WorldRoom extends WorldObject
     }
     
     /**
+     * Adds an serverPlayer to this room.
+     * 
+     * @param add serverPlayer to this room.
+     * @return {@code true} if the item was added to the room
+     */
+    public void addServerPlayer(ServerPlayer serverPlayer, String playerName, BigInteger playerID) {
+    	DataManager dataManager = AppContext.getDataManager();
+        dataManager.markForUpdate(this);
+        
+        ManagedReference<ServerPlayer> refPlayer = dataManager.createReference(serverPlayer);
+//        BigInteger playerID = dataManager.getObjectId(serverPlayer);
+        refPlayer.getForUpdate().setId(playerID);
+    	logger.log(Level.INFO, "ServerPlayer {0} placed in {1}",
+                    new Object[] { serverPlayer.getName(), this });
+	        
+        serverPlayer.setRoom(this);
+        serverPlayers.get().put(playerName,refPlayer);
+    }
+    
+    /**
      * Edits an entity in this room.
      * 
      * @param id: entity to edit
@@ -170,8 +203,8 @@ public class WorldRoom extends WorldObject
     	   entity.setX(state[0]);
     	   entity.setY(state[1]);
     	   entity.setMovement(state[2], state[3]);
-    	   entity.setHeight(state[4]);
-    	   entity.setWidth(state[5]);
+//    	   entity.setHeight(state[4]);
+//    	   entity.setWidth(state[5]);
     	   //entities.put(id, entity);
     	   return true;
        } else {
@@ -230,8 +263,8 @@ public class WorldRoom extends WorldObject
 //    	   space.setY(state[1]);
     	   space.setAllXY(state[0], state[1]);
     	   space.setMovement(state[2], state[3]);
-    	   space.setHeight(state[4]);
-    	   space.setWidth(state[5]);
+//    	   space.setHeight(state[4]);
+//    	   space.setWidth(state[5]);
     	   //entities.put(id, entity);
     	   return true;
        } else {
@@ -255,7 +288,7 @@ public class WorldRoom extends WorldObject
     	   space.setRGB(rgb);
     	   space.setTrans(trans);
     	   if (filled == 0) space.setFilled(false); else space.setFilled(true);
-    	   space.setScale(scale);
+    	   space.scale(scale);
     	   space.setArea(area);
     	   //entities.put(id, entity);
     	   return true;
@@ -283,8 +316,40 @@ public class WorldRoom extends WorldObject
 	        refPlayer.getForUpdate().setId(playerID);
 	        
 	        players.put(refPlayer.getId(), refPlayer);
+//        }       
+	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
 	        
-	        Entity playerEntity = new Entity("ship.png", playerID, player.getX(), player.getY(), player.getMX(), player.getMY());
+	        PlayerEntity playerEntity = null;
+	        if (!serverPlayers.get().containsKey(playerName)) {
+		        String serverSpriteString = "ship.png";
+		        Sprite sprite = SpriteManager.manager.getSprite(serverSpriteString);
+		        ServerSprite s_sprite = new ServerSprite(serverSpriteString, sprite.getHeight(), sprite.getWidth());
+		        ServerPlayer s_player;
+		       	s_player = new ServerPlayer(s_sprite, refPlayer.getId(), 0, 0, 0, 0);
+		       	s_player.setName(playerName);
+		       	s_player.setTileSetPathName("tilesets/players/standardShip.png");
+		       	s_player.setTileSetName("shipTileName");
+		        this.addServerPlayer(s_player, playerName, refPlayer.getId());
+		        
+		        TileSet tile = TileSetManager.manager.getTileSet(s_player.getTileSetName());
+		        playerEntity = new PlayerEntity(tile, playerName, player.getId(), player.getX(), player.getY(), GameStates.animationDelay);
+	        } else {
+	        	logger.log(Level.INFO, "{0} with ID {1} exists already in room {2}",
+	                    new Object[] { playerName, refPlayer.getId(), this });
+	        	ServerPlayer s_player = serverPlayers.get().get(playerName).get();
+	        	s_player.setId(refPlayer.getId());
+
+	        	TileSet tile = TileSetManager.manager.getTileSet(s_player.getTileSetName());
+		        playerEntity = new PlayerEntity(tile, playerName, s_player.getId(), s_player.getX(), s_player.getY(), GameStates.animationDelay);
+//		        System.out.println(s_player.getX());
+	        }
+//	        ServerPlayer serverPlayer = new ServerPlayer(sprite, playerID, millis, last, frames, duration)
+//	        this.addServerPlayer(serverPlayer, refPlayer.getId());
+	        
+	        
+	        
+//	        System.out.println("playerID at add: "+player.getId());
+//	        Entity playerEntity = new Entity("ship.png", playerID, player.getX(), player.getY(), player.getMX(), player.getMY());
 	        
 	        if (PlayerManager.add(playerEntity)) {
 	        	logger.log(Level.INFO, "{0} is added to the PlayerManager",
@@ -294,7 +359,7 @@ public class WorldRoom extends WorldObject
 	        	logger.log(Level.INFO, "{0} is NOT added to the PlayerManager",
 	                    new Object[] { player});
 	        }
-	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
+	        
 	        if (ServerTextureManager.manager.containsPlayer(playerName)) {
 	        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
 	        	ServerTextureManager.manager.removePlayer(playerName);
@@ -315,15 +380,53 @@ public class WorldRoom extends WorldObject
     	   player.setX(state[0]);
     	   player.setY(state[1]);
     	   player.setMovement(state[2], state[3]);
-    	   player.setHeight(state[4]);
-    	   player.setWidth(state[5]);
+//    	   player.setHeight(state[4]);
+//    	   player.setWidth(state[5]);
     	   
     	   /** PlayerManager update */
     	   PlayerManager.get(id).setX(state[0]);
     	   PlayerManager.get(id).setY(state[1]);
     	   PlayerManager.get(id).setMovement(state[2], state[3]);
-    	   PlayerManager.get(id).setHeight(state[4]);
-    	   PlayerManager.get(id).setWidth(state[5]);
+    	   
+    	   String playerName = PlayerManager.get(id).getName();
+    	   /** ServerPlayers update */
+    	   ServerPlayer changePlayer = serverPlayers.get().get(playerName).getForUpdate();
+    	   changePlayer.setX(state[0]);
+    	   changePlayer.setY(state[1]);
+    	   changePlayer.setMovement(state[2], state[3]);
+//    	   System.out.println(state[0]);
+//    	   PlayerManager.get(id).setHeight(state[4]);
+//    	   PlayerManager.get(id).setWidth(state[5]);
+    	   //entities.put(id, entity);
+    	   return true;
+       } else {
+    	   return false;
+       }
+    	   
+    }
+    
+    /**
+     * Edits an entity in this room.
+     * 
+     * @param id: entity to edit
+     * @return {@code true} if the entity was edited with success
+     */
+    public boolean editPlayerAddons(BigInteger playerId, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+       if ( serverPlayers.get().containsKey(playerName)) {
+    	   /** ServerPlayers update */
+    	   ServerPlayer changePlayer = serverPlayers.get().get(playerName).getForUpdate();
+    	   changePlayer.setId(playerId);
+    	   changePlayer.setTileSetName(tileName);
+    	   changePlayer.setTileSetPathName(tilePathName);
+    	   changePlayer.setWidth(tileWidth);
+    	   changePlayer.setHeight(tileHeight);
+    	   changePlayer.setCountry(country);
+    	   changePlayer.setGroupName(groupName);
+    	   changePlayer.setExperience(experience);
+//    	   changePlayer.setMovement(state[2], state[3]);
+//    	   System.out.println(state[0]);
+//    	   PlayerManager.get(id).setHeight(state[4]);
+//    	   PlayerManager.get(id).setWidth(state[5]);
     	   //entities.put(id, entity);
     	   return true;
        } else {
@@ -362,6 +465,10 @@ public class WorldRoom extends WorldObject
         }
     }
 
+    public void removeAllPlayers() {
+    	players.clear();
+    	PlayerManager.emptyAll();
+    }
 
     /**
      * Returns a list of players in this room excluding the given
@@ -401,6 +508,24 @@ public class WorldRoom extends WorldObject
 //			ServerSpace s_space = space.get();
 			realSpace = SpaceManager.get(SpaceManager.idList.get(i));
 			objectList[objectCounter] = realSpace;
+			objectCounter++;
+		}
+    	return objectList;    	
+    }
+    
+    /** return Spaces*/
+    public PlayerEntity[] getPlayers(WorldPlayer worldPlayer, int begin, int end) {
+    	PlayerEntity[] objectList = new PlayerEntity[end-begin];
+    	int objectCounter = 0;
+    	PlayerEntity realPlayer;
+    	/** for each entity add the corresponding id to the intList */
+    	for (int i = begin; i<end; i++) {
+//    		PlayerManager.updatePlayer(this.getId(), objectX, objectY, objectMX, objectMY);
+//			getRoom().editPlayer(this.getId(), new float[]{objectX, objectY, objectMX, objectMY});
+    		realPlayer = PlayerManager.get(PlayerManager.idList.get(i));
+//    		realPlayer.setId(serverPlayers.get().get(realPlayer.getName()).getId());
+//    		System.out.println("ID: "+PlayerManager.idList.get(i)+" idlist-length = "+PlayerManager.idList.size());
+			objectList[objectCounter] = realPlayer;
 			objectCounter++;
 		}
     	return objectList;    	
@@ -513,6 +638,7 @@ public class WorldRoom extends WorldObject
 	    			// get the six object-states: x,y,mx,my,width,height
 	    			float[] object_state = new float[]{entity.get().getX(), entity.get().getY(),entity.get().getHorizontalMovement(),entity.get().getVerticalMovement(), entity.get().getWidth(), entity.get().getHeight()};
 	    			players.get(playerID).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.ENTITY, object_id, object_state));
+	    			
     			}
 			}
 //    		for (ManagedReference<WorldPlayer> player : players) {
@@ -561,6 +687,10 @@ public class WorldRoom extends WorldObject
     
     public int getCountSpaces() {
     	return this.spaces.size();
+    }
+    
+    public int getCountPlayers() {
+    	return this.players.size();
     }
 
 	public void updateSendPlayers(int index, int endIndex) {
@@ -651,6 +781,15 @@ public class WorldRoom extends WorldObject
 			}
 		}
 	}
+	
+	/** send init process if we got new spaces */
+	public void sendEditPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+		for(BigInteger playerIDto: players.keySet()) {
+			if (players.get(playerIDto).get().isReady() && playerIDto!= id) {
+				players.get(playerIDto).get().sendEditPlayerAddons(id, playerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+			}
+		}
+	}
 
 	public BigInteger getLastAddedSpaceID() {
 		return lastAddedSpaceID;
@@ -676,5 +815,9 @@ public class WorldRoom extends WorldObject
 	
 	public void setHasReceivedNewSpace(boolean hasReceivedNewSpace) {
 		this.hasReceivedNewSpace = hasReceivedNewSpace;
+	}
+	
+	public ServerPlayer getServerPlayer(String name) {
+		return serverPlayers.get().get(name).get();
 	}
 }

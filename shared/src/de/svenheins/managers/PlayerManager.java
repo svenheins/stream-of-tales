@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import de.svenheins.main.GameStates;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.PlayerEntity;
+import de.svenheins.objects.TileSet;
 
 
 public class PlayerManager{
-	public static HashMap<BigInteger, Entity> playerList = new HashMap<BigInteger, Entity>();
+	public static HashMap<BigInteger, PlayerEntity> playerList = new HashMap<BigInteger, PlayerEntity>();
 	
 	public static List<BigInteger> idList = new ArrayList<BigInteger>();
 	
@@ -27,19 +30,22 @@ public class PlayerManager{
 //		playerList.remove(entity);
 //	}
 	
-	public static boolean add(Entity entity){
-		if (playerList.containsKey(entity.getId())) {
+	public static boolean add(PlayerEntity entity){
+		if (playerList.containsKey(entity.getId()) ) {
+//			if (playerList.containsKey(entity.getId()) || entity.getId().signum()==-1 ) {	
 			return false;
 		} else {
 			playerList.put(entity.getId(), entity);
 			idList.add(entity.getId());
+//			System.out.println("PlayerManager.add ID: "+entity.getId());
+			
 			return true;
 		}
 	}
 	
-	public static Entity get(BigInteger index){
+	public static PlayerEntity get(BigInteger index){
 		try {
-			return (Entity) playerList.get(index);
+			return (PlayerEntity) playerList.get(index);
 //			return (Entity) entityList.values().toArray()[index];
 		}
 		catch(IndexOutOfBoundsException e){
@@ -52,20 +58,21 @@ public class PlayerManager{
 	public static void updatePlayer(BigInteger objectId, float objectX,
 			float objectY, float objectMX, float objectMY) {
 		if (PlayerManager.playerList.containsKey(objectId)) {
-			Entity entity = PlayerManager.playerList.get(objectId);
+			PlayerEntity entity = PlayerManager.playerList.get(objectId);
 			if (entity != null) {
 				entity.setX(objectX);
 				entity.setY(objectY);
 				entity.setMovement(objectMX, objectMY);
 				PlayerManager.playerList.put(objectId, entity);
 			}
-		} else
-		{
-			PlayerManager.add(new Entity("ship.png", objectId, objectX, objectY, objectMX, objectMY));
-		}
+		} 
+//		else
+//		{
+//			PlayerManager.add(new Entity("ship.png", objectId, objectX, objectY, objectMX, objectMY));
+//		}
 	}
 	
-	public static boolean overwrite(Entity entity){
+	public static boolean overwrite(PlayerEntity entity){
 		if (!playerList.containsKey(entity.getId())) {
 			/** do nothing if key is not yet set*/
 			return false;
@@ -76,28 +83,60 @@ public class PlayerManager{
 		}
 	}
 	
+	/** update the Entity with the ID objectId */
+	public static void updatePlayerAddons(BigInteger objectId, String playerName, String tileName, int width, int height, String country, String groupName, int experience) {
+		if (PlayerManager.playerList.containsKey(objectId)) {
+			PlayerEntity entity = PlayerManager.playerList.get(objectId);
+			if (entity != null) {
+				TileSet tileSet = TileSetManager.manager.getTileSet(tileName);
+//		    	System.out.println("got tileset: "+tileName_add + " from player "+name_player_add);
+		    	PlayerEntity playerEntity = new PlayerEntity(tileSet, playerName, objectId, 0, 0, GameStates.animationDelay);
+//		    	playerEntity.setTileSetName(tileName_add);
+//		    	playerEntity.setTileSetPathName(tilePathName);
+		    	playerEntity.setWidth(width);
+		    	playerEntity.setHeight(height);
+		    	playerEntity.setCountry(country);
+		    	playerEntity.setGroupName(groupName);
+		    	playerEntity.setExperience(experience);
+//		    	PlayerManager.overwrite(playerEntity_overwrite);
+				
+		    	System.out.println("updated player");
+				
+				PlayerManager.playerList.put(objectId, playerEntity);
+			}
+		} 
+		else {
+			System.out.println("didnt find it!");
+		}
+//		else
+//		{
+//			PlayerManager.add(new Entity("ship.png", objectId, objectX, objectY, objectMX, objectMY));
+//		}
+	}
+	
 	public static int size(){
 		return playerList.size();
 	}
 	
-	public static boolean contains(Entity entity) {
+	public static boolean contains(PlayerEntity entity) {
 		return playerList.containsValue(entity);
 	}
 	
 	
 	/** compare the idList with a given int[] and return the difference */
-	public static void createPlayersFromArray(Entity[] entityArray) {
+	public static void createPlayersFromArray(PlayerEntity[] entityArray) {
 		if(entityArray.length > 0) {
 			for (int i =0; i< entityArray.length; i++) {
 				if (playerList.containsKey(entityArray[i].getId()) ) System.out.println("Doppelte ID: " + entityArray[i].getId());
 				playerList.put(entityArray[i].getId(), entityArray[i]);
 				idList.add(entityArray[i].getId());
+				System.out.println("IDs: " + entityArray[i].getId());
 			}
 		}
 	}
 	
 	public static void emptyAll() {
-		playerList = new HashMap<BigInteger, Entity>();
+		playerList = new HashMap<BigInteger, PlayerEntity>();
 //		sortedEntityList = new ArrayList<Entity>();
 		idList = new ArrayList<BigInteger>();
 	}

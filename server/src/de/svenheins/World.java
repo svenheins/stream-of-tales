@@ -52,6 +52,7 @@ import com.sun.sgs.app.TaskManager;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
@@ -67,6 +68,7 @@ import de.svenheins.objects.ServerSpace;
 import de.svenheins.objects.ServerSprite;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.Sprite;
+import de.svenheins.objects.TileSet;
 
 /**
  * World-Object
@@ -112,6 +114,8 @@ public class World
     static final String CHANNEL_1_NAME = "Foo";
     /** The name of the second channel {@value #CHANNEL_2_NAME} */
     static final String CHANNEL_2_NAME = "Bar";
+    /** The name of the global chat channel {@value #CHANNEL_CHAT_GLOBAL} */
+    static final String CHANNEL_CHAT_GLOBAL = "GLOBAL CHAT";
  
     /** 
      * The first {@link Channel}.  The second channel is looked up
@@ -156,6 +160,8 @@ public class World
         
         this.initStartIndex = 0;
         
+        PlayerManager.emptyAll();
+        
 //        this.initEndIndex = this.initStartIndex + this.initPackageSize;
         
 //        /** Display Resolution */
@@ -180,9 +186,14 @@ public class World
         channelMgr.createChannel(CHANNEL_2_NAME, 
                                  new WorldChannelListener(), 
                                  Delivery.RELIABLE);
+        channelMgr.createChannel(CHANNEL_CHAT_GLOBAL, 
+                new WorldChannelListener(), 
+                Delivery.RELIABLE);
     	
     	logger.info("Initializing World");
 
+    	initializeTileSetManager();
+    	
         // Create the Room
         WorldRoom room = new WorldRoom("Plain Room", "a nondescript room", 100.222f, 300.333f);
         
@@ -215,7 +226,7 @@ public class World
         Sprite it_spriteAgent = SpriteManager.manager.getSprite(iterativSpriteStringAgent);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
-        int numAgentsEntrepreneur = 10;
+        int numAgentsEntrepreneur = 0;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgent.getWidth());
@@ -238,7 +249,7 @@ public class World
         Sprite it_spriteAgentEmployee = SpriteManager.manager.getSprite(iterativSpriteStringAgentEmployee);
         ServerSprite it_s_spriteAgentEmployee = new ServerSprite(iterativSpriteStringAgentEmployee, it_spriteAgentEmployee.getHeight(), it_spriteAgentEmployee.getWidth());
         ServerEntity it_s_entityAgentEmployee;
-        int numAgentsEmployee = 5;
+        int numAgentsEmployee = 0;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEmployee; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgentEmployee.getWidth());
@@ -594,9 +605,13 @@ public class World
 	        	
 	        	/** if everything is ready */
 	        	if (SpaceManager.size() == spacesArray.size()) {
-	        		logger.log(Level.INFO, "### EVERYTHING IS INITIALIZED ###");
-	        		/** init the external images */
+	        		/** init the external images and so on */
 	        	    ServerTextureManager.manager.initExternalImages(GameStates.externalImagesPath);
+	        	    initializeTileSetManager();
+	        	    PlayerManager.emptyAll();
+	        	    roomRef.get().removeAllPlayers();
+	        	    /** DONE */
+	        	    logger.log(Level.INFO, "### EVERYTHING IS INITIALIZED ###");
 	        	}
 //	        	logger.log(Level.INFO, "Initializing SpaceManager");
 //	        	for (ManagedReference<ServerSpace> space: roomRef.get().getSpaces()) {
@@ -777,6 +792,20 @@ public class World
 			  
 		}
 		
+		
+		public void initializeTileSetManager() {
+			// just add all TileSets
+			TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "shipTileName", 50, 50);
+			TileSet tileSet2 = new TileSet("tilesets/players/standardShip.png", "shipTileName2", 50, 50);
+			TileSet tileSet_green = new TileSet("tilesets/players/standardShip_green.png", "shipTileName_green", 50, 50);
+			TileSet tileSet_yellow = new TileSet("tilesets/players/standardShip_yellow.png", "shipTileName_yellow", 50, 50);
+			TileSet tileSet_blue = new TileSet("tilesets/players/standardShip_blue.png", "shipTileName_blue", 50, 50);
+			Entity playerEntity2 = new Entity(tileSet2, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new Entity(tileSet, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new Entity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new Entity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new Entity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+		}
 		
 	 
 }

@@ -158,7 +158,7 @@ public class SpaceManager{
     	   space.setRGB(rgb);
     	   space.setTrans(trans);
     	   if (filled == 0) space.setFilled(false); else space.setFilled(true);
-    	   space.setScale(scale);
+    	   space.scale(scale);
     	   space.setArea(area);
     	   //entities.put(id, entity);
     	   return true;

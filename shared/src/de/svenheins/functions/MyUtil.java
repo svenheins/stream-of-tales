@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -98,4 +100,19 @@ public class MyUtil {
 		return fileList;
 	}
 
+	public static ArrayList<String> listFilesForFolder(URL url) {
+		ArrayList<String> fileList = MyUtil.listFilesForFolder(MyUtil.urlToFile(url));
+		return fileList;
+	}
+
+	static File urlToFile(URL url) {
+        File file = null;
+        try {
+          file = new File(url.toURI());
+        } catch(URISyntaxException e) {
+          file = new File(url.getPath());
+        }
+//        System.out.println(file);
+        return file;
+    } 
 }

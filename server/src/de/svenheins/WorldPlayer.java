@@ -47,14 +47,18 @@ import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TileSetManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.PlayerEntity;
+import de.svenheins.objects.ServerPlayer;
 import de.svenheins.objects.ServerRegion;
 import de.svenheins.objects.ServerSpace;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldObject;
 
 /**
@@ -104,8 +108,9 @@ public class WorldPlayer
      */
     public static WorldPlayer loggedIn(ClientSession session, ManagedReference<Channel> channelRef) {
         String playerBinding = PLAYER_BIND_PREFIX + session.getName();
-        BigInteger id = BigInteger.valueOf(playerBinding.hashCode());
-
+//        BigInteger id = BigInteger.valueOf(playerBinding.hashCode());
+//        logger.log(Level.INFO, "New ID created: {0}", new Object[]{id});
+        
         // try to find player object, if non existent then create
         DataManager dataMgr = AppContext.getDataManager();
         WorldPlayer player;
@@ -120,13 +125,18 @@ public class WorldPlayer
             dataMgr.setBinding(playerBinding, player);
         }
         player.setSession(session, channelRef);
-        player.setId(id);
-        Entity playerEntity = new Entity("ship.png", player.getId(), player.getX(), player.getY(), player.getHorizontalMovement(), player.getVerticalMovement());
-        if (PlayerManager.add(playerEntity)) {
-	        logger.log(Level.INFO, "New player created: {0}", player.getName());
-	        logger.log(Level.INFO, "# of players: "+PlayerManager.size());
-        }
+//        player.setId(id);
+        
         String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
+//        TileSet tile = TileSetManager.manager.getTileSet("ship.png");
+////        Entity playerEntity = new Entity(tile, playerName, player.getId(), player.getX(), player.getY(), 300);
+//        Entity playerEntity = new Entity(tile, playerName, id, player.getX(), player.getY(), 300);
+//        if (PlayerManager.add(playerEntity)) {
+//	        logger.log(Level.INFO, "New player created: {0}, ID = {1}", new Object[]{player.getName(), player.getId()});
+//	        logger.log(Level.INFO, "# of players: "+PlayerManager.size());
+//	        logger.log(Level.INFO, "TileSet-Name "+PlayerManager.get(id).getTileSet().getName());
+//        }
+        
         if (ServerTextureManager.manager.containsPlayer(playerName)) {
         	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
         	ServerTextureManager.manager.removePlayer(playerName);
@@ -183,8 +193,20 @@ public class WorldPlayer
             this.channelRef.get().join(session);
             
             // We look up the second channel by name.
-            Channel channel2 = channelMgr.getChannel(World.CHANNEL_2_NAME);
-            channel2.join(session);
+            String playerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
+            String channelAdd = playerName.substring(0,1);
+            
+            if (channelAdd.toLowerCase().equals("u")) {
+            	logger.log(Level.INFO,
+                        "Set extra channel for {0} to {1}",
+                        new Object[] { this, World.CHANNEL_2_NAME });
+	            Channel channel2 = channelMgr.getChannel(World.CHANNEL_2_NAME);
+	            channel2.join(session);
+            }
+            
+            /** add global chat channel */
+            Channel channelChatGlobal = channelMgr.getChannel(World.CHANNEL_CHAT_GLOBAL);
+            channelChatGlobal.join(session);
            
         }
         
@@ -296,6 +318,49 @@ public class WorldPlayer
 				this.initSpaces();
 				break;
 
+			case INITPLAYERS:
+				this.initPlayers();
+				break;
+				
+			case INITME:
+				this.initMe();
+				break; 
+			case LOGOUT:
+				this.disconnected(true);
+				break;
+			case PLAYERDATA:
+				BigInteger playerId = BigInteger.valueOf(message.getLong());
+				this.sendPlayerData(playerId);
+				break;
+			case EDIT_PLAYER_ADDONS:
+				/** ID */
+				BigInteger objectId_player = BigInteger.valueOf(message.getLong()); // 8
+		        
+				byte[] nameBytes_player = new byte[message.getInt()];
+    			message.get(nameBytes_player);
+    			String name_player = new String(nameBytes_player); // name
+    			byte[] tileNameBytes_player = new byte[message.getInt()];
+    			message.get(tileNameBytes_player);
+    			String tileName = new String(tileNameBytes_player); // name
+    			byte[] tilePathNameBytes_player = new byte[message.getInt()];
+    			message.get(tilePathNameBytes_player);
+    			String tilePathName = new String(tilePathNameBytes_player); // name
+		    	int tileWidth = message.getInt(); // 4 
+		    	int tileHeight = message.getInt(); // 4 
+		    	byte[] countryBytes = new byte[message.getInt()];
+    			message.get(countryBytes);
+    			String country = new String(countryBytes); // name
+    			byte[] groupNameBytes = new byte[message.getInt()];
+    			message.get(groupNameBytes);
+    			String groupName = new String(groupNameBytes); // name
+		    	int experience = message.getInt(); // 4
+		    	
+		    	PlayerManager.updatePlayerAddons(objectId_player, thisPlayerName, tileName, tileWidth, tileHeight, country, groupName, experience);
+		    	this.getRoom().editPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+		    	this.getRoom().sendEditPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+		    	
+		    	
+				break;
 			case EDIT_OBJECT:
 				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
 //				byte[] bigByte = new byte[message.getInt()];
@@ -307,20 +372,20 @@ public class WorldPlayer
 	    		float objectY = message.getFloat();
 	    		float objectMX = message.getFloat();
 	    		float objectMY = message.getFloat();
-	    		float objectWidth = message.getFloat();
-	    		float objectHeight = message.getFloat();
+//	    		float objectWidth = message.getFloat();
+//	    		float objectHeight = message.getFloat();
 	    		// Update the entities/ spaces of the WorldRoom
 	    		if (objCode == OBJECTCODE.SPACE) {
 	    			SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
-	    			getRoom().editSpace(objectId, new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});
+	    			getRoom().editSpace(objectId, new float[]{objectX, objectY, objectMX, objectMY});
 	    		}
 	    		if (objCode == OBJECTCODE.ENTITY) {
 	    			EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
-	    			getRoom().editEntity(objectId, new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});
+	    			getRoom().editEntity(objectId, new float[]{objectX, objectY, objectMX, objectMY});
 	    		}
 	    		if (objCode == OBJECTCODE.PLAYER) {
 	    			PlayerManager.updatePlayer(this.getId(), objectX, objectY, objectMX, objectMY);
-	    			getRoom().editPlayer(this.getId(), new float[]{objectX, objectY, objectMX, objectMY, objectWidth, objectHeight});
+	    			getRoom().editPlayer(this.getId(), new float[]{objectX, objectY, objectMX, objectMY});
 	    		}
 	    		
 				break;
@@ -330,7 +395,7 @@ public class WorldPlayer
 				OBJECTCODE objCodeUpload = OBJECTCODE.values()[message.getInt()];
 				if(objCodeUpload == OBJECTCODE.SPACE) {
 					BigInteger id = BigInteger.valueOf(message.getLong());
-					System.out.println("got ID: "+id);
+//					System.out.println("got ID: "+id);
 					byte[] nameBytes = new byte[message.getInt()];
 	    			message.get(nameBytes);
 	    			String name = new String(nameBytes); // name
@@ -361,7 +426,7 @@ public class WorldPlayer
 		            Polygon addPolygon;
 		    		for (int i = 0; i < numberOfPolygons; i++) {
 		    			int numberOfActualPolygon = message.getInt();
-		    			System.out.println("number of edges: "+ numberOfActualPolygon);
+//		    			System.out.println("number of edges: "+ numberOfActualPolygon);
 		    			int[] xpoints = new int[numberOfActualPolygon];
 		    			int[] ypoints = new int[numberOfActualPolygon];
 		    			for (int j = 0; j < numberOfActualPolygon; j++) {
@@ -460,65 +525,7 @@ public class WorldPlayer
 	    		getSession().send(ServerMessages.uploadTexture(textureName, oldPacket+1, ServerTextureManager.manager.getNumberOfPacketsUploadTexture(thisPlayerName) , imagePacket.length, imagePacket, getSession().getName()));
 	    		
 	    		break;
-//			case READY_FOR_NEXT_TEXTURE:
-//				if (this.isReadyForNextMessage()) {
-//					this.setReadyForNextMessage(false);
-//					
-//					byte[] oldTextureNameBytes = new byte[message.getInt()];
-//					message.get(oldTextureNameBytes);
-//					String oldTextureName = new String(oldTextureNameBytes); // name
-//					logger.log(Level.INFO, "getting message for texture {0}",
-//		    	            new Object[] { oldTextureName});
-//					
-//					/** only do this if this message was not yet processed */
-//					if(ServerTextureManager.manager.hasTextureToUpload(thisPlayerName, oldTextureName)) {
-//	//				if (ServerTextureManager.manager.getCountTextureForUpload(thisPlayerName)>0) {
-//			    		System.out.println("OK, Texture "+oldTextureName +" is ready, sending next one!");
-//			    		
-//			    		/** get next Texture and prepare it */		
-//			    		int remainingTextures = ServerTextureManager.manager.prepareNextTextureForUpload(thisPlayerName, oldTextureName);
-//			    		if (remainingTextures > 0) {
-//			    			logger.log(Level.INFO, "{0} textures for upload",
-//				    	            new Object[] { remainingTextures});
-//				    		/** send the next packet */
-//			    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
-//			    			logger.log(Level.INFO, "next one is: {0}",
-//				    	            new Object[] { nextTextureName});
-//		//	    			byte[] imagePacketNew = TextureManager.manager.getTexturePacket(0);
-//			    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
-//			    			
-//		//		    		getSession().send(ServerMessages.uploadTexture(nextTextureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacketNew.length, imagePacketNew, getSession().getName()));
-//			    		}
-////			    		this.setReadyForNextMessage(true);
-//					} else {
-//						logger.log(Level.INFO, "got an old packet!");
-//						/** try with next one */
-//				    		/** just send the next packet */
-//			    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
-//			    			logger.log(Level.INFO, "next one is: {0}",
-//				    	            new Object[] { nextTextureName});
-//		//	    			byte[] imagePacketNew = TextureManager.manager.getTexturePacket(0);
-//			    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
-//			    			
-//		//		    		getSession().send(ServerMessages.uploadTexture(nextTextureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacketNew.length, imagePacketNew, getSession().getName()));
-//			    		
-//					}
-////					} else {
-////						/** everything should be well prepared */
-////						int remainingTextures = ServerTextureManager.manager.getCountTextureForUpload(thisPlayerName);
-////						if (remainingTextures > 0) {
-////							logger.log(Level.INFO, "{0} textures for upload",
-////				    	            new Object[] { remainingTextures});
-////				    		/** send the next packet */
-////			    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
-////			    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
-////			    		}
-////						this.setReadyForNextMessage(true);
-////					}
-//				} else
-//					logger.log(Level.INFO, "not ready yet!");
-//	    		break;
-//	    		
+
 			case READY_FOR_NEXT_TEXTURE:
 				
 				sendAvailableTextures();
@@ -537,22 +544,13 @@ public class WorldPlayer
 		    			logger.log(Level.INFO, "missing texture: {0}",
 			    	            new Object[] { textureNames});
 		    		}
-	//	    		ArrayList<String> missingTextures = ClientTextureManager.manager.missingTextures(textureNames);
-	//	    		ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);
-	//		    	ServerTextureManager.manager.setTextureUploadList(thisPlayerName, textureNames);
+
 			    	String texture = textureNames.get(0);
 			    	if (!ServerTextureManager.manager.getUploadTextureName(thisPlayerName).equals(texture)) {
 			    		ServerTextureManager.manager.prepareTextureForUpload(thisPlayerName, texture);
 			    	}
-//			    	if (!ServerTextureManager.manager.getUploadTextureName(thisPlayerName).equals(texture)) {
+
 			    	getSession().send(ServerMessages.sendTextureStart(thisPlayerName, texture));
-//			    	}
-//			    	else {
-//			    		logger.log(Level.INFO, "got an old texture: {0}",
-//			    	            new Object[] { texture});
-//			    		this.setReadyForNextMessage(true);
-//			    		sendAvailableTextures();
-//			    	}
 				}
 
 				break;
@@ -604,26 +602,6 @@ public class WorldPlayer
 			}
 	}
 
-//    private void initTextures() {
-//    	ArrayList<String> externalTextures;
-//    	String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
-//    	if (ServerTextureManager.manager.getCountTextureForUpload(thisPlayerName)<=0) {
-//	    	externalTextures = ServerTextureManager.manager.listExternalImages(GameStates.externalImagesPath);
-//			ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);
-//	    	ServerTextureManager.manager.setTextureUploadList(thisPlayerName, externalTextures);
-//    	} else {
-//    		externalTextures = ServerTextureManager.manager.getTextureUploadList(thisPlayerName);
-//    	}
-//	//    	System.out.println(externalTextures.size());
-//    	if (externalTextures.size() >0) {
-//			/** get first texture and send it to the client */
-//			String texture = externalTextures.get(0);	
-//			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, texture));	
-//			setReadyForNextMessage(true);
-//			logger.log(Level.INFO, "first texture send");
-//    	}
-//    	
-//	}
 	
 	public void sendAvailableTextures() {
 		ArrayList<String> externalTextures;
@@ -647,6 +625,50 @@ public class WorldPlayer
 //								logger.log(Level.INFO, "packet send");
 		
 		}
+	}
+	
+	public void initPlayers() {
+    	int countPlayers = currentRoomRef.get().getCountPlayers();
+		PlayerEntity[] playerArray;
+		int end = 0;
+		for (int begin = 0; end<countPlayers; begin+=200) {
+			end = begin+200;
+			if (end> countPlayers) end = countPlayers;
+			playerArray = getRoom().getPlayers(this, begin, end);
+//								logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
+
+			getSession().send(ServerMessages.sendPlayers(playerArray));
+//								logger.log(Level.INFO, "packet send");
+		
+		}
+	}
+	
+	/** initialize the player himself */
+	public void initMe() {
+		String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
+		ServerPlayer s_player = getRoom().getServerPlayer(thisPlayerName);
+
+		BigInteger playerId = s_player.getId();
+		String tileName = s_player.getTileSetName();
+		String tilePathName = s_player.getTileSetPathName();
+		String groupName = s_player.getGroupName();
+		long firstServerLogin = s_player.getFirstServerLogin();
+		int experience = s_player.getExperience();
+		String country = s_player.getCountry();
+		
+		float x = s_player.getX();
+		float y = s_player.getY();
+		float mx = s_player.getMX();
+		float my = s_player.getMY();
+		
+        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my));
+
+	}
+	
+	public void sendPlayerData(BigInteger id) {
+		PlayerEntity[] playerArray = new PlayerEntity[1];
+		playerArray[0] = PlayerManager.get(id);
+		getSession().send(ServerMessages.sendPlayers(playerArray));
 	}
 	
 	/** start a download for a specific texture */
@@ -821,6 +843,11 @@ public class WorldPlayer
 	public void sendEditSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
 		// TODO Auto-generated method stub
 		getSession().send(ServerMessages.editSpaceAddons(id, textureName, rgb, trans, filled, scale, area));
+	}
+	
+	public void sendEditPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+		// TODO Auto-generated method stub
+		getSession().send(ServerMessages.editPlayerAddons(id, playerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience));
 	}
 	
 	public boolean isReadyForNextMessage() {

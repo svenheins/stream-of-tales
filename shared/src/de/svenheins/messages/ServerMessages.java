@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
+import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
 
@@ -196,6 +197,66 @@ public class ServerMessages extends Messages{
         return buffer;
     }
     
+    /** here we only send known spaces 
+     * those which are not yet known by clients should be handled separately
+     * */
+    public static ByteBuffer sendTextureStart(String name) {
+    	ByteBuffer buffer = null;
+    	TextureManager.manager.prepareTextureForUpload(name);
+    	byte[] byteTexture = TextureManager.manager.getTexturePacket(0);
+    	int lengthOfFirstPacket = byteTexture.length;
+    	int countPacketsOfWholeTexture = TextureManager.manager.getLengthOfUploadTexture();
+    	/** initialize bytes */
+		byte[] bytes = new byte[1 + 4 + name.length() + 4 + 4 + 4+ lengthOfFirstPacket ];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.SENDTEXTURE.ordinal()); 
+    	
+        /** put name of texture */
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // name.length
+    	/** put part = 0 of packet */
+    	buffer.putInt(0); // 4
+    	/** put max parts of packets */
+    	buffer.putInt(countPacketsOfWholeTexture); // 4
+        /** put length of texture byte */
+        buffer.putInt(lengthOfFirstPacket); // 4
+        /** put texture */
+        buffer.put(byteTexture); // image.length
+        
+    	buffer.flip();
+    		
+        return buffer;
+    }
+    
+    /** here we only send known spaces 
+     * those which are not yet known by clients should be handled separately
+     * */
+    public static ByteBuffer uploadTexture(String name, int packetId, int countPackets, int imageCountBytes, byte[] image, String playerName) {
+    	ByteBuffer buffer = null;
+    	int lengthOfPacket = image.length;
+    	int countPacketsOfWholeTexture = countPackets;
+    	/** initialize bytes */
+		byte[] bytes = new byte[1 + 4 + name.length() + 4 + 4 + 4+ lengthOfPacket ];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.SENDTEXTURE.ordinal()); 
+    	
+        /** put name of texture */
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // name.length
+    	/** put part = 0 of packet */
+    	buffer.putInt(packetId); // 4
+    	/** put max parts of packets */
+    	buffer.putInt(countPacketsOfWholeTexture); // 4
+        /** put length of texture byte */
+        buffer.putInt(lengthOfPacket); // 4
+        /** put texture */
+        buffer.put(image); // image.length
+        
+    	buffer.flip();
+    		
+        return buffer;
+    }
+    
     /** get object state */
     public static ByteBuffer sendDelete (OBJECTCODE objCode, BigInteger id) {
         byte[] bytes = new byte[1 + 4 + 8];
@@ -206,6 +267,20 @@ public class ServerMessages extends Messages{
         buffer.putInt(objCode.ordinal());
         
         buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** get object state */
+    public static ByteBuffer sendReadyForNextTexturePacket (String name, int oldPacketId) {
+        byte[] bytes = new byte[1 + 4 + name.length() + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.READY_FOR_NEXT_TEXTURE_PACKET.ordinal()); // 1
+        
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // name.length
+        buffer.putInt(oldPacketId); // 4
+        
         buffer.flip();
         return buffer;
     }

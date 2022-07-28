@@ -1,5 +1,10 @@
 package de.svenheins.functions;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -53,6 +58,43 @@ public class MyUtil {
 			default: ;
 		}
 		return retColor;
+	}
+	
+	/** copy a file */
+	public static void copyFile(File sourceFile, File destFile) throws IOException {
+	    if(!destFile.exists()) {
+	        destFile.createNewFile();
+	    }
+
+	    FileChannel source = null;
+	    FileChannel destination = null;
+
+	    try {
+	        source = new FileInputStream(sourceFile).getChannel();
+	        destination = new FileOutputStream(destFile).getChannel();
+	        destination.transferFrom(source, 0, source.size());
+	    }
+	    finally {
+	        if(source != null) {
+	            source.close();
+	        }
+	        if(destination != null) {
+	            destination.close();
+	        }
+	    }
+	}
+	
+	/** list all files in a directory */
+	public static ArrayList<String> listFilesForFolder(final File folder) {
+	    ArrayList<String> fileList = new ArrayList<String>();
+		for (final File fileEntry : folder.listFiles()) {
+	        if (fileEntry.isDirectory()) {
+	            listFilesForFolder(fileEntry);
+	        } else {
+	        	fileList.add(fileEntry.getName());
+	        }
+	    }
+		return fileList;
 	}
 
 }

@@ -7,9 +7,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import javax.swing.JButton;
 import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -25,6 +27,7 @@ import de.svenheins.animation.SpaceAnimation;
 import de.svenheins.animation.SpaceDisappear;
 
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.objects.Entity;
@@ -78,6 +81,19 @@ public class EditWindow {
             }
         });
         spacePanel.add(colorButton);
+                
+        JComboBox comboTexture = new JComboBox();
+        String[] sortedTextureList = TextureManager.manager.getTextureNames();
+        Arrays.sort(sortedTextureList);
+        for (int i =0; i < TextureManager.manager.getSize(); i++) {
+        	comboTexture.addItem(sortedTextureList[i]);
+        }
+        comboTexture.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					space.loadTexture((String) ((JComboBox) e.getSource()).getSelectedItem());
+				}
+		});
+        spacePanel.add(comboTexture);
         
         JButton saveButton = new JButton("Save Space");
         saveButton.addActionListener(new ActionListener() {

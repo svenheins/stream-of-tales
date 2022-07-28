@@ -12,8 +12,11 @@ import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TextureManager;
+import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
+import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
 
@@ -172,6 +175,53 @@ public class ClientMessageHandler {
 //			GamePanel.gp.setServerInitialized(true);
 			
     		break;
+    	case SENDTEXTURE:
+    		byte[] nameBytesTexture = new byte[packet.getInt()];
+			packet.get(nameBytesTexture);
+			String name_texture = new String(nameBytesTexture); // name
+			
+//			for (int i = 0; i< TextureManager.manager.getSize(); i++) {
+//				System.out.println("texture: "+ i + " is "+ TextureManager.manager.getTextureNames()[i]);
+//			}
+			
+			/** if not yet contained inside the manager and there is no actual texture to download */
+			if (!TextureManager.manager.contains(name_texture)) {
+				int packetIndex = packet.getInt();
+				int countPackets = packet.getInt();
+//				System.out.println("Got a new Texture: "+name_texture);
+				String playerName = name_texture.substring(0, name_texture.indexOf("_"));
+				/** init for the first packet */
+				if (packetIndex == 0 && TextureManager.manager.getDownloadTextureName().equals("")) {
+					TextureManager.manager.initDownload(name_texture,countPackets, playerName);
+				}
+				if (packetIndex == TextureManager.manager.getActualDownloadIndex() && name_texture.equals(TextureManager.manager.getDownloadTextureName())) {
+					System.out.println("got the right part of the texture!");
+					/** get the part of the texture */
+					int lengthOfPacket = packet.getInt();
+					byte[] image = new byte[lengthOfPacket];
+					packet.get(image);
+					
+					TextureManager.manager.getPartOfDownload(name_texture, packetIndex, image, playerName);
+					/** send OK, if we still nedd packets */
+					if (packetIndex < countPackets-1) {
+		    			/** send the "received!!"-message if there are textures remaining */
+		    			GameWindow.gw.send(ClientMessages.sendReadyForNextTexturePacket(GameWindow.gw.getPlayer(), packetIndex));
+		    		} else {
+		    			/** send "this one is complete, send next! */
+		    			System.out.println("next texture, please!");
+		    			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
+		    		}
+				} else {
+					System.out.println("got the WRONG part of the texture!");
+				}
+			} else {
+				System.out.println("texture is already there!");
+				/** send "this one is complete, send next! */
+    			System.out.println("next texture, please!");
+    			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
+			}
+    		
+    		break;
     	case OBJECTDELETE:
     		if (GamePanel.gp.isServerInitialized()) {
 	    		OBJECTCODE objCode = OBJECTCODE.values()[packet.getInt()];
@@ -185,6 +235,20 @@ public class ClientMessageHandler {
 //					GameWindow.gw.gameInfoConsole.appendInfo("Entity: x="+objectX+" y="+objectY);
 //				}
     		}
+    		break;
+    	case READY_FOR_NEXT_TEXTURE_PACKET:
+    		byte[] nameBytes = new byte[packet.getInt()];
+			packet.get(nameBytes);
+			String namePlayer = new String(nameBytes); // name
+    		int oldPacket = packet.getInt();
+    		System.out.println("OK, packet "+oldPacket +" is ready, sending next one!");
+    		
+    		/** get next Packet and send it to the server */			
+    		byte[] imagePacket = TextureManager.manager.getTexturePacket(oldPacket+1);
+    		String textureName = TextureManager.manager.getUploadTextureName();
+    		/** send the next packet */
+    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName, oldPacket+1, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayer()));
+    		
     		break;
     	case MOVEMOB:
     		break;

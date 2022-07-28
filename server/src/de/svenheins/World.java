@@ -55,6 +55,7 @@ import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.SpriteManager;
+import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
@@ -141,7 +142,16 @@ public class World
         GameStates.setHeight(ge.getMaximumWindowBounds().height);
         
         /** init ressources */
-        initializeRessources();
+//        initializeRessources();
+        
+        /** create an image-folder */
+     	/** all non-existent ancestor directories are automatically created */
+	    boolean success = (new File("./ressources/images")).mkdirs();
+	    if (!success) {
+	         // Directory creation failed
+	    }
+	    /** init the external images */
+	    TextureManager.manager.initExternalImages("./ressources/images");
         
         this.initStartIndex = 0;
         
@@ -584,6 +594,8 @@ public class World
 	        	/** if everything is ready */
 	        	if (SpaceManager.size() == spacesArray.size()) {
 	        		logger.log(Level.INFO, "### EVERYTHING IS INITIALIZED ###");
+	        		/** init the external images */
+	        	    TextureManager.manager.initExternalImages(GameStates.externalImagesPath);
 	        	}
 //	        	logger.log(Level.INFO, "Initializing SpaceManager");
 //	        	for (ManagedReference<ServerSpace> space: roomRef.get().getSpaces()) {

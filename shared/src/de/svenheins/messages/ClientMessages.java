@@ -115,6 +115,42 @@ public class ClientMessages extends Messages{
     }
    
     
+    public static ByteBuffer initTextures() {
+        byte[] bytes = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITTEXTURES.ordinal());
+//        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** get object state */
+    public static ByteBuffer sendReadyForNextTexturePacket (String name, int oldPacketId) {
+        byte[] bytes = new byte[1 + 4 + name.length() + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.READY_FOR_NEXT_TEXTURE_PACKET.ordinal()); // 1
+        
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // name.length
+        buffer.putInt(oldPacketId); // 4
+        
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** get object state */
+    public static ByteBuffer sendNextTexture(String lastName) {
+        byte[] bytes = new byte[1 + 4 + lastName.length()];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.READY_FOR_NEXT_TEXTURE.ordinal()); // 1
+        
+        buffer.putInt(lastName.length()); // 4
+    	buffer.put(lastName.getBytes()); // name.length
+        
+        buffer.flip();
+        return buffer;
+    }
+    
     /** 
      * Upload Object onto the server
      * @param id, state
@@ -192,6 +228,37 @@ public class ClientMessages extends Messages{
     			buffer.putInt(actualPolygonY[j]); // 4 bytes
     		}
     	}
+        buffer.flip();
+        return buffer;
+    }
+    
+    
+    /** 
+     * Upload Texture
+     * @param name, packageId, image: we need image-bytes!
+     * @return ByteBuffer
+     */
+    public static ByteBuffer uploadTexture(String name, int packetId, int numberOfPackets, int sizeOfPacket, byte[] image, String playerName) {
+    	/** define byte array */
+    	byte[] bytes = new byte[1 + 4 + name.length() + 4 + 4 + 4+ image.length + 4 + playerName.length()];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.UPLOAD_TEXTURE.ordinal()); // 1 Byte
+        /** name */
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // name.length
+    	/** packageId */
+    	buffer.putInt(packetId); // 4
+    	/** the number of packets */
+    	buffer.putInt(numberOfPackets); // 4
+    	/** store the size of the actual packet */
+    	buffer.putInt(sizeOfPacket); // 4
+    	/** image data */
+    	buffer.put(image); // image.length
+    	/** put player Name */
+    	buffer.putInt(playerName.length()); // 4
+    	buffer.put(playerName.getBytes()); // playerName.length
+    	
+    	/** buffer is ready */
         buffer.flip();
         return buffer;
     }

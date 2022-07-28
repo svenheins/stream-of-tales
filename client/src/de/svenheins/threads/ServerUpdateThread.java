@@ -11,6 +11,7 @@ import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
@@ -46,8 +47,10 @@ public class ServerUpdateThread implements Runnable {
 					EntityManager.idList = new ArrayList<BigInteger>();
 					SpaceManager.spaceList = new HashMap<BigInteger, Space>();
 					SpaceManager.idList = new ArrayList<BigInteger>();
+					TextureManager.manager.init();
 					GameWindow.gw.send(ClientMessages.initEntities());
 					GameWindow.gw.send(ClientMessages.initSpaces());
+					GameWindow.gw.send(ClientMessages.initTextures());
 					GamePanel.gp.setServerInitialized(true);
 				}
 

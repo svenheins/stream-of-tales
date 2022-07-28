@@ -77,12 +77,12 @@ public class World
     private static final long serialVersionUID = 1L;
 
     /** The delay before the first run of the task. */
-    public static final int DELAY_MS = 7000;
-    public static final int DELAY_MS_WORLDUPDATE = 7000;
+    public static final int DELAY_MS = 4000;
+    public static final int DELAY_MS_WORLDUPDATE = 4000;
 
     /** The time to wait before repeating the task. */
-    public static final int PERIOD_MS = 200;
-    public static final int PERIOD_MS_WORLDUPDATE = 200;
+    public static final int PERIOD_MS = 100;
+    public static final int PERIOD_MS_WORLDUPDATE = 100;
     
 //    public static WorldRoom room;
     
@@ -90,7 +90,7 @@ public class World
     private int initEndIndex; 
     private int initPackageSize = 20;
     private boolean restartDuplicated = false;
-	boolean runReady =true;
+	boolean runReady = true;
 
     private static List<ManagedReference<ServerEntity>> entitiesArray = null;
     private static List<ManagedReference<ServerSpace>> spacesArray = null;
@@ -126,6 +126,7 @@ public class World
     
     /**  The timestamp when this task was last run. */
     private long lastTimestamp = System.currentTimeMillis();
+
  
 
     /**
@@ -253,8 +254,8 @@ public class World
         /** Create World-Plates */
         String hexaString = "Sechseck.svg";
         Space hexaSpace;
-        int rowsHexagons = 2;
-        int colsHexagons = 3;
+        int rowsHexagons = 10;
+        int colsHexagons = 8;
         float hexX, hexY, hexMX, hexMY;
         float climateHexagon;
         int capacityHexagon;
@@ -280,6 +281,7 @@ public class World
 	        capacityHexagon = 10;
 	        ServerRegion s_hexaSpace = new ServerRegion(hexaSpace, climateHexagon, capacityHexagon);
 	        room.addSpace(s_hexaSpace);
+	        // DONT add to the SpaceManager, because we manage this in the room.addSpace already
 	        hexaSpace.setId(s_hexaSpace.getId());
 	        SpaceManager.add(hexaSpace);	
 	        logger.log(Level.INFO, "SpacePlates intitialized: count = " + SpaceManager.size());
@@ -370,7 +372,7 @@ public class World
        
         /** create Space-Tasks */
         begin = 0;
-        countPackets = 4;//(1+(room.getCountSpaces()/200));
+        countPackets = 1;//(1+(room.getCountSpaces()/200));
         packageSize = 10;
         logger.log(Level.INFO, "countPackets: "+countPackets);
         end = room.getCountSpaces()/countPackets + (room.getCountSpaces() % countPackets);
@@ -378,10 +380,10 @@ public class World
         /** UpdateTask (moving, collision, ...) and SendTask (send updates to all players)*/
         UpdateWorldSpaces uws;
         SendUpdatePlayersSpaces sups;
-        for (int i = 0; i< countPackets; i++) {
-        	uws = new UpdateWorldSpaces(room, begin, end, packageSize);
+        for (int i = 0; i < countPackets; i++ ) {
+        	uws = new UpdateWorldSpaces(room, i, packageSize, countPackets);
         	addUpdateTaskSpaces(uws);
-        	sups = new SendUpdatePlayersSpaces(room, begin, end, packageSize);
+        	sups = new SendUpdatePlayersSpaces(room, i, packageSize, countPackets);
         	addSendTaskSpaces(sups);
         	begin = end;
         	logger.log(Level.INFO, "begin: "+begin);
@@ -595,6 +597,7 @@ public class World
         } else {
         	/** Here everything is already initialized, so we can start computing*/
 	    	
+        	
         	/** Start Entity Tasks */
         	UpdateWorldTaskSimple uwtReal;
 	    	for(ManagedReference<UpdateWorldTaskSimple> uwt: uwtSimple) {
@@ -625,6 +628,9 @@ public class World
 	    		supPlayer = supPl.get();
 	    		supPlayer.run();
 	    	}
+	    	
+	 
+	    	
         }
     }
 	
@@ -703,6 +709,7 @@ public class World
 	        return supPlayers.add(dataManager.createReference(supPlayer));
 		}
 		
+		
 		private void initializeRessources() {
 			// Directory path to svg-files
 			URL pathSVG = getClass().getResource(GameStates.resourcePath+"svg/");//GameStates.resourcePath+"svg/"; 
@@ -756,5 +763,7 @@ public class World
 			}
 			  
 		}
+		
+		
 	 
 }

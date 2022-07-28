@@ -35,6 +35,7 @@ public class SpaceManager{
 		} else {
 			spaceList.put(space.getId(), space);
 			idList.add(space.getId());
+//			System.out.println("SpaceManager added new space: "+ space.getId());
 			return true;
 		}
 	}
@@ -56,7 +57,7 @@ public class SpaceManager{
 			return false;
 		} else {
 			spaceList.put(space.getId(), space);
-			idList.add(space.getId());
+//			idList.add(space.getId());
 			return true;
 		}
 	}
@@ -97,7 +98,7 @@ public class SpaceManager{
 	public static void updateSpace(BigInteger objectId, float objectX,
 			float objectY, float objectMX, float objectMY) {
 		Space space = SpaceManager.spaceList.get(objectId);
-		if (space != null) {
+		if (space != null && space.getUpdateByServer()) {
 			space.setX((int)objectX);
 			space.setY((int)objectY);
 //			space.setPolyX((int)objectX);
@@ -120,7 +121,7 @@ public class SpaceManager{
 		if(spaceArray.length > 0) {
 			for (int i =0; i< spaceArray.length; i++) {
 				spaceList.put(spaceArray[i].getId(), spaceArray[i]);
-				idList.add(spaceArray[i].getId());
+				if (!idList.contains(spaceArray[i].getId())) idList.add(spaceArray[i].getId());
 			}
 		}
 	}

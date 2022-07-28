@@ -75,6 +75,7 @@ public class MoveThread implements Runnable {
 //						if(space.getHorizontalMovement() != 0 || space.getVerticalMovement()!=0) {
 						/** spaces move without limitations */	
 						space.move(duration);
+						
 						space.setAllXY(space.getX(), space.getY());
 							//System.out.println("koordianten: "+ space.getX() + " "+ space.getY() + "  Dimensionen: "+space.getWidth()+" "+space.getHeight()+ "  Speed: "+space.getHorizontalMovement()+ " "+ space.getVerticalMovement());
 //						}

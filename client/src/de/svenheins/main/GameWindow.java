@@ -119,6 +119,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	public GameWindow(String title, int breite, int hoehe){
 		super(title);
 
+//		System.out.println("Ergebnis= "+9%4);
+		
 		gw = this;
 		
 		this.breite = breite;

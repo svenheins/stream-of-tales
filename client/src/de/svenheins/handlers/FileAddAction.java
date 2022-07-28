@@ -59,12 +59,10 @@ public class FileAddAction implements ActionListener {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			spaceAdd.setId(SpaceManager.getMax().add(BigInteger.valueOf(1)));
-			System.out.println("ID: "+spaceAdd.getId());
+			spaceAdd.setId(BigInteger.valueOf(0));//SpaceManager.getMax().add(BigInteger.valueOf(2)));
 			spaceAdd.setPolyX(0);
 			spaceAdd.setPolyY(0);
-			System.out.println("send ID: "+spaceAdd.getId());
-			SpaceManager.add(spaceAdd);
+			//SpaceManager.add(spaceAdd);
 			/** send space to server */ 
 			GameWindow.gw.send(ClientMessages.uploadObject(OBJECTCODE.SPACE, spaceAdd.getId(), spaceAdd));
 		}

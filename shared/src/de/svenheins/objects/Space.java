@@ -57,6 +57,7 @@ public class Space extends LocalObject{
 //	protected float mx, my;
 //	protected float height, width;
 	protected int polyX, polyY;
+	protected boolean updateByServer;
 	
 	protected SpaceAnimation spaceAnimation;
 	
@@ -78,6 +79,7 @@ public class Space extends LocalObject{
 		spaceAnimation = new SpaceAnimation(this);
 		this.texturePaint = null;
 		this.bufferedImage = null;
+		this.setUpdateByServer(true);
 	}
 	
 	public Space( String str, BigInteger id,  int[] rgb, Boolean filled, float trans, float scale) {
@@ -98,6 +100,7 @@ public class Space extends LocalObject{
 		spaceAnimation = new SpaceAnimation(this);
 		this.texturePaint = null;
 		this.bufferedImage = null;
+		this.setUpdateByServer(true);
 	}
 	
 	public Space(ArrayList<Polygon> polygon, int polyX, int polyY, String str, BigInteger id,  int[] rgb, Boolean filled, float trans, float scale) {
@@ -122,6 +125,7 @@ public class Space extends LocalObject{
 		spaceAnimation = new SpaceAnimation(this);
 		this.texturePaint = null;
 		this.bufferedImage = null;
+		this.setUpdateByServer(true);
 	}
 	
 	public Space( String str, BigInteger id, String textureString, float trans) {
@@ -135,6 +139,7 @@ public class Space extends LocalObject{
 		setRGB(new int[]{0,0,0});
 		setFilled(true);
 		setTrans(trans);
+		this.setUpdateByServer(true);
 	}
 	
 	public void loadTexture(String textureString) {
@@ -175,7 +180,7 @@ public class Space extends LocalObject{
 				try {
 					document = builder.parse(src.openStream());					
 					int numPaths = document.getElementsByTagName("path").getLength();
-					//System.out.println(numPaths);
+//					System.out.println(numPaths);
 					float ar = this.getArea();
 					float tempMinX = 1000;
 					float tempMinY = 1000; 
@@ -184,7 +189,7 @@ public class Space extends LocalObject{
 					for(int k = 0; k< numPaths; k++) {
 						String polyDataRead = document.getElementsByTagName("path").item(k).getAttributes().getNamedItem("d").getNodeValue();
 						//System.out.println(polyDataRead);
-						String strCutDataRead1 = polyDataRead.substring(2,polyDataRead.length()-3);
+						String strCutDataRead1 = polyDataRead.substring(2,polyDataRead.length()-2);
 						String strCutDataRead2 = strCutDataRead1.replaceAll("[A-Z] ", "");
 						strCutDataRead2 = strCutDataRead2.replaceAll("[a-z] ", "");
 						//System.out.println(strCutDataRead2);
@@ -197,10 +202,25 @@ public class Space extends LocalObject{
 						{
 							//System.out.println("Punkt: "+strField[i]);
 							String[] co = strField[i].split(",");
-							float f_x = Float.parseFloat(co[0]);
-							float f_y = Float.parseFloat(co[1]);
-							int x = Math.round(f_x);
-							int y = Math.round(f_y);
+//							System.out.println("co[0]: "+co[0]+" co[1]: "+co[1]);
+							
+							int x, y;
+							float f_x, f_y;
+//							if (co[0].contains(".")) {
+							f_x = Float.parseFloat(co[0]);
+							x = Math.round(f_x);
+//							} else {
+//								f_x = Float.parseFloat(co[0]+".0");
+//								x = Math.round(f_x);
+//							}
+//							if (co[1].contains(".")) {
+							f_y = Float.parseFloat(co[1]);
+							y = Math.round(f_y);
+//							} else {
+//								f_y = Float.parseFloat(co[1]+".0");
+//								y = Math.round(f_y);
+//							}
+							
 							polyXCoords[i] = x;
 							polyYCoords[i] = y;
 							//System.out.println("Integer: x="+x+" y="+y);
@@ -440,6 +460,15 @@ public class Space extends LocalObject{
 	
 	public int[] getPubYCoord() {
 		return pubYCoord;
+	}
+	
+	public boolean getUpdateByServer() {
+		return updateByServer;
+	}
+	
+	public void setUpdateByServer (boolean updateByServer) {
+		this.updateByServer = updateByServer;
+		// System.out.println("set update space id "+this.getId()+" to "  + updateByServer);
 	}
 	
 }

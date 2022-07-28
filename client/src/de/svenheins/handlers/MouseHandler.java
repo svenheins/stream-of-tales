@@ -34,7 +34,6 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	public void mouseClicked(MouseEvent mouseEvent) {
 		Point point = mouseEvent.getPoint();
 		
-		
 		if (GameModus.modus == GameModus.GAME && GameWindow.gw.getShowConsole() == false){
 			gameMouseClicked(point);
 		} else 
@@ -72,6 +71,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	public void gameMouseReleased(Point point) {
 		// TODO Auto-generated method stub
 //		this.gameMouseClicked(point);
+		if (dragSpace != null) this.dragSpace.setUpdateByServer(true);
 	}
 
 	@Override
@@ -135,15 +135,15 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 //			
 //		}
 		
-//		for( int i =0; i < SpaceManager.size(); i++){
-//			for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
-//				if (SpaceManager.get(i).getPolygon().get(j).contains(point)) {
-//					// open edit-windows
-////					GamePanel.gp.setPause(true);
-//					new EditWindow(SpaceManager.get(i));
-//				}
-//			}
-//		}
+		for( BigInteger i : SpaceManager.idList) {
+			for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
+				if (SpaceManager.get(i).getPolygon().get(j).contains(point)) {
+					// open edit-windows
+//					GamePanel.gp.setPause(true);
+					new EditWindow(SpaceManager.get(i));
+				}
+			}
+		}
 		
 //		for( int i =0; i < PlayerManager.size(); i++){
 //			if (PlayerManager.get(i).contains(point)) {
@@ -202,6 +202,9 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	 * @param point
 	 */
 	public void gameMouseMoved(Point point){
+		
+		if (dragSpace != null) this.dragSpace.setUpdateByServer(true);
+		
 		dragging = false;
 		dragSpace = null;
 		
@@ -218,6 +221,8 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 					SpaceManager.get(i).setTrans(0.5f);
 				}
 		}
+		
+		
 	}
 	
 	/**
@@ -234,8 +239,9 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			float newX = (float) (point.getX()-localX);
 			float newY = (float) (point.getY()-localY);
 			dragSpace.setAllXY(newX, newY);
+			dragSpace.setUpdateByServer(false);
 			GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.SPACE, dragSpace.getId(),  new float[]{newX, newY, dragSpace.getMX(), dragSpace.getMY(), dragSpace.getHeight(), dragSpace.getWidth()}));
-			System.out.println("x: "+newX+" y: "+newY);
+//			System.out.println("ID: "+dragSpace.getId() +"  x: "+newX+" y: "+newY);
 		} else {
 //			SpaceManager.sortZIndex();
 //			for( int i =0; i < SpaceManager.sizeSorted(); i++){

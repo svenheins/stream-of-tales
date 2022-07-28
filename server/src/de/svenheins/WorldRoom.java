@@ -95,6 +95,10 @@ public class WorldRoom extends WorldObject
     private long duration, last; 
 	private long millis, frames;
 
+	private BigInteger lastAddedSpaceID;
+
+	private boolean hasReceivedNewSpace;
+
     /**
      * Creates a new room with the given name and description, initially
      * empty of items and players.
@@ -185,7 +189,7 @@ public class WorldRoom extends WorldObject
     public void addSpace(ServerSpace space) {
         logger.log(Level.INFO, "{0} placed in {1}",
             new Object[] { space, this });
-//        if (!spaces.containsKey(space.getId())) {
+        //if (!spaces.containsKey(space.getId())) {
 	        DataManager dataManager = AppContext.getDataManager();
 	        dataManager.markForUpdate(this);
 	        
@@ -193,7 +197,17 @@ public class WorldRoom extends WorldObject
 	        BigInteger spaceID = dataManager.getObjectId(space);
 	        refSpace.getForUpdate().setId(spaceID);
 	        
-	        spaces.put(refSpace.getId(), refSpace);
+	        spaces.put(spaceID, refSpace);
+	        this.setLastAddedSpaceID(spaceID);
+	        logger.log(Level.INFO, "created new ID: {0}",
+	                new Object[] { spaceID});
+	        
+	        this.setHasReceivedNewSpace(true);
+	        
+//        } else {
+//        	logger.log(Level.INFO, "ID={0} is duplicated in {1} -> Nothing added to room",
+//                    new Object[] { space.getId(), this });
+//        }
 //	        spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
 	        	//logger.log(Level.INFO, "entity placed");
 //	        return true;
@@ -424,7 +438,8 @@ public class WorldRoom extends WorldObject
     	long timestamp;
 //    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
 
-		for (int i = begin; i<end; i++) {
+//		for (int i = begin; i<end; i++) {
+    	for (int i = 0; i< SpaceManager.size(); i++) {
 //			ManagedReference<ServerSpace> space = spacesArray.get(i);
     		ServerSpace s_space = spaces.get(SpaceManager.idList.get(i)).getForUpdate();//space.getForUpdate();
     		
@@ -481,7 +496,8 @@ public class WorldRoom extends WorldObject
 
     
     public void updateSendPlayersSpaces(int begin, int end) {
-    	for (int i = begin; i<end; i++) {
+//    	for (int i = begin; i<end; i++) {
+    	for ( int i = 0; i < SpaceManager.idList.size(); i++) {
 			ServerSpace space = spaces.get(SpaceManager.idList.get(i)).get(); //spacesArray.get(i);
 			for (BigInteger playerID : players.keySet()) {
 				if (players.get(playerID).get().isReady()) {
@@ -566,6 +582,23 @@ public class WorldRoom extends WorldObject
 //			}
 //		}
 	}
+	
+	/** send init process if we got new spaces */
+	public void updateSendInitSpaces() {
+		for(BigInteger playerIDto: players.keySet()) {
+			if (players.get(playerIDto).get().isReady()) {
+				players.get(playerIDto).get().initSpaces();
+			}
+		}
+	}
+
+	public BigInteger getLastAddedSpaceID() {
+		return lastAddedSpaceID;
+	}
+
+	public void setLastAddedSpaceID(BigInteger lastAddedSpaceID) {
+		this.lastAddedSpaceID = lastAddedSpaceID;
+	}
     
 //    /** Update entityArray */
 //    public void updateEntityArray() {
@@ -576,4 +609,12 @@ public class WorldRoom extends WorldObject
 //    public void updateSpaceArray() {
 //    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
 //    }
+	
+	public boolean getHasReceivedNewSpace() {
+		return hasReceivedNewSpace;
+	}
+	
+	public void setHasReceivedNewSpace(boolean hasReceivedNewSpace) {
+		this.hasReceivedNewSpace = hasReceivedNewSpace;
+	}
 }

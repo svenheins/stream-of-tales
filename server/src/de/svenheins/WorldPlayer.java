@@ -48,6 +48,7 @@ import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.ServerRegion;
 import de.svenheins.objects.ServerSpace;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.WorldObject;
@@ -278,19 +279,7 @@ public class WorldPlayer
 				}
 				break;
 			case INITSPACES:
-				int countSpaces = currentRoomRef.get().getCountSpaces();
-				Space[] spaceArray;
-				int end = 0;
-				for (int begin = 0; end<countSpaces; begin+=200) {
-					end = begin+200;
-					if (end> countSpaces) end = countSpaces;
-					spaceArray = getRoom().getSpaces(this, begin, end);
-//										logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
-
-					getSession().send(ServerMessages.sendSpaces(spaceArray));
-//										logger.log(Level.INFO, "packet send");
-				
-				}
+				this.initSpaces();
 				break;
 //				OBJECTCODE objInitCode = OBJECTCODE.values()[message.getInt()];
 //				/** get the six object-states: x,y,mx,my,width,height */
@@ -390,8 +379,16 @@ public class WorldPlayer
 		    		//if (polygon.size() > 1) System.out.println(polygon.get(1).npoints);
 		    		spaceAdd.setName(name);
 		    		spaceAdd.setArea(area);
-		    		SpaceManager.add(spaceAdd);
+//		    		SpaceManager.add(spaceAdd);
+		    		/** first create the world object then the temporarily SpaceManager-Object */
 		    		getRoom().addSpace(new ServerSpace(spaceAdd));
+		    		/** now we got a new ID saved in the room */
+		    		spaceAdd.setId(getRoom().getLastAddedSpaceID());
+		    		System.out.println("last ID="+ spaceAdd.getId());
+			        SpaceManager.add(spaceAdd);	
+			        
+		    		//ServerSpace s_space =ServerRegion getRoom().getSpaces().
+		    		//Space spaceAddManager = new Space()
 				}
 				
 				break;
@@ -422,7 +419,24 @@ public class WorldPlayer
 			}
 	}
 
-    /** {@inheritDoc} */
+    public void initSpaces() {
+		// TODO Auto-generated method stub
+    	int countSpaces = currentRoomRef.get().getCountSpaces();
+		Space[] spaceArray;
+		int end = 0;
+		for (int begin = 0; end<countSpaces; begin+=200) {
+			end = begin+200;
+			if (end> countSpaces) end = countSpaces;
+			spaceArray = getRoom().getSpaces(this, begin, end);
+//								logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
+
+			getSession().send(ServerMessages.sendSpaces(spaceArray));
+//								logger.log(Level.INFO, "packet send");
+		
+		}
+	}
+
+	/** {@inheritDoc} */
     public void disconnected(boolean graceful) {
         setSession(null, null);
         logger.log(Level.INFO, "Disconnected: {0}", this);

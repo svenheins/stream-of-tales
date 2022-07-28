@@ -132,6 +132,7 @@ public class ClientMessageHandler {
     		Space[] spaces = new Space[spaceList.size()];
     		for (int i = 0; i<spaceList.size(); i++){
     			spaces[i] = spaceList.get(i);
+    			System.out.println("ID="+spaces[i].getId());
     		}
     		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+spaceList.size()+ " Spaces");
     		GamePanel.gp.loadSpaceList(spaces);

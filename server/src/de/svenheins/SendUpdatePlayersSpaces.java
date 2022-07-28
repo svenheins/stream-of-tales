@@ -30,6 +30,8 @@ import com.sun.sgs.app.ManagedObject;
 import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.Task;
 
+import de.svenheins.managers.SpaceManager;
+
 /**
  * A simple repeating Task that tracks and prints the time since it was
  * last run.
@@ -49,19 +51,21 @@ public class SendUpdatePlayersSpaces
     /**  The timestamp when this task was last run. */
     private long lastTimestamp = System.currentTimeMillis();
     
-    private int begin, end, packageSize, index;
+    private int begin, end, packageSize, index,  counter, countTasks;
     
     /** The  room. */
     private ManagedReference<WorldRoom> room = null;
         
     
-    public SendUpdatePlayersSpaces(WorldRoom worldRoom, int begin, int end, int packageSize) {
+    public SendUpdatePlayersSpaces(WorldRoom worldRoom, int counter, int packageSize, int countTasks) {
     	DataManager dataManager = AppContext.getDataManager();
     	this.room = dataManager.createReference(worldRoom);
-    	this.begin = begin;
-    	this.end = end;
-    	this.index = end;
+    	this.begin = 0;
+    	this.end = 0;
+    	this.index = 0;
     	this.packageSize = packageSize;
+    	this.counter = counter;
+    	this.countTasks = countTasks;
     }
 
     /**
@@ -93,16 +97,47 @@ public class SendUpdatePlayersSpaces
 //			room.get().updateSendPlayersSpaces(delta, begin, end);
 //        }
 		if (!(room.get() == null)) {
-			int endIndex = this.index + this.packageSize;
-			if (endIndex > this.end) endIndex =this.end;
 			
-			room.get().updateSendPlayersSpaces(index, endIndex);
-//			room.get().updateSendPlayersEntities(delta, begin, end);
+			/** if something changed with the spaces */
+			if (room.get().getHasReceivedNewSpace()) {
+				room.get().updateSendInitSpaces();
+				room.getForUpdate().setHasReceivedNewSpace(false);
+			} else {
+				/** nothing changed, so we send only the actual spaces */
+				int sizeSpaceManager = SpaceManager.size();
+	
+				int sizeThisTask = sizeSpaceManager/this.countTasks;
+				this.begin = counter*(sizeThisTask);
+				this.end = this.begin + sizeThisTask;
+				
+				/** if we are in the last Task, add the missing Spaces to this one 
+				 * counter goes from (0)-(N-1) and countTasks is the number of tasks
+				 * */
+				if (this.counter == this.countTasks-1) this.end += sizeSpaceManager % this.countTasks;
+						
+				int startIndex = this.index*packageSize + this.begin;
+				int endIndex = startIndex + this.packageSize;
+				
+				if (endIndex > this.end) endIndex = this.end;
+				
+				
+	//			room.get().updateSendPlayersSpaces(0, 0);
+				room.get().updateSendPlayersSpaces(startIndex, endIndex);
+				this.index += 1;
+				if (this.index >= (sizeThisTask/ packageSize)+1) this.index = 0;
+			}
 			
-			this.index += this.packageSize;
-			if (this.index >= this.end) this.index = this.begin;
+			
+//			int endIndex = this.index + this.packageSize;
+//			if (endIndex > this.end) endIndex =this.end;
+//			
+//			room.get().updateSendPlayersSpaces(index, endIndex);
+////			room.get().updateSendPlayersEntities(delta, begin, end);
+//			
+//			this.index += this.packageSize;
+//			if (this.index >= this.end) this.index = this.begin;
         }
 	}
-    
+
     
 }

@@ -1,6 +1,9 @@
 package de.svenheins.handlers;
 
 import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.awt.TexturePaint;
+import java.awt.image.BufferedImage;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -8,11 +11,12 @@ import java.util.ArrayList;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
-import de.svenheins.managers.TextureManager;
+//import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
@@ -74,6 +78,7 @@ public class ClientMessageHandler {
         	int numberOfActualPolygon;
         	int[] xpoints;
 			int[] ypoints;
+			String textureName;
         	ArrayList<Polygon> polygon;
 			ArrayList<Space> spaceList = new ArrayList<Space>();
 			/** for each available packet do */
@@ -97,6 +102,11 @@ public class ClientMessageHandler {
     			scale = packet.getFloat();
     			area = packet.getFloat();
     			
+    			byte[] textureNameBytes = new byte[packet.getInt()];
+    			packet.get(textureNameBytes);
+    			textureName = new String(textureNameBytes); // name
+//    			System.out.println("init Space "+id+" with texture: "+textureName);
+    			
     			polyX = packet.getInt();
 	            polyY = packet.getInt();
 	    		
@@ -104,7 +114,7 @@ public class ClientMessageHandler {
 	            polygon = new ArrayList<Polygon>();
 	    		for (int i = 0; i < numberOfPolygons; i++) {
 	    			numberOfActualPolygon = packet.getInt();
-	    			System.out.println("number of edges: "+ numberOfActualPolygon);
+//	    			System.out.println("number of edges: "+ numberOfActualPolygon);
 	    			xpoints = new int[numberOfActualPolygon];
 	    			ypoints = new int[numberOfActualPolygon];
 	    			for (int j = 0; j < numberOfActualPolygon; j++) {
@@ -125,9 +135,15 @@ public class ClientMessageHandler {
 //    			}
     			
     			/** now everything is well prepared */
-	    		Space spaceAdd = new Space(polygon, polyX, polyY, "polygon", id, new int[]{r,g,b}, filled, trans, scale);
-	    		spaceAdd.setName(name);
-	    		spaceAdd.setArea(area);
+	    		Space spaceAdd = new Space(polygon, polyX, polyY, name, id, new int[]{r,g,b}, filled, trans, scale, area, textureName);
+	    		/** change the corresponding serverspace and space and send an update to players */
+	    		if (ClientTextureManager.manager.contains(textureName)) {
+	    			BufferedImage bufferedImage = ClientTextureManager.manager.getMapTexture(textureName);
+	    			spaceAdd.setBufferedTexture(bufferedImage);
+	    		} else {
+	    			spaceAdd.setTexturePaint(null);
+	    			spaceAdd.setBufferedTexture(null);
+	    		}
 	    		//SpaceManager.add(spaceAdd);
 	    		spaceList.add(spaceAdd);
     		}
@@ -135,11 +151,37 @@ public class ClientMessageHandler {
     		Space[] spaces = new Space[spaceList.size()];
     		for (int i = 0; i<spaceList.size(); i++){
     			spaces[i] = spaceList.get(i);
-    			System.out.println("ID="+spaces[i].getId());
+//    			System.out.println("ID="+spaces[i].getId());
     		}
     		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+spaceList.size()+ " Spaces");
     		GamePanel.gp.loadSpaceList(spaces);
     		GameWindow.gw.gameInfoConsole.appendInfo("There are "+SpaceManager.size()+ " Spaces");
+    		break;
+    		
+    	case EDIT_SPACE_ADDONS: 
+    		/** get the message */
+			BigInteger id_sa = BigInteger.valueOf(packet.getLong()); // 8 Bytes
+			byte[] textureNameBytes_sa = new byte[packet.getInt()];
+			packet.get(textureNameBytes_sa);
+			String nameTexture_sa = new String(textureNameBytes_sa); // name
+			int[] rgb_sa = new int[3];
+	    	rgb_sa[0] = packet.getInt();
+	    	rgb_sa[1] = packet.getInt();
+	    	rgb_sa[2] = packet.getInt();
+	    	float trans_sa = packet.getFloat();
+	    	int filled_sa = packet.getInt();
+	    	float scale_sa = packet.getFloat();
+	    	float area_sa = packet.getFloat();
+	    	
+	    	/** change the corresponding serverspace and space and send an update to players */
+	    	if(SpaceManager.editSpaceAddons(id_sa, nameTexture_sa, rgb_sa, trans_sa, filled_sa, scale_sa, area_sa)) {
+	    		/** we have an existing space so we can add the Texture*/
+	    		SpaceManager.get(id_sa).setBufferedTexture(ClientTextureManager.manager.getMapTexture(nameTexture_sa));
+	    	}
+	    	
+	    	
+	    	System.out.println("change space: "+ id_sa + "; textureName: "+nameTexture_sa);
+	    	
     		break;
     	case INITENTITIES:
     		/** no more need for init requests*/
@@ -185,30 +227,32 @@ public class ClientMessageHandler {
 //			}
 			
 			/** if not yet contained inside the manager and there is no actual texture to download */
-			if (!TextureManager.manager.contains(name_texture)) {
+			if (!ClientTextureManager.manager.contains(name_texture)) {
 				int packetIndex = packet.getInt();
 				int countPackets = packet.getInt();
 //				System.out.println("Got a new Texture: "+name_texture);
 				String playerName = name_texture.substring(0, name_texture.indexOf("_"));
 				/** init for the first packet */
-				if (packetIndex == 0 && TextureManager.manager.getDownloadTextureName().equals("")) {
-					TextureManager.manager.initDownload(name_texture,countPackets, playerName);
+				if (packetIndex == 0 && ClientTextureManager.manager.getDownloadTextureName().equals("")) {
+					ClientTextureManager.manager.initDownload(name_texture,countPackets, playerName);
 				}
-				if (packetIndex == TextureManager.manager.getActualDownloadIndex() && name_texture.equals(TextureManager.manager.getDownloadTextureName())) {
-					System.out.println("got the right part of the texture!");
+				if (packetIndex == ClientTextureManager.manager.getActualDownloadIndex() && name_texture.equals(ClientTextureManager.manager.getDownloadTextureName())) {
+//					System.out.println("got the right part of the texture!");
 					/** get the part of the texture */
 					int lengthOfPacket = packet.getInt();
 					byte[] image = new byte[lengthOfPacket];
 					packet.get(image);
 					
-					TextureManager.manager.getPartOfDownload(name_texture, packetIndex, image, playerName);
-					/** send OK, if we still nedd packets */
+					ClientTextureManager.manager.getPartOfDownload(name_texture, packetIndex, image, playerName);
+					/** send OK, if we still need packets */
 					if (packetIndex < countPackets-1) {
 		    			/** send the "received!!"-message if there are textures remaining */
 		    			GameWindow.gw.send(ClientMessages.sendReadyForNextTexturePacket(GameWindow.gw.getPlayer(), packetIndex));
 		    		} else {
 		    			/** send "this one is complete, send next! */
 		    			System.out.println("next texture, please!");
+		    			GameWindow.gw.setReadyForNextMessage(true);
+		    			
 		    			GameWindow.gw.gameInfoConsole.appendInfo("Got the new texture "+name_texture+" by player "+playerName);
 		    			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
 		    		}
@@ -222,6 +266,7 @@ public class ClientMessageHandler {
     			String playerName = name_texture.substring(0, name_texture.indexOf("_"));
     			GameWindow.gw.gameInfoConsole.appendInfo("I have already the texture: "+name_texture+" by player "+playerName+" - next please!");
     			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
+    			GameWindow.gw.setReadyForNextMessage(true);
 			}
     		
     		break;
@@ -247,10 +292,33 @@ public class ClientMessageHandler {
     		System.out.println("OK, packet "+oldPacket +" is ready, sending next one!");
     		
     		/** get next Packet and send it to the server */			
-    		byte[] imagePacket = TextureManager.manager.getTexturePacket(oldPacket+1);
-    		String textureName = TextureManager.manager.getUploadTextureName();
+    		byte[] imagePacket = ClientTextureManager.manager.getTexturePacket(oldPacket+1);
+    		String textureName_ready = ClientTextureManager.manager.getUploadTextureName();
     		/** send the next packet */
-    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName, oldPacket+1, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayer()));
+    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName_ready, oldPacket+1, ClientTextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayer()));
+    		
+    		break;
+    		
+    	case SEND_AVAILABLE_TEXTURES:
+    		if (GameWindow.gw.isReadyForNextMessage()) {
+    			GameWindow.gw.setReadyForNextMessage(false);
+	    		ArrayList<String> textureNames = new ArrayList<String>();
+	    		int countTextures = packet.getInt();
+	    		for (int i = 0; i < countTextures; i++) {
+	    			byte[] nameTextureBytes = new byte[packet.getInt()];
+	    			packet.get(nameTextureBytes);
+	    			String nameTexture = new String(nameTextureBytes); // name
+	    			textureNames.add(nameTexture);
+	    		}
+	    		ArrayList<String> missingTextures = ClientTextureManager.manager.missingTextures(textureNames);
+	    		if (missingTextures.size() > 0) {
+	    			/** return answer: give me missing textures! */
+	    			ArrayList<String> emptyList = new ArrayList<String>();
+	    			emptyList.add(missingTextures.get(0));
+	    			GameWindow.gw.send(ClientMessages.sendMissingTextures(emptyList));
+	    		}
+	    		GameWindow.gw.setReadyForNextMessage(true);
+    		}
     		
     		break;
     	case MOVEMOB:

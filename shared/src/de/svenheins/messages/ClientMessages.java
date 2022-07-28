@@ -124,7 +124,29 @@ public class ClientMessages extends Messages{
         return buffer;
     }
     
-    /** get object state */
+    /** edit space-addons */
+    public static ByteBuffer editSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
+        byte[] bytes = new byte[1 + 8 + 4 + textureName.length() + 4 + 4 + 4 + 4 + 4 + 4 + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.EDIT_SPACE_ADDONS.ordinal());
+        /** ID */
+        buffer.putLong(id.longValue()); // 8 Bytes
+        
+        buffer.putInt(textureName.length()); // 4
+    	buffer.put(textureName.getBytes()); // textureName.length
+    	buffer.putInt(rgb[0]); // 4
+    	buffer.putInt(rgb[1]); // 4
+    	buffer.putInt(rgb[2]); // 4
+    	buffer.putFloat(trans); // 4
+    	buffer.putInt(filled); // 4
+    	buffer.putFloat(scale); // 4
+    	buffer.putFloat(area); // 4
+        
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** ready for next Texture PACKET */
     public static ByteBuffer sendReadyForNextTexturePacket (String name, int oldPacketId) {
         byte[] bytes = new byte[1 + 4 + name.length() + 4];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
@@ -138,7 +160,26 @@ public class ClientMessages extends Messages{
         return buffer;
     }
     
-    /** get object state */
+    /** give me the missing textures */
+    public static ByteBuffer sendMissingTextures(ArrayList<String> missingTextures) {
+    	int bytesForTextureNames = 0;
+		for (String s : missingTextures) {
+			bytesForTextureNames += s.length() + 4;
+		}
+		byte[] bytes = new byte[1 + 4 + bytesForTextureNames];
+		
+		ByteBuffer buffer = ByteBuffer.wrap(bytes);
+		buffer.put((byte) OPCODE.SEND_MISSING_TEXTURES.ordinal()); // 1
+		buffer.putInt(missingTextures.size()); // 4
+		for (String s : missingTextures) {
+			buffer.putInt(s.length()); // 4
+			buffer.put(s.getBytes()); // s.length()
+		}
+		buffer.flip();
+        return buffer;
+    }
+    
+    /** ready for next TEXTURE */
     public static ByteBuffer sendNextTexture(String lastName) {
         byte[] bytes = new byte[1 + 4 + lastName.length()];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
@@ -166,6 +207,9 @@ public class ClientMessages extends Messages{
     	Boolean filled = uploadSpace.isFilled(); // 4 bytes
     	float scale = uploadSpace.getScale(); // 4 bytes
     	float area = uploadSpace.getArea(); // 4 bytes
+    	
+    	String textureName = uploadSpace.getTextureName(); // 4 + textureName.length
+    	
     	int polyX = uploadSpace.getPolyX(); // 4 bytes
     	int polyY = uploadSpace.getPolyY(); // 4 bytes
     	/** now the more complex structure */
@@ -180,7 +224,7 @@ public class ClientMessages extends Messages{
     		bytesOfPolygon += (4 + 4*actualPolygonX.length*2);
     	}
 
-    	byte[] bytes = new byte[1 + 4 + 8 + 4 + name.length() + 4 + (pubXCoord.length * 4) + (pubYCoord.length * 4)+(rgb.length * 4)+4+4+4+4+4+4 + bytesOfPolygon];
+    	byte[] bytes = new byte[1 + 4 + 8 + 4 + name.length() + 4 + (pubXCoord.length * 4) + (pubYCoord.length * 4)+(rgb.length * 4)+4+4+4+4+ 4 + textureName.length() +4+4 + bytesOfPolygon];
     	
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.UPLOAD_OBJECT.ordinal()); // 1 Byte
@@ -209,6 +253,10 @@ public class ClientMessages extends Messages{
         buffer.putFloat(scale); // 4 Bytes
         // area
         buffer.putFloat(area); // 4 Bytes
+        // textureName.length()
+        buffer.putInt(textureName.length()); // 4 Bytes
+        // textureName
+        buffer.put(textureName.getBytes()); // textureName.length
         // polyX
         buffer.putInt(polyX); // 4 bytes
         // polyY

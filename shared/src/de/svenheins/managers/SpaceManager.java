@@ -5,9 +5,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.NoSuchElementException;
 
-import de.svenheins.objects.Entity;
 import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.ZIndexObjectComparator;
@@ -143,4 +141,30 @@ public class SpaceManager{
 		}
 		return tempMax;
 	}
+	
+	/**
+     * Edits the addon parameters of a space
+     * 
+     * @param id: entity to edit
+     * @return {@code true} if the entity was edited with success
+     */
+    public static boolean editSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
+       if ( spaceList.containsKey(id)) {
+    	   Space space = spaceList.get(id);
+//    	   space.setX(state[0]);
+//    	   space.setY(state[1]);
+    	   space.setTexture(textureName);
+    	   System.out.println("Space "+id +" gets the texture "+textureName);
+    	   space.setRGB(rgb);
+    	   space.setTrans(trans);
+    	   if (filled == 0) space.setFilled(false); else space.setFilled(true);
+    	   space.setScale(scale);
+    	   space.setArea(area);
+    	   //entities.put(id, entity);
+    	   return true;
+       } else {
+    	   return false;
+       }
+    	   
+    }
 }

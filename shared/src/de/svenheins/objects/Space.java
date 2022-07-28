@@ -18,7 +18,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import de.svenheins.main.GameStates;
-import de.svenheins.managers.TextureManager;
+import de.svenheins.managers.ClientTextureManager;
+//import de.svenheins.managers.TextureManager;
 
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -49,6 +50,7 @@ public class Space extends LocalObject{
 //	protected Color color;
 	protected int[] rgb;
 	protected BufferedImage bufferedImage; 
+	protected String textureName;
 	protected TexturePaint texturePaint;
 	protected float trans;
 	protected Boolean filled;
@@ -77,6 +79,7 @@ public class Space extends LocalObject{
 		setPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+"Zeichnung.svg")));
 		
 		spaceAnimation = new SpaceAnimation(this);
+		this.textureName = "";
 		this.texturePaint = null;
 		this.bufferedImage = null;
 		this.setUpdateByServer(true);
@@ -94,6 +97,7 @@ public class Space extends LocalObject{
 		this.setName(str);
 		this.scale = scale;
 		this.scale(scale);
+		this.textureName = "";
 		this.setAllXY(0, 0);
 //		this.width = this.width*scale;
 //		this.height = this.height *scale;
@@ -103,7 +107,7 @@ public class Space extends LocalObject{
 		this.setUpdateByServer(true);
 	}
 	
-	public Space(ArrayList<Polygon> polygon, int polyX, int polyY, String str, BigInteger id,  int[] rgb, Boolean filled, float trans, float scale) {
+	public Space(ArrayList<Polygon> polygon, int polyX, int polyY, String str, BigInteger id,  int[] rgb, Boolean filled, float trans, float scale, float area, String textureName) {
 //		setColor(color);
 		setFilled(filled);
 		setTrans(trans);
@@ -119,12 +123,12 @@ public class Space extends LocalObject{
 		this.setId(id);
 		this.setName(str);
 		this.scale = scale;
+		this.setArea(area);
 //		this.scale(scale);
 //		this.width = this.width*scale;
 //		this.height = this.height *scale;
 		spaceAnimation = new SpaceAnimation(this);
-		this.texturePaint = null;
-		this.bufferedImage = null;
+		this.textureName = textureName;
 		this.setUpdateByServer(true);
 	}
 	
@@ -135,6 +139,7 @@ public class Space extends LocalObject{
 		this.setId(id);
 		spaceAnimation = new SpaceAnimation(this);
 		loadTexture(textureString);
+		this.textureName = textureString;
 //		setColor(null);
 		setRGB(new int[]{0,0,0});
 		setFilled(true);
@@ -142,9 +147,31 @@ public class Space extends LocalObject{
 		this.setUpdateByServer(true);
 	}
 	
+	/** use a ressource-texture */
 	public void loadTexture(String textureString) {
-		bufferedImage = TextureManager.manager.getTexture(textureString);
+		bufferedImage = ClientTextureManager.manager.getTexture(textureString);
 		setTexturePaint(new TexturePaint(bufferedImage, new Rectangle(this.getPolyX(),this.getPolyY(), this.bufferedImage.getWidth(), this.bufferedImage.getHeight())));
+	}
+	
+	/** use an existing texture */
+	public void setExternalTexture(String textureString) {
+		this.textureName = textureString;
+		bufferedImage = ClientTextureManager.manager.getExternalTexture(GameStates.externalImagesPath, textureString);
+		setTexturePaint(new TexturePaint(bufferedImage, new Rectangle(this.getPolyX(),this.getPolyY(), this.bufferedImage.getWidth(), this.bufferedImage.getHeight())));
+	}
+	
+	public void setBufferedTexture(BufferedImage texture) {
+		if (texture != null) {
+			this.bufferedImage = texture;
+			setTexturePaint(new TexturePaint(bufferedImage, new Rectangle(this.getPolyX(),this.getPolyY(), this.bufferedImage.getWidth(), this.bufferedImage.getHeight())));
+		} else {
+			this.bufferedImage =null;
+			this.setTexturePaint(null);
+		}
+	}
+	
+	public String getTextureName() {
+		return textureName;
 	}
 	
 	public void setTexturePaint(TexturePaint tp) {
@@ -299,9 +326,17 @@ public class Space extends LocalObject{
  	  	Color color = new Color(this.rgb[0], this.rgb[1], this.rgb[2]);
  		g.setColor(color);
  		// TODO: check if texture exists for this space
- 		if(texturePaint != null && bufferedImage !=null) {
+ 		if(this.getTexturePaint() != null && this.getBufferedImage() !=null) {
  			setTexturePaint(new TexturePaint(bufferedImage, new Rectangle(this.getPolyX(),this.getPolyY(),this.bufferedImage.getWidth(),this.bufferedImage.getHeight())));
  			g.setPaint(texturePaint);
+ 		} else {
+ 			/** if there is a string that describes a texture, load it (if possible */
+ 			if (!this.textureName.equals("")) {
+ 				this.setBufferedTexture(ClientTextureManager.manager.getMapTexture(textureName));
+ 				if (texturePaint != null) {
+ 					g.setPaint(texturePaint);
+ 				}
+ 			}
  		}
  		
  		Polygon pTemp;
@@ -325,6 +360,16 @@ public class Space extends LocalObject{
  		
 	}
 	
+	public BufferedImage getBufferedImage() {
+		// TODO Auto-generated method stub
+		return this.bufferedImage;
+	}
+
+	public TexturePaint getTexturePaint() {
+		// TODO Auto-generated method stub
+		return texturePaint;
+	}
+
 	/**
 	 * @param color set new Color, for example: Color(110, 220, 50) (RGB) Color
 	 * @param alpha between 0.0f and 1.0f, percentage of transpareny
@@ -446,6 +491,10 @@ public class Space extends LocalObject{
 		this.scale = scale;
 	}
 	
+//	public void setArea(float area) {
+//		this.area = area;
+//	}
+	
 	public void setPubXCoord(int[] pubXCoord) {
 		this.pubXCoord = pubXCoord;
 	}
@@ -470,5 +519,10 @@ public class Space extends LocalObject{
 		this.updateByServer = updateByServer;
 		// System.out.println("set update space id "+this.getId()+" to "  + updateByServer);
 	}
+	
+	public void setTexture(String textureName) {
+		this.textureName = textureName;
+	}
+	
 	
 }

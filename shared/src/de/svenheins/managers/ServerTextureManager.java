@@ -53,6 +53,10 @@ public class ServerTextureManager {
 		uploadTexture.put(playerName, new UploadTexture());
 	}
 	
+	public void removePlayer(String playerName) {
+		uploadTexture.remove(playerName);
+	}
+	
 	public BufferedImage getTexture(String src) {
 		if(map.get(src) != null) return map.get(src);
 		else {
@@ -141,13 +145,13 @@ public class ServerTextureManager {
 		return map.size();
 	}
 	
-	/** upload an existing texture to server*/
+	/** prepare the upload of an existing texture from the map to the client */
 	public void prepareTextureForUpload(String playerName, String str) {
-//		uploadTexture
-		UploadTexture up = new UploadTexture();
+		UploadTexture up = this.uploadTexture.get(playerName);
 		up.setUploadTextureName(str);
 		/** get the BufferedImage */
-		BufferedImage bi = manager.getTexture(str);
+		BufferedImage bi = map.get(str);//manager.getExternalTexture(GameStates.externalImagesPath, str);
+		System.out.println("texture-upload: " +str);
 		String fileFormat = "";
 		if (str.toLowerCase().endsWith(".jpg")) fileFormat = "jpeg"; 
 		else if (str.toLowerCase().endsWith(".png")) fileFormat = "png"; 
@@ -207,7 +211,12 @@ public class ServerTextureManager {
 	
 	/** get length of Texture-Packets */
 	public int getLengthOfUploadTexture(String playerName) {
-		return uploadTexture.get(playerName).getSize();
+		if (uploadTexture.containsKey(playerName)) {
+		
+			return uploadTexture.get(playerName).getSize();
+		} else {
+			return -1;
+		}
 	}
 	
 	/** get bytes of upload Texture */
@@ -365,8 +374,24 @@ public class ServerTextureManager {
 			return 0;
 		}
 	}
+	
+	public int getCountTextureForUpload(String playerName) {
+		if (uploadTexture.containsKey(playerName)) {
+			return uploadTexture.get(playerName).getTextureUploadList().size();
+		} else
+			return -1;
+	}
 
 	public int getNumberOfPacketsUploadTexture(String playerName) {
 		return uploadTexture.get(playerName).getNumberOfPacketsUploadTexture();
+	}
+	
+	public boolean containsPlayer(String playerName) {
+		return uploadTexture.containsKey(playerName);
+				
+	}
+	
+	public boolean hasTextureToUpload(String playerName, String textureToUpload) {
+		return uploadTexture.get(playerName).getTextureUploadList().contains(textureToUpload);
 	}
 }

@@ -42,6 +42,7 @@ import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
 
 import de.svenheins.main.GameStates;
+import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.ServerTextureManager;
@@ -80,6 +81,8 @@ public class WorldPlayer
     private boolean ready;
     
     private boolean initializing;
+    
+    private boolean readyForNextMessage= true;
     
     /** The {@code ClientSession} for this player, or null if logged out. */
     private ManagedReference<ClientSession> currentSessionRef = null;
@@ -123,6 +126,13 @@ public class WorldPlayer
 	        logger.log(Level.INFO, "New player created: {0}", player.getName());
 	        logger.log(Level.INFO, "# of players: "+PlayerManager.size());
         }
+        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
+        if (ServerTextureManager.manager.containsPlayer(playerName)) {
+        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
+        	ServerTextureManager.manager.removePlayer(playerName);
+        }
+        
+        
         return player;
     }
 
@@ -285,32 +295,7 @@ public class WorldPlayer
 			case INITSPACES:
 				this.initSpaces();
 				break;
-				
-			case INITTEXTURES:
-				this.initTextures();
-				break;
-//				OBJECTCODE objInitCode = OBJECTCODE.values()[message.getInt()];
-//				/** get the six object-states: x,y,mx,my,width,height */
-//				if (objInitCode == OBJECTCODE.ENTITY) {
-//					Entity[] entityArray = getRoom().getEntities(this);
-//					getSession().send(ServerMessages.sendEntities(entityArray));
-//				} else if (objInitCode == OBJECTCODE.SPACE) {
-//					Space[] spaceArray = getRoom().getSpaces(this);
-//					getSession().send(ServerMessages.sendSpaces(spaceArray));
-//				}
-				
-//				logger.log(Level.INFO,
-//		                "Ids: {0} and {1}",
-//		                new Object[] {ids[0], ids[1]}
-//		            );
-//				break;
-//			case OBJECTNAME:
-//				int objectNameId = message.getInt();
-//				OBJECTCODE objCodeName = OBJECTCODE.values()[message.getInt()];
-//				/** get the six object-states: x,y,mx,my,width,height */
-//				String objectName = getRoom().getObjectName(objCodeName, this, objectNameId);
-//				getSession().send(ServerMessages.sendObjectName(objCodeName, objectNameId, objectName));
-//				break;
+
 			case EDIT_OBJECT:
 				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
 //				byte[] bigByte = new byte[message.getInt()];
@@ -363,6 +348,11 @@ public class WorldPlayer
 		    		if (filledInt == 1) filled = true; else filled = false; 
 		    		float scale = message.getFloat() ;
 		            float area = message.getFloat() ;
+		            
+		            byte[] textureNameBytes = new byte[message.getInt()];
+	    			message.get(textureNameBytes);
+	    			String textureName = new String(textureNameBytes); // name
+		            
 		            int polyX = message.getInt();
 		            int polyY = message.getInt();
 		    		
@@ -383,10 +373,8 @@ public class WorldPlayer
 		    		}
 					
 		    		/** now everything is well prepared */
-		    		Space spaceAdd = new Space(polygon, polyX, polyY, "polygon", id, rgb, filled, trans, scale);
+		    		Space spaceAdd = new Space(polygon, polyX, polyY, name, id, rgb, filled, trans, scale, area, textureName);
 		    		//if (polygon.size() > 1) System.out.println(polygon.get(1).npoints);
-		    		spaceAdd.setName(name);
-		    		spaceAdd.setArea(area);
 //		    		SpaceManager.add(spaceAdd);
 		    		/** first create the world object then the temporarily SpaceManager-Object */
 		    		getRoom().addSpace(new ServerSpace(spaceAdd));
@@ -400,7 +388,22 @@ public class WorldPlayer
 				}
 				
 				break;
-				
+			case INITTEXTURES:
+//				if (!ServerTextureManager.manager.containsPlayer(thisPlayerName) || ServerTextureManager.manager.getLengthOfUploadTexture(thisPlayerName)>0) {
+				ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);	
+				logger.log(Level.INFO,
+			                "Player {0} will get textures now!!!",
+			                new Object[] { thisPlayerName});
+					this.sendAvailableTextures();
+					
+					
+//				} else {
+//					logger.log(Level.INFO,
+//			                "Player {0} is already initialized for the textures-upload!",
+//			                new Object[] { thisPlayerName});
+//				}
+					
+				break;
 				/** parse upload Texture */
 			case UPLOAD_TEXTURE:
 				byte[] nameBytes = new byte[message.getInt()];
@@ -457,22 +460,123 @@ public class WorldPlayer
 	    		getSession().send(ServerMessages.uploadTexture(textureName, oldPacket+1, ServerTextureManager.manager.getNumberOfPacketsUploadTexture(thisPlayerName) , imagePacket.length, imagePacket, getSession().getName()));
 	    		
 	    		break;
+//			case READY_FOR_NEXT_TEXTURE:
+//				if (this.isReadyForNextMessage()) {
+//					this.setReadyForNextMessage(false);
+//					
+//					byte[] oldTextureNameBytes = new byte[message.getInt()];
+//					message.get(oldTextureNameBytes);
+//					String oldTextureName = new String(oldTextureNameBytes); // name
+//					logger.log(Level.INFO, "getting message for texture {0}",
+//		    	            new Object[] { oldTextureName});
+//					
+//					/** only do this if this message was not yet processed */
+//					if(ServerTextureManager.manager.hasTextureToUpload(thisPlayerName, oldTextureName)) {
+//	//				if (ServerTextureManager.manager.getCountTextureForUpload(thisPlayerName)>0) {
+//			    		System.out.println("OK, Texture "+oldTextureName +" is ready, sending next one!");
+//			    		
+//			    		/** get next Texture and prepare it */		
+//			    		int remainingTextures = ServerTextureManager.manager.prepareNextTextureForUpload(thisPlayerName, oldTextureName);
+//			    		if (remainingTextures > 0) {
+//			    			logger.log(Level.INFO, "{0} textures for upload",
+//				    	            new Object[] { remainingTextures});
+//				    		/** send the next packet */
+//			    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
+//			    			logger.log(Level.INFO, "next one is: {0}",
+//				    	            new Object[] { nextTextureName});
+//		//	    			byte[] imagePacketNew = TextureManager.manager.getTexturePacket(0);
+//			    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
+//			    			
+//		//		    		getSession().send(ServerMessages.uploadTexture(nextTextureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacketNew.length, imagePacketNew, getSession().getName()));
+//			    		}
+////			    		this.setReadyForNextMessage(true);
+//					} else {
+//						logger.log(Level.INFO, "got an old packet!");
+//						/** try with next one */
+//				    		/** just send the next packet */
+//			    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
+//			    			logger.log(Level.INFO, "next one is: {0}",
+//				    	            new Object[] { nextTextureName});
+//		//	    			byte[] imagePacketNew = TextureManager.manager.getTexturePacket(0);
+//			    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
+//			    			
+//		//		    		getSession().send(ServerMessages.uploadTexture(nextTextureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacketNew.length, imagePacketNew, getSession().getName()));
+//			    		
+//					}
+////					} else {
+////						/** everything should be well prepared */
+////						int remainingTextures = ServerTextureManager.manager.getCountTextureForUpload(thisPlayerName);
+////						if (remainingTextures > 0) {
+////							logger.log(Level.INFO, "{0} textures for upload",
+////				    	            new Object[] { remainingTextures});
+////				    		/** send the next packet */
+////			    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
+////			    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
+////			    		}
+////						this.setReadyForNextMessage(true);
+////					}
+//				} else
+//					logger.log(Level.INFO, "not ready yet!");
+//	    		break;
+//	    		
 			case READY_FOR_NEXT_TEXTURE:
-				byte[] oldTextureNameBytes = new byte[message.getInt()];
-				message.get(oldTextureNameBytes);
-				String oldTextureName = new String(oldTextureNameBytes); // name
-	    		System.out.println("OK, Texture "+oldTextureName +" is ready, sending next one!");
-	    		
-	    		/** get next Texture and prepare it */		
-	    		int remainingTextures = ServerTextureManager.manager.prepareNextTextureForUpload(thisPlayerName, oldTextureName);
-	    		if (remainingTextures > 0) {
-		    		/** send the next packet */
-	    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
-//	    			byte[] imagePacketNew = TextureManager.manager.getTexturePacket(0);
-	    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
-//		    		getSession().send(ServerMessages.uploadTexture(nextTextureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacketNew.length, imagePacketNew, getSession().getName()));
-	    		}
-	    		break;	
+				
+				sendAvailableTextures();
+				
+				break;
+			case SEND_MISSING_TEXTURES:
+				if (this.isReadyForNextMessage()) {
+					this.setReadyForNextMessage(false);
+					ArrayList<String> textureNames = new ArrayList<String>();
+		    		int countTextures = message.getInt();
+		    		for (int i = 0; i < countTextures; i++) {
+		    			byte[] nameTextureBytes = new byte[message.getInt()];
+		    			message.get(nameTextureBytes);
+		    			String nameTexture = new String(nameTextureBytes); // name
+		    			textureNames.add(nameTexture);
+		    			logger.log(Level.INFO, "missing texture: {0}",
+			    	            new Object[] { textureNames});
+		    		}
+	//	    		ArrayList<String> missingTextures = ClientTextureManager.manager.missingTextures(textureNames);
+	//	    		ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);
+	//		    	ServerTextureManager.manager.setTextureUploadList(thisPlayerName, textureNames);
+			    	String texture = textureNames.get(0);
+			    	if (!ServerTextureManager.manager.getUploadTextureName(thisPlayerName).equals(texture)) {
+			    		ServerTextureManager.manager.prepareTextureForUpload(thisPlayerName, texture);
+			    	}
+//			    	if (!ServerTextureManager.manager.getUploadTextureName(thisPlayerName).equals(texture)) {
+			    	getSession().send(ServerMessages.sendTextureStart(thisPlayerName, texture));
+//			    	}
+//			    	else {
+//			    		logger.log(Level.INFO, "got an old texture: {0}",
+//			    	            new Object[] { texture});
+//			    		this.setReadyForNextMessage(true);
+//			    		sendAvailableTextures();
+//			    	}
+				}
+
+				break;
+			case EDIT_SPACE_ADDONS:
+				/** get the message */
+				BigInteger id = BigInteger.valueOf(message.getLong()); // 8 Bytes
+				byte[] textureNameBytes = new byte[message.getInt()];
+				message.get(textureNameBytes);
+				String nameTexture = new String(textureNameBytes); // name
+				int[] rgb = new int[3];
+		    	rgb[0] = message.getInt();
+		    	rgb[1] = message.getInt();
+		    	rgb[2] = message.getInt();
+		    	float trans = message.getFloat();
+		    	int filled = message.getInt();
+		    	float scale = message.getFloat();
+		    	float area = message.getFloat();
+		    	
+		    	/** change the corresponding serverspace and space and send an update to players */
+		    	this.getRoom().editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
+		    	SpaceManager.editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
+		    	this.getRoom().sendEditSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
+		    	
+				break;
 			case RESPAWN:
 	//		    int respawnId = packet.getInt();
 	//		    float respawnX = packet.getFloat();
@@ -500,17 +604,32 @@ public class WorldPlayer
 			}
 	}
 
-    private void initTextures() {
-    	String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
-    	ArrayList<String> externalTextures = ServerTextureManager.manager.listExternalImages(GameStates.externalImagesPath);
-		ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);
-    	ServerTextureManager.manager.setTextureUploadList(thisPlayerName, externalTextures);
-    	if (externalTextures.size() >0) {
-			/** get first texture and send it to the client */
-			String texture = externalTextures.get(0);	
-			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, texture));		
-			logger.log(Level.INFO, "first texture send");
-    	}
+//    private void initTextures() {
+//    	ArrayList<String> externalTextures;
+//    	String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
+//    	if (ServerTextureManager.manager.getCountTextureForUpload(thisPlayerName)<=0) {
+//	    	externalTextures = ServerTextureManager.manager.listExternalImages(GameStates.externalImagesPath);
+//			ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);
+//	    	ServerTextureManager.manager.setTextureUploadList(thisPlayerName, externalTextures);
+//    	} else {
+//    		externalTextures = ServerTextureManager.manager.getTextureUploadList(thisPlayerName);
+//    	}
+//	//    	System.out.println(externalTextures.size());
+//    	if (externalTextures.size() >0) {
+//			/** get first texture and send it to the client */
+//			String texture = externalTextures.get(0);	
+//			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, texture));	
+//			setReadyForNextMessage(true);
+//			logger.log(Level.INFO, "first texture send");
+//    	}
+//    	
+//	}
+	
+	public void sendAvailableTextures() {
+		ArrayList<String> externalTextures;
+		externalTextures = ServerTextureManager.manager.listExternalImages(GameStates.externalImagesPath);
+		getSession().send(ServerMessages.sendAvailableTextures(externalTextures));	
+		this.setReadyForNextMessage(true);
 	}
 
 	public void initSpaces() {
@@ -698,4 +817,17 @@ public class WorldPlayer
     public void setInitializing(boolean init) {
     	this.initializing=init;
     }
+
+	public void sendEditSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
+		// TODO Auto-generated method stub
+		getSession().send(ServerMessages.editSpaceAddons(id, textureName, rgb, trans, filled, scale, area));
+	}
+	
+	public boolean isReadyForNextMessage() {
+		return readyForNextMessage;
+	}
+	
+	public void setReadyForNextMessage(boolean b) {
+		readyForNextMessage = b;
+	}
 }

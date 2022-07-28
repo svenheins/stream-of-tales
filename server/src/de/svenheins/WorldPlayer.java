@@ -44,8 +44,8 @@ import com.sun.sgs.app.NameNotBoundException;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
+import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
-import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
@@ -238,6 +238,7 @@ public class WorldPlayer
 
 	public void receivedMessage(OPCODE opCode, ByteBuffer message) {
 //		OBJECTCODE objCode = getObjectCode(message);
+		String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
 		switch (opCode) {
 //			case EYE:
 //				int id = message.getInt();
@@ -419,20 +420,26 @@ public class WorldPlayer
 	    		logger.log(Level.INFO, "got the packet={0} for texture {1} from player {2} with {3} bytes",
 	    	            new Object[] { packetId, name, playerName, sizeOfActualPacket });
 	    		
-	    		if (!TextureManager.manager.contains(name)) {
+	    		if (!ServerTextureManager.manager.contains(name)) {
 		    		/** init in the first step */
 		    		if(packetId == 0) {
-		    			TextureManager.manager.initDownload(name, countPackets, playerName);
+		    			ServerTextureManager.manager.initDownload(name, countPackets, playerName);
 		    		}
-		    		TextureManager.manager.getPartOfDownload(name, packetId, imageBytes, playerName);
+		    		ServerTextureManager.manager.getPartOfDownload(name, packetId, imageBytes, playerName);
 		    		
 		    		if (packetId < countPackets-1) {
 		    			/** send the "received!!"-message if there are textures remaining */
 		    			getSession().send(ServerMessages.sendReadyForNextTexturePacket(this.getName(), packetId));
+		    		} else if (packetId == countPackets-1) {
+		    			/** texture "name" is ready to send it to other players except player "playerName" */
+		    			logger.log(Level.INFO, "texture {0} is ready and will now be sent to players except {1}",
+			    	            new Object[] { name, playerName});
+		    			this.getRoom().sendTextureToPlayers(name, playerName);
 		    		}
 	    		} else {
 	    			logger.log(Level.INFO, "got an upload request for {0} by player {1} but denied it, because the texture is already there!",
 		    	            new Object[] { name, playerName});
+	    			this.getRoom().sendTextureToPlayers(name, playerName);
 	    		}
 	    		
 				break;
@@ -444,10 +451,10 @@ public class WorldPlayer
 	    		System.out.println("OK, packet "+oldPacket +" is ready, sending next one!");
 	    		
 	    		/** get next Packet and send it to the server */			
-	    		byte[] imagePacket = TextureManager.manager.getTexturePacket(oldPacket+1);
-	    		String textureName = TextureManager.manager.getUploadTextureName();
+	    		byte[] imagePacket = ServerTextureManager.manager.getTexturePacket(thisPlayerName, oldPacket+1);
+	    		String textureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
 	    		/** send the next packet */
-	    		getSession().send(ServerMessages.uploadTexture(textureName, oldPacket+1, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, getSession().getName()));
+	    		getSession().send(ServerMessages.uploadTexture(textureName, oldPacket+1, ServerTextureManager.manager.getNumberOfPacketsUploadTexture(thisPlayerName) , imagePacket.length, imagePacket, getSession().getName()));
 	    		
 	    		break;
 			case READY_FOR_NEXT_TEXTURE:
@@ -457,12 +464,12 @@ public class WorldPlayer
 	    		System.out.println("OK, Texture "+oldTextureName +" is ready, sending next one!");
 	    		
 	    		/** get next Texture and prepare it */		
-	    		int remainingTextures = TextureManager.manager.prepareNextTextureForUpload(oldTextureName);
+	    		int remainingTextures = ServerTextureManager.manager.prepareNextTextureForUpload(thisPlayerName, oldTextureName);
 	    		if (remainingTextures > 0) {
 		    		/** send the next packet */
-	    			String nextTextureName = TextureManager.manager.getUploadTextureName();
+	    			String nextTextureName = ServerTextureManager.manager.getUploadTextureName(thisPlayerName);
 //	    			byte[] imagePacketNew = TextureManager.manager.getTexturePacket(0);
-	    			getSession().send(ServerMessages.sendTextureStart(nextTextureName));	
+	    			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, nextTextureName));	
 //		    		getSession().send(ServerMessages.uploadTexture(nextTextureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacketNew.length, imagePacketNew, getSession().getName()));
 	    		}
 	    		break;	
@@ -494,12 +501,14 @@ public class WorldPlayer
 	}
 
     private void initTextures() {
-    	ArrayList<String> externalTextures = TextureManager.manager.listExternalImages(GameStates.externalImagesPath);
-		TextureManager.manager.setTextureUploadList(externalTextures);
+    	String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
+    	ArrayList<String> externalTextures = ServerTextureManager.manager.listExternalImages(GameStates.externalImagesPath);
+		ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);
+    	ServerTextureManager.manager.setTextureUploadList(thisPlayerName, externalTextures);
     	if (externalTextures.size() >0) {
 			/** get first texture and send it to the client */
 			String texture = externalTextures.get(0);	
-			getSession().send(ServerMessages.sendTextureStart(texture));		
+			getSession().send(ServerMessages.sendTextureStart(thisPlayerName, texture));		
 			logger.log(Level.INFO, "first texture send");
     	}
 	}
@@ -519,6 +528,12 @@ public class WorldPlayer
 //								logger.log(Level.INFO, "packet send");
 		
 		}
+	}
+	
+	/** start a download for a specific texture */
+	public void startTextureDownload(String textureName) {
+		String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
+		getSession().send(ServerMessages.sendTextureStart(thisPlayerName, textureName));
 	}
 
 	/** {@inheritDoc} */

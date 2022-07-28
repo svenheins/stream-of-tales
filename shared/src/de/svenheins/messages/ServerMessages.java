@@ -5,7 +5,8 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-import de.svenheins.managers.TextureManager;
+import de.svenheins.managers.ServerTextureManager;
+//import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
 
@@ -200,12 +201,13 @@ public class ServerMessages extends Messages{
     /** here we only send known spaces 
      * those which are not yet known by clients should be handled separately
      * */
-    public static ByteBuffer sendTextureStart(String name) {
+    public static ByteBuffer sendTextureStart(String playerName, String name) {
     	ByteBuffer buffer = null;
-    	TextureManager.manager.prepareTextureForUpload(name);
-    	byte[] byteTexture = TextureManager.manager.getTexturePacket(0);
+    	//String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
+        ServerTextureManager.manager.prepareTextureForUpload(playerName, name);
+    	byte[] byteTexture = ServerTextureManager.manager.getTexturePacket(playerName, 0);
     	int lengthOfFirstPacket = byteTexture.length;
-    	int countPacketsOfWholeTexture = TextureManager.manager.getLengthOfUploadTexture();
+    	int countPacketsOfWholeTexture = ServerTextureManager.manager.getLengthOfUploadTexture(playerName);
     	/** initialize bytes */
 		byte[] bytes = new byte[1 + 4 + name.length() + 4 + 4 + 4+ lengthOfFirstPacket ];
     	buffer = ByteBuffer.wrap(bytes);

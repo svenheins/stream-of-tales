@@ -90,7 +90,7 @@ public class FileAddTextureAction implements ActionListener {
 					String userNameFileName = GameWindow.gw.getPlayer() + "_" + fileName;
 					if (TextureManager.manager.addTexture(userNameFileName, newImage)== true ) {
 						/** local copy of image */
-						
+						GameWindow.gw.gameInfoConsole.appendInfo("Got the new texture: "+userNameFileName+" from local disk");
 						try {
 							MyUtil.copyFile(file, new File(GameStates.externalImagesPath+userNameFileName));
 						} catch (IOException e1) {
@@ -111,6 +111,7 @@ public class FileAddTextureAction implements ActionListener {
 		    		byte[] imagePacket = TextureManager.manager.getTexturePacket(0);
 		    		String textureName = TextureManager.manager.getUploadTextureName();
 		    		/** send the next packet */
+		    		GameWindow.gw.gameInfoConsole.appendInfo("Sending texture "+userNameFileName+" to server");
 		    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayer()));
 		    		
 				}

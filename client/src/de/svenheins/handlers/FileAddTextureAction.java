@@ -21,7 +21,8 @@ import javax.swing.filechooser.FileFilter;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
-import de.svenheins.managers.TextureManager;
+import de.svenheins.managers.ClientTextureManager;
+//import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.objects.Space;
@@ -88,7 +89,7 @@ public class FileAddTextureAction implements ActionListener {
 				if (newImage != null) {
 					/** then we can try to add it to the TextureManager under the players-prefix + fileName*/
 					String userNameFileName = GameWindow.gw.getPlayer() + "_" + fileName;
-					if (TextureManager.manager.addTexture(userNameFileName, newImage)== true ) {
+					if (ClientTextureManager.manager.addTexture(userNameFileName, newImage)== true ) {
 						/** local copy of image */
 						GameWindow.gw.gameInfoConsole.appendInfo("Got the new texture: "+userNameFileName+" from local disk");
 						try {
@@ -106,13 +107,13 @@ public class FileAddTextureAction implements ActionListener {
 					}
 					/** send space to server */ 
 					/** get next Packet and send it to the server */			
-					TextureManager.manager.prepareTextureForUpload(userNameFileName);
+					ClientTextureManager.manager.prepareTextureForUpload(userNameFileName);
 					
-		    		byte[] imagePacket = TextureManager.manager.getTexturePacket(0);
-		    		String textureName = TextureManager.manager.getUploadTextureName();
+		    		byte[] imagePacket = ClientTextureManager.manager.getTexturePacket(0);
+		    		String textureName = ClientTextureManager.manager.getUploadTextureName();
 		    		/** send the next packet */
 		    		GameWindow.gw.gameInfoConsole.appendInfo("Sending texture "+userNameFileName+" to server");
-		    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayer()));
+		    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName, 0, ClientTextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayer()));
 		    		
 				}
 			}

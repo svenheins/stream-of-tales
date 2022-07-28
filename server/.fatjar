@@ -1,10 +1,10 @@
 #Fat Jar Configuration File
-#Sat Jun 01 09:09:52 CEST 2013
+#Fri Jun 07 10:13:54 CEST 2013
 onejar.license.required=true
 manifest.classpath=
 manifest.removesigners=true
 onejar.checkbox=false
-jarname=rd24_server_fat.jar
+jarname=rd26_server_fat.jar
 manifest.mergeall=true
 manifest.mainclass=com.sun.sgs.impl.kernel.Kernel
 manifest.file=<createnew>

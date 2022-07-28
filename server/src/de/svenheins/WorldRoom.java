@@ -42,6 +42,7 @@ import com.sun.sgs.app.util.ScalableHashSet;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
+import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.ServerMessages;
@@ -238,6 +239,31 @@ public class WorldRoom extends WorldObject
        }
     	   
     }
+    
+    /**
+     * Edits an entity in this room.
+     * 
+     * @param id: entity to edit
+     * @return {@code true} if the entity was edited with success
+     */
+    public boolean editSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
+       if ( spaces.containsKey(id)) {
+    	   ServerSpace space = spaces.get(id).getForUpdate();
+//    	   space.setX(state[0]);
+//    	   space.setY(state[1]);
+    	   space.setTexture(textureName);
+    	   space.setRGB(rgb);
+    	   space.setTrans(trans);
+    	   if (filled == 0) space.setFilled(false); else space.setFilled(true);
+    	   space.setScale(scale);
+    	   space.setArea(area);
+    	   //entities.put(id, entity);
+    	   return true;
+       } else {
+    	   return false;
+       }
+    	   
+    }
 
     /**
      * Adds a player to this room.
@@ -267,6 +293,11 @@ public class WorldRoom extends WorldObject
 	        {
 	        	logger.log(Level.INFO, "{0} is NOT added to the PlayerManager",
 	                    new Object[] { player});
+	        }
+	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
+	        if (ServerTextureManager.manager.containsPlayer(playerName)) {
+	        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
+	        	ServerTextureManager.manager.removePlayer(playerName);
 	        }
 //        }
 //        return players.add(dataManager.createReference(player));
@@ -318,6 +349,11 @@ public class WorldRoom extends WorldObject
 	        players.remove(player.getId());
 	        PlayerManager.remove(player.getId());
 	        this.updateSendLogout(player.getId());
+	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
+	        if (ServerTextureManager.manager.containsPlayer(playerName)) {
+	        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
+	        	ServerTextureManager.manager.removePlayer(playerName);
+	        }
 	        return true;
         } else {
         	logger.log(Level.INFO, "{0} with ID={1} was not found inside the HashMap players",
@@ -445,7 +481,7 @@ public class WorldRoom extends WorldObject
     		
     		if (s_space instanceof ServerRegion) {
     			/** update dimensions */
-    			Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale());
+    			Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale(), s_space.getArea(), s_space.getTextureName());
     			if ( SpaceManager.overwrite(realSpace) ) {
 //        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
         		} else {
@@ -456,7 +492,7 @@ public class WorldRoom extends WorldObject
         		/** Spaces can move without limitations (_IF_ they move) */
 //        		if(s_space.getHorizontalMovement() != 0 || s_space.getVerticalMovement()!=0) 
         		s_space.move(timestamp);
-        		Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale());
+        		Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale(), s_space.getArea(), s_space.getTextureName());
         		if ( SpaceManager.overwrite(realSpace) ) {
 //        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
         		} else {
@@ -599,7 +635,19 @@ public class WorldRoom extends WorldObject
 			if (player.isReady() && !playerName.equals(byPlayerName)) {
 				logger.log(Level.INFO, "sending texture {0} to player {1}",
 				            new Object[] { textureName, playerName });
+				if (!ServerTextureManager.manager.getUploadTextureName(playerName).equals(textureName)) {
+		    		ServerTextureManager.manager.prepareTextureForUpload(playerName, textureName);
+		    	}
 				player.startTextureDownload(textureName);
+			}
+		}
+	}
+	
+	/** send init process if we got new spaces */
+	public void sendEditSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
+		for(BigInteger playerIDto: players.keySet()) {
+			if (players.get(playerIDto).get().isReady()) {
+				players.get(playerIDto).get().sendEditSpaceAddons(id, textureName, rgb, trans, filled, scale, area);
 			}
 		}
 	}

@@ -25,6 +25,9 @@ public class ClientTextureManager {
 	public static ClientTextureManager manager = new ClientTextureManager();
 	private HashMap<String, BufferedImage> map = new HashMap<String, BufferedImage>();
 	
+//	private HashMap<String, DownloadTexture> downloadTextures = new HashMap<String, DownloadTexture>();
+	private ArrayList<String> downloadTextureList = new ArrayList<String>();
+	
 	private List<byte[]> uploadTexture = new ArrayList<byte[]>();
 	private String uploadTextureName = "";
 	private int bytesOfUploadTexture = 0;
@@ -42,6 +45,8 @@ public class ClientTextureManager {
 	public void init() {
 //		this.map = new HashMap<String, BufferedImage>();
 		this.uploadTexture = new ArrayList<byte[]>();
+//		this.downloadTextures = new HashMap<String, DownloadTexture>();
+		downloadTextureList = new ArrayList<String>();
 		uploadTextureName = "";
 		bytesOfUploadTexture = 0;
 		numberOfPacketsUploadTexture=0;
@@ -70,6 +75,10 @@ public class ClientTextureManager {
 		}
 	}
 	
+//	public BufferedImage getMapTexture(String name) {
+//		return map.get(name);
+//	}
+	
 	/** get one file by other folderpath than standard */
 	public BufferedImage getExternalTexture(String folderPath, String src) {
 		if(map.get(src) != null) return map.get(src);
@@ -87,6 +96,33 @@ public class ClientTextureManager {
 			}
 			
 		}
+	}
+	
+	/** get the already available map.texture */
+	public BufferedImage getMapTexture(String textureName) {
+		if (map.containsKey(textureName)) {
+		return map.get(textureName);
+		} else
+			return null;
+	}
+	
+	/** list all available Textures in the map*/
+	public ArrayList<String> listAllTextures() {
+		ArrayList<String> returnList = new ArrayList<String>();
+		for (String key : map.keySet()) {
+			returnList.add(key);
+		}
+		return returnList;
+	}
+	
+	/** list all the missing textures compared to another list */
+	public ArrayList<String> missingTextures(ArrayList<String> list) {
+		ArrayList<String> returnList = new ArrayList<String>();
+		ArrayList<String> myList = listAllTextures();
+		for(String key : list) {
+			if (!myList.contains(key)) returnList.add(key);
+		}
+		return returnList;
 	}
 	
 	/** first init of external images */

@@ -113,12 +113,14 @@ public class ServerMessages extends Messages{
     	ByteBuffer buffer = null;
     	/** get the length of Bytes that must be reserved for the names */
 		int namesLength = 0;
+		int texturesNameLength = 0;
     	
 		int polygonBytesAbsolut = 0;
 		int numPolygons = 0;
 		ArrayList<Polygon> polygon;
 		for (int i = 0; i<localObjects.length; i++) {
 			namesLength += localObjects[i].getName().length();
+			texturesNameLength += localObjects[i].getTextureName().length();
 			
 			/** reserve 4 + 4 bytes for the polyX and polyY Coordinates */
 			polygonBytesAbsolut += 8;
@@ -136,7 +138,7 @@ public class ServerMessages extends Messages{
 		}
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 40*localObjects.length + namesLength + polygonBytesAbsolut];
+		bytes = new byte[1 + 44*localObjects.length + namesLength + texturesNameLength + polygonBytesAbsolut];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITSPACES.ordinal()); 
     	
@@ -157,6 +159,9 @@ public class ServerMessages extends Messages{
     		float trans = s.getTrans();
     		float scale = s.getScale();
     		float area = s.getArea();
+    		
+    		String textureName = s.getTextureName();
+    		
     		int polyX = s.getPolyX();
         	int polyY = s.getPolyY();
         	/** reset polygon */
@@ -173,6 +178,9 @@ public class ServerMessages extends Messages{
         	buffer.putFloat(trans); // 4
         	buffer.putFloat(scale); // 4
         	buffer.putFloat(area); // 4
+        	
+        	buffer.putInt(textureName.length()); // 4
+        	buffer.put(textureName.getBytes()); // texureName.length
         	
         	// polyX
             buffer.putInt(polyX); // 4 bytes
@@ -198,13 +206,35 @@ public class ServerMessages extends Messages{
         return buffer;
     }
     
+    /** edit space-addons */
+    public static ByteBuffer editSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
+        byte[] bytes = new byte[1+ 8 + 4 + textureName.length() + 4 + 4 + 4 + 4 + 4 + 4 + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.EDIT_SPACE_ADDONS.ordinal());
+        /** ID */
+        buffer.putLong(id.longValue()); // 8 Bytes
+        
+        buffer.putInt(textureName.length()); // 4
+    	buffer.put(textureName.getBytes()); // name.length
+    	buffer.putInt(rgb[0]); // 4
+    	buffer.putInt(rgb[1]); // 4
+    	buffer.putInt(rgb[2]); // 4
+    	buffer.putFloat(trans); // 4
+    	buffer.putInt(filled); // 4
+    	buffer.putFloat(scale); // 4
+    	buffer.putFloat(area); // 4
+        
+        buffer.flip();
+        return buffer;
+    }
+    
     /** here we only send known spaces 
      * those which are not yet known by clients should be handled separately
      * */
     public static ByteBuffer sendTextureStart(String playerName, String name) {
     	ByteBuffer buffer = null;
     	//String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
-        ServerTextureManager.manager.prepareTextureForUpload(playerName, name);
+//        ServerTextureManager.manager.prepareTextureForUpload(playerName, name);
     	byte[] byteTexture = ServerTextureManager.manager.getTexturePacket(playerName, 0);
     	int lengthOfFirstPacket = byteTexture.length;
     	int countPacketsOfWholeTexture = ServerTextureManager.manager.getLengthOfUploadTexture(playerName);
@@ -286,6 +316,25 @@ public class ServerMessages extends Messages{
         buffer.flip();
         return buffer;
     }
+
+
+	public static ByteBuffer sendAvailableTextures(	ArrayList<String> externalTextures) {
+		int bytesForTextureNames = 0;
+		for (String s : externalTextures) {
+			bytesForTextureNames += s.length() + 4;
+		}
+		byte[] bytes = new byte[1 + 4 + bytesForTextureNames];
+		
+		ByteBuffer buffer = ByteBuffer.wrap(bytes);
+		buffer.put((byte) OPCODE.SEND_AVAILABLE_TEXTURES.ordinal()); // 1
+		buffer.putInt(externalTextures.size()); // 4
+		for (String s : externalTextures) {
+			buffer.putInt(s.length()); // 4
+			buffer.put(s.getBytes()); // s.length()
+		}
+		buffer.flip();
+        return buffer;
+	}
 
 //    /**
 //     * Create a "start game" packet which notifies the client to start the battle.

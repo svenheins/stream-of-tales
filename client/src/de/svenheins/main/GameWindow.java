@@ -8,10 +8,11 @@ import de.svenheins.handlers.ConsoleInputHandler;
 import de.svenheins.handlers.FileAddAction;
 import de.svenheins.handlers.FileAddTextureAction;
 import de.svenheins.handlers.FileOpenAction;
+import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
-import de.svenheins.managers.TextureManager;
+//import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
@@ -70,6 +71,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     private boolean isFullScreen = false;
     private boolean loggedIn, superUser;
     private boolean showConsole, showInfoConsole;
+    
+    private boolean readyForNextMessage;
     
     private ConsoleInputHandler consoleInput;
     public IngameConsole gameConsole;
@@ -175,7 +178,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	         // Directory creation failed
 	    }
 	    /** init the external images */
-	    TextureManager.manager.initExternalImages(GameStates.externalImagesPath);
+	    ClientTextureManager.manager.initExternalImages(GameStates.externalImagesPath);
+	    
+	    this.setReadyForNextMessage(true);
  
 		consoleInput = new ConsoleInputHandler();
 		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-80, new int[]{120, 120, 220}, 0.75f, true, 20);
@@ -715,5 +720,15 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	
 	public String getPlayer(){
 		return this.player;
+	}
+
+
+	public boolean isReadyForNextMessage() {
+		return readyForNextMessage;
+	}
+
+
+	public void setReadyForNextMessage(boolean readyForNextMessage) {
+		this.readyForNextMessage = readyForNextMessage;
 	}
 }

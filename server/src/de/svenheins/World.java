@@ -53,9 +53,10 @@ import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.RessourcenManager;
+import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.SpriteManager;
-import de.svenheins.managers.TextureManager;
+//import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
@@ -82,8 +83,8 @@ public class World
     public static final int DELAY_MS_WORLDUPDATE = 4000;
 
     /** The time to wait before repeating the task. */
-    public static final int PERIOD_MS = 100;
-    public static final int PERIOD_MS_WORLDUPDATE = 100;
+    public static final int PERIOD_MS = 200;
+    public static final int PERIOD_MS_WORLDUPDATE = 200;
     
 //    public static WorldRoom room;
     
@@ -151,7 +152,7 @@ public class World
 	         // Directory creation failed
 	    }
 	    /** init the external images */
-	    TextureManager.manager.initExternalImages("./ressources/images");
+	    ServerTextureManager.manager.initExternalImages("./ressources/images/");
         
         this.initStartIndex = 0;
         
@@ -506,7 +507,7 @@ public class World
             		
             		/** reset our indices and packageSize */
             		this.initStartIndex = 0;
-            		this.initPackageSize = 50;
+            		this.initPackageSize = 25;
             		this.initEndIndex = 0;
             	}
             	/** we must create our entityArray in each step */
@@ -554,7 +555,7 @@ public class World
 	        		SpaceManager.idList = new ArrayList<BigInteger>();
             		/** reset our indices and packageSize */
             		this.initStartIndex = 0;
-            		this.initPackageSize = 50;
+            		this.initPackageSize = 5;
             		this.initEndIndex = 0;
             		this.restartDuplicated = false;
 	        	}
@@ -570,7 +571,7 @@ public class World
 	    			ManagedReference<ServerSpace> space = spacesArray.get(i);
 	        		ServerSpace sp = space.get();
 //	        		Space realSpace = new Space(sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale());
-	        		Space realSpace = new Space(sp.getPolygon(), (int) sp.getX(), (int) sp.getY(), sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale());
+	        		Space realSpace = new Space(sp.getPolygon(), (int) sp.getX(), (int) sp.getY(), sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale(), sp.getArea(), sp.getTextureName());
 	        		if(!SpaceManager.add(realSpace)) {
 	            		/** something went wrong -> RESTART!!! */
 	            		this.restartDuplicated = true;
@@ -595,7 +596,7 @@ public class World
 	        	if (SpaceManager.size() == spacesArray.size()) {
 	        		logger.log(Level.INFO, "### EVERYTHING IS INITIALIZED ###");
 	        		/** init the external images */
-	        	    TextureManager.manager.initExternalImages(GameStates.externalImagesPath);
+	        	    ServerTextureManager.manager.initExternalImages(GameStates.externalImagesPath);
 	        	}
 //	        	logger.log(Level.INFO, "Initializing SpaceManager");
 //	        	for (ManagedReference<ServerSpace> space: roomRef.get().getSpaces()) {

@@ -92,6 +92,7 @@ public class MyUtil {
 	            listFilesForFolder(fileEntry);
 	        } else {
 	        	fileList.add(fileEntry.getName());
+//	        	System.out.println(fileEntry.getName());
 	        }
 	    }
 		return fileList;

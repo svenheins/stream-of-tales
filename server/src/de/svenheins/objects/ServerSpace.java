@@ -21,7 +21,7 @@ public class ServerSpace extends WorldObject{
 	private Set<ManagedReference<ServerPolygon>> polygons = new HashSet<ManagedReference<ServerPolygon>>();
 //	protected ArrayList<Polygon> polygon;
 //	protected Color color;
-//	protected BufferedImage bufferedImage; 
+	protected String textureName; 
 //	protected TexturePaint texturePaint;
 	protected int[] rgb;
 	protected float trans;
@@ -50,6 +50,7 @@ public class ServerSpace extends WorldObject{
 		this.setMovement(space.getHorizontalMovement(), space.getVerticalMovement());
 		this.setId(space.getId());
 		this.setScale(space.getScale());
+		this.textureName = space.getTextureName();
 //		this.scale(this.getScale());
 		this.lastTimestamp = System.currentTimeMillis();
 	}
@@ -147,6 +148,14 @@ public class ServerSpace extends WorldObject{
 		this.scale = scale;
 	}
 	
+	public void setArea(float area) {
+		this.area = area;
+	}
+	
+	public float getArea() {
+		return area;
+	}
+	
 	public ArrayList<Polygon> getPolygon() {
 		ArrayList<Polygon> p = new ArrayList<Polygon>();
 		
@@ -165,5 +174,13 @@ public class ServerSpace extends WorldObject{
 //			System.out.println("got length= "+s.polyX.length);
         }
 		return p;
+	}
+	
+	public void setTexture(String textureName) {
+		this.textureName = textureName;
+	}
+	
+	public String getTextureName() {
+		return textureName;
 	}
 }

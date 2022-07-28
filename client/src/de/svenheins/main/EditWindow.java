@@ -26,8 +26,9 @@ import de.svenheins.functions.MyStrings;
 import de.svenheins.animation.SpaceAnimation;
 import de.svenheins.animation.SpaceDisappear;
 
+import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
-import de.svenheins.managers.TextureManager;
+//import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.objects.Entity;
@@ -83,19 +84,24 @@ public class EditWindow {
         spacePanel.add(colorButton);
                 
         JComboBox comboTexture = new JComboBox();
-        String[] sortedTextureList = TextureManager.manager.getTextureNames();
+        String[] sortedTextureList = ClientTextureManager.manager.getTextureNames();
         Arrays.sort(sortedTextureList);
-        for (int i =0; i < TextureManager.manager.getSize(); i++) {
+        for (int i =0; i < ClientTextureManager.manager.getSize(); i++) {
         	comboTexture.addItem(sortedTextureList[i]);
         }
         comboTexture.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					space.loadTexture((String) ((JComboBox) e.getSource()).getSelectedItem());
+					System.out.println((String) ((JComboBox) e.getSource()).getSelectedItem());
+					space.setExternalTexture((String) ((JComboBox) e.getSource()).getSelectedItem());
+					int isFilled = 0;
+					if (space.isFilled()) isFilled = 1;// else isFilled = 0;
+					GameWindow.gw.send(ClientMessages.editSpaceAddons(space.getId(), space.getTextureName(), space.getRGB(), space.getTrans(), isFilled, space.getScale(), space.getArea()));
+    				
 				}
 		});
         spacePanel.add(comboTexture);
         
-        JButton saveButton = new JButton("Save Space");
+        JButton saveButton = new JButton("Save to disk");
         saveButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
             	// TODO: Save Space under chosen directory

@@ -30,6 +30,23 @@ public class TileSetManager {
 		}
 	}
 	
+	public TileSet getTileSetByPath(String src, String path) {
+		if(map.get(src) != null) return map.get(src);
+		else {
+//			BufferedImage img;
+//			try {
+//				img = ImageIO.read(this.getClass().getResource(GameStates.resourcePath+"images/"+src));
+			TileSet s = new TileSet(path, src, GameStates.tileWidth, GameStates.tileHeight);
+			map.put(src, s);
+			return s;
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//				return null;
+//			}
+			
+		}
+	}
+	
 	public TileSet getTileSet(String src, int width, int height) {
 		if(map.get(src) != null) return map.get(src);
 		else {

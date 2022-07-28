@@ -1,4 +1,8 @@
 package de.svenheins.threads;
+import java.io.IOException;
+
+import com.sun.sgs.client.ClientChannel;
+
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
@@ -37,7 +41,7 @@ public class InputThread implements Runnable{
 			}
 			
 			try {
-				Thread.sleep(25);
+				Thread.sleep(20);
 			}
 			catch(InterruptedException exception) {
 				System.out.println(exception);
@@ -99,10 +103,10 @@ public class InputThread implements Runnable{
 						GamePanel.gp.setPause(!GamePanel.gp.isPaused());
 						input.pause = false;
 					}
-					if (input.zoomIn && GamePanel.gp.getZoomFactor()<10.0f) {
+					if (input.zoomIn && GamePanel.gp.getZoomFactor()<5.0f) {
 						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()*1.1f);
 					}
-					if (input.zoomOut && GamePanel.gp.getZoomFactor()>0.1f) {
+					if (input.zoomOut && GamePanel.gp.getZoomFactor()>0.01f) {
 						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()/1.1f);
 					}
 					if (input.options ){
@@ -117,9 +121,7 @@ public class InputThread implements Runnable{
 					}
 //					GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //				}
-					if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
-						GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY()}));
-					}
+					
 			}
 		}
 		else if (GameWindow.gw.getShowConsole() == true) {

@@ -101,12 +101,6 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	 * @param point
 	 */
 	public void mainMenuMouseClicked(Point point) {
-		if (GamePanel.gp.startButton.getPolygon().get(0).contains(point)) {
-			GameModus.modus = GameModus.GAME;
-		}
-		if (GamePanel.gp.simulationButton.getPolygon().get(0).contains(point)) {
-			GameModus.modus = GameModus.SIM;
-		}
 		if (GamePanel.gp.connectButton.getPolygon().get(0).contains(point)) {
 			new ConnectionWindow();
 		}
@@ -181,22 +175,11 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	 * @param point
 	 */
 	public void mainMenuMouseMoved(Point point){
-		if (GamePanel.gp.startButton.getPolygon().get(0).contains(point)) {
-			GamePanel.gp.startButton.setTrans(1.0f);
-		} else {
-			GamePanel.gp.startButton.setTrans(0.5f);
-		}
 		
 		if (GamePanel.gp.connectButton.getPolygon().get(0).contains(point)) {
 			GamePanel.gp.connectButton.setTrans(1.0f);
 		} else {
-			GamePanel.gp.connectButton.setTrans(0.5f);
-		}
-		
-		if (GamePanel.gp.simulationButton.getPolygon().get(0).contains(point)) {
-			GamePanel.gp.simulationButton.setTrans(1.0f);
-		} else {
-			GamePanel.gp.simulationButton.setTrans(0.5f);
+			GamePanel.gp.connectButton.setTrans(0.75f);
 		}
 	}
 	

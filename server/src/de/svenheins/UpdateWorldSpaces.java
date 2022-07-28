@@ -56,7 +56,7 @@ public class UpdateWorldSpaces  implements Task, Serializable, ManagedObject{
 		
 		
 //		this.room.get().updateSpaces(0, 0);
-		this.room.get().updateSpaces(startIndex, endIndex);
+		this.room.get().updateSpaces();
 		
 		this.index += 1;
 		if (this.index >= (sizeThisTask/ packageSize)+1) this.index = 0;

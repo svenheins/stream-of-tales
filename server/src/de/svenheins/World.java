@@ -59,6 +59,7 @@ import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.SpriteManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
 import de.svenheins.objects.ServerAgentEntrepreneur;
@@ -92,9 +93,9 @@ public class World
     
     private int initStartIndex = 0;
     private int initEndIndex; 
-    private int initPackageSize = 20;
+    private int initPackageSize = 1;
     private boolean restartDuplicated = false;
-	boolean runReady = true;
+//	boolean runReady = true;
 
     private static List<ManagedReference<ServerEntity>> entitiesArray = null;
     private static List<ManagedReference<ServerSpace>> spacesArray = null;
@@ -107,6 +108,8 @@ public class World
     private Set<ManagedReference<SendUpdatePlayersSpaces>> supsSimple = new HashSet<ManagedReference<SendUpdatePlayersSpaces>>();
     private Set<ManagedReference<UpdateWorldSpaces>> uwsSimple = new HashSet<ManagedReference<UpdateWorldSpaces>>();
     
+    private Set<ManagedReference<InitializePlayersTask>> initTasks = new HashSet<ManagedReference<InitializePlayersTask>>();
+    
     /** A Set reference to each of the sendTask */
     private Set<ManagedReference<SendUpdatePlayers>> supPlayers = new HashSet<ManagedReference<SendUpdatePlayers>>();
     
@@ -116,6 +119,7 @@ public class World
     static final String CHANNEL_2_NAME = "Bar";
     /** The name of the global chat channel {@value #CHANNEL_CHAT_GLOBAL} */
     static final String CHANNEL_CHAT_GLOBAL = "GLOBAL CHAT";
+    
  
     /** 
      * The first {@link Channel}.  The second channel is looked up
@@ -227,7 +231,7 @@ public class World
 //        TileSet tileSetEnemy = new TileSet("eye12.png", "enemy", 10, 6);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
-        int numAgentsEntrepreneur = 600;
+        int numAgentsEntrepreneur = 200;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {
         	it_x = (float) (Math.random()*2*GameStates.getWidth()-it_s_spriteAgent.getWidth());
@@ -236,6 +240,8 @@ public class World
         	it_my = (float) (-10+Math.random()*30);//Math.random()*50+0;
         	entityIDIndex = entityIDIndex.add(BigInteger.valueOf(1));
         	it_s_entityAgent = new ServerAgentEntrepreneur(it_s_spriteAgent, entityIDIndex, it_x, it_y, it_mx, it_my);
+        	it_s_entityAgent.setTileSetName("standardShip_green");
+        	it_s_entityAgent.setTileSetPathName("tilesets/entities/"+iterativSpriteStringAgent);
         	room.addEntity(it_s_entityAgent);
         	/** Add Entity to the EntityManager, which allows to communicate fastly*/
         	realAgent = new Entity(it_s_entityAgent.getName(), it_s_entityAgent.getId(), 0, 0, 0, 0);
@@ -250,7 +256,7 @@ public class World
         Sprite it_spriteAgentEmployee = SpriteManager.manager.getSprite(iterativSpriteStringAgentEmployee);
         ServerSprite it_s_spriteAgentEmployee = new ServerSprite(iterativSpriteStringAgentEmployee, it_spriteAgentEmployee.getHeight(), it_spriteAgentEmployee.getWidth());
         ServerEntity it_s_entityAgentEmployee;
-        int numAgentsEmployee = 20;
+        int numAgentsEmployee = 0;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEmployee; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgentEmployee.getWidth());
@@ -259,6 +265,8 @@ public class World
         	it_my = 30;//Math.random()*50+0;
         	entityIDIndex = entityIDIndex.add(BigInteger.valueOf(1));
         	it_s_entityAgentEmployee = new ServerAgentEmployee(it_s_spriteAgentEmployee, entityIDIndex, it_x, it_y, it_mx, it_my);
+        	it_s_entityAgentEmployee.setTileSetName("enemy");
+        	it_s_entityAgentEmployee.setTileSetPathName(iterativSpriteStringAgentEmployee);
         	room.addEntity(it_s_entityAgentEmployee);
         	/** Add Entity to the EntityManager, which allows to communicate fastly*/
         	realAgentEmployee = new Entity(it_s_entityAgentEmployee.getName(), it_s_entityAgentEmployee.getId(), 0, 0, 0, 0);
@@ -277,18 +285,22 @@ public class World
         /** Create World-Plates */
         String hexaString = "Sechseck.svg";
         Space hexaSpace;
-        int rowsHexagons = 10;
-        int colsHexagons = 10;
+        int rowsHexagons = 4;
+        int colsHexagons = 3;
         float hexX, hexY, hexMX, hexMY;
+        float setOffX = 0;
+        float setOffY = 0;
         float climateHexagon;
         int capacityHexagon;
         for (int i = 0; i<rowsHexagons*colsHexagons; i++) {
         	spaceIds = spaceIds.add(BigInteger.valueOf(1));
         	int[] rgb = MyUtil.niceColorGenerator();
 
-            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 2.0f);
-            hexX = (float) (i % colsHexagons)*hexaSpace.getWidth();
-            hexY = (float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.75f));
+            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 60.0f);
+            setOffX = - (hexaSpace.getWidth()*colsHexagons/(2.5f));
+            setOffY = - (hexaSpace.getHeight()*rowsHexagons/(2*2.0f));
+            hexX = (float) (i % colsHexagons)*hexaSpace.getWidth()*(0.75f) + setOffX;
+            hexY = (float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.5f)) + setOffY;
 
             if ((i/colsHexagons) % 2 == 0) hexX += hexaSpace.getWidth()/2;
             hexMX = 0;//Math.random()*50+0;
@@ -300,8 +312,12 @@ public class World
 	        ServerRegion s_hexaSpace = new ServerRegion(hexaSpace, climateHexagon, capacityHexagon);
 	        room.addSpace(s_hexaSpace);
 	        // DONT add to the SpaceManager, because we manage this in the room.addSpace already
-	        hexaSpace.setId(s_hexaSpace.getId());
-	        SpaceManager.add(hexaSpace);	
+//	        hexaSpace.setId(s_hexaSpace.getId());
+//	        SpaceManager.add(hexaSpace);
+	        /** for each region-space add one cannel */
+	        channelMgr.createChannel("SpaceChannel_"+s_hexaSpace.getId(), 
+	                new WorldChannelListener(), 
+	                Delivery.RELIABLE);
 	        logger.log(Level.INFO, "SpacePlates intitialized: count = " + SpaceManager.size());
         }
 
@@ -310,7 +326,7 @@ public class World
 
         /** create Entity-Tasks */
         int begin = 0;
-        int countPackets = 2;//(1+(room.getCountEntities()/2000));
+        int countPackets = 1;//(1+(room.getCountEntities()/2000));
         logger.log(Level.INFO, "countPackets: "+countPackets);
         int end = room.getCountEntities()/countPackets + (room.getCountEntities() % countPackets);
         logger.log(Level.INFO, "end: "+end);
@@ -332,7 +348,7 @@ public class World
         /** create Space-Tasks */
         begin = 0;
         countPackets = 1;//(1+(room.getCountSpaces()/200));
-        packageSize = 10;
+        packageSize = 5;
         logger.log(Level.INFO, "countPackets: "+countPackets);
         end = room.getCountSpaces()/countPackets + (room.getCountSpaces() % countPackets);
         logger.log(Level.INFO, "end: "+end);
@@ -370,7 +386,11 @@ public class World
         	end = end + packageSize;
         	logger.log(Level.INFO, "end: "+end);
         }
-       
+        
+        /** create Init tasks */
+        InitializePlayersTask initTask = new InitializePlayersTask(room, 0, 0, 0);
+        addInitializeTask(initTask);
+        
         logger.info("World Initialized");
     }
 
@@ -434,122 +454,169 @@ public class World
      * Calls the run() method of the subtask set on this object.
      */
     public void run() throws Exception {
+    	        /** Here everything is already initialized, so we can start computing*/
+//		    	initFirstStart();
+	        	
+	        	/** Start Entity Tasks */
+	        	UpdateWorldTaskSimple uwtReal;
+		    	for(ManagedReference<UpdateWorldTaskSimple> uwt: uwtSimple) {
+		    		uwtReal = uwt.get();
+		    		uwtReal.run();
+		    	}
+		    	SendUpdatePlayersTaskSimple supReal;
+		    	for (ManagedReference<SendUpdatePlayersTaskSimple> sup : supSimple) {
+		    		supReal = sup.get();
+		    		supReal.run();
+		    	}
+		    	
+		    	/** Start Space Tasks */
+		    	UpdateWorldSpaces uwsReal;
+		    	for(ManagedReference<UpdateWorldSpaces> uws: uwsSimple) {
+		    		uwsReal = uws.get();
+		    		uwsReal.run();
+		    	}
+		    	SendUpdatePlayersSpaces supsReal;
+		    	for (ManagedReference<SendUpdatePlayersSpaces> sups : supsSimple) {
+		    		supsReal = sups.get();
+		    		supsReal.run();
+		    	}
+		    	
+		    	InitializePlayersTask initReal;
+		    	for (ManagedReference<InitializePlayersTask> inits : initTasks) {
+		    		initReal = inits.get();
+		    		initReal.run();
+		    	}
+		    	
+		    	
+		    	/** Start Players Task */
+//		    	SendUpdatePlayers supPlayer;
+//		    	for (ManagedReference<SendUpdatePlayers> supPl : supPlayers) {
+//		    		supPlayer = supPl.get();
+//		    		supPlayer.run();
+//		    	}
+		    	
+	        }
 
-    	/** Check if the Server was down or has to be reinitialized*/
+
+public void initFirstStart() {
+
+	/** Check if the Server was down or has to be reinitialized*/
 //        if (EntityManager.get(EntityManager.idList.get(roomRef.get().getEntities().size()-1)) == null || SpaceManager.get(EntityManager.idList.get(roomRef.get().getSpaces().size()-1)) == null) {
-        /** if the Spaces are not initialized, the Entities have to be checked, too */
-    	if (SpaceManager.size() < roomRef.get().getSpaces().get().size()) {	
-    	/** check if the EntityManger is still in the filling process (so the last item should be null) */
+    /** if the Spaces are not initialized, the Entities have to be checked, too */
+	if (SpaceManager.size() < roomRef.get().getSpaces().get().size()) {	
+	/** check if the EntityManger is still in the filling process (so the last item should be null) */
 //        	if (EntityManager.get(EntityManager.idList.get(roomRef.get().getEntities().size()-1)) == null) {
-            if( EntityManager.size() < roomRef.get().getEntities().get().size()) {
-        		if (EntityManager.entityList.size() == 0) {
-            		logger.log(Level.INFO, "Init for the first time");
-            		/** init for the first time */
-                	GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-                    GameStates.setWidth(ge.getMaximumWindowBounds().width);
-                    GameStates.setHeight(ge.getMaximumWindowBounds().height);
-                    /** init EntityManager for the restart-case */
-            		EntityManager.entityList = new HashMap<BigInteger, Entity>();
-            		EntityManager.idList = new ArrayList<BigInteger>();
-            		this.restartDuplicated = false;
-            		
-            		/** reset our indices and packageSize */
-            		this.initStartIndex = 0;
-            		this.initPackageSize = 1;
-            		this.initEndIndex = 0;
-            	}
-            	/** we must create our entityArray in each step */
-        		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(roomRef.get().getEntities().get().values());
-        		logger.log(Level.INFO, "EntityArray-Size: "+ entitiesArray.size());
+        if( EntityManager.size() < roomRef.get().getEntities().get().size()) {
+    		if (EntityManager.entityList.size() == 0) {
+        		logger.log(Level.INFO, "Init for the first time");
+        		/** init for the first time */
+            	GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                GameStates.setWidth(ge.getMaximumWindowBounds().width);
+                GameStates.setHeight(ge.getMaximumWindowBounds().height);
+                /** init EntityManager for the restart-case */
+        		EntityManager.entityList = new HashMap<BigInteger, Entity>();
+        		EntityManager.idList = new ArrayList<BigInteger>();
+        		this.restartDuplicated = false;
         		
-        		/** set the actual endIndex */
-        		this.initEndIndex = this.initStartIndex + this.initPackageSize;
-            	if (this.initEndIndex > roomRef.get().getEntities().get().size()) this.initEndIndex = entitiesArray.size();
+        		/** reset our indices and packageSize */
+        		this.initStartIndex = 0;
+        		this.initPackageSize = 1;
+        		this.initEndIndex = 0;
+        	}
+        	/** we must create our entityArray in each step */
+    		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(roomRef.get().getEntities().get().values());
+    		logger.log(Level.INFO, "EntityArray-Size: "+ entitiesArray.size());
+    		
+    		/** set the actual endIndex */
+    		this.initEndIndex = this.initStartIndex + this.initPackageSize;
+        	if (this.initEndIndex > roomRef.get().getEntities().get().size()) this.initEndIndex = entitiesArray.size();
 
-            	/** now loop through the package and add each Entity of the persistent data to the sending-relevant EntityManager */
-	        	for (int i = this.initStartIndex; i<this.initEndIndex; i++) {
-	    			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
-	        		ServerEntity se = entity.get();
-	        		Entity realEntity = new Entity(se.getName(), se.getId(), 0, 0, 0, 0);
-	            	/** after restart there can appear a duplicated entry */
-	        		if(!EntityManager.add(realEntity)) {
-	            		/** something went wrong -> RESTART!!! */
-	            		this.restartDuplicated = true;
-	            		logger.log(Level.INFO, "Doppelte ID: "+ realEntity.getId());
+        	/** now loop through the package and add each Entity of the persistent data to the sending-relevant EntityManager */
+        	for (int i = this.initStartIndex; i<this.initEndIndex; i++) {
+        		logger.log(Level.INFO, "index: "+ i);
+    			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
+        		ServerEntity se = entity.get();
+        		Entity realEntity = new Entity(se.getName(), se.getId(), 0, 0, 0, 0);
+            	/** after restart there can appear a duplicated entry */
+        		if(!EntityManager.add(realEntity)) {
+            		/** something went wrong -> RESTART!!! */
+            		this.restartDuplicated = true;
+            		logger.log(Level.INFO, "Doppelte ID: "+ realEntity.getId()+" at index: "+i);
 //	            		EntityManager.entityList = new HashMap<BigInteger, Entity>();
 //	            		EntityManager.idList = new ArrayList<BigInteger>();
-	            	}
-	        	}
-	        	/** Handle Duplicated Entries here */
-	        	if(this.restartDuplicated && (initEndIndex > entitiesArray.size()-this.initPackageSize) ) {
-	        		/** start once again */
-	        		this.initStartIndex = 0;
-            		this.initEndIndex = 0;
-            		restartDuplicated = false;
-	        	} else {
-	        		/** don't restart */
-	        		this.initStartIndex = EntityManager.size();
-	        	}
-	        	
-	        	logger.log(Level.INFO, "EntityManager-Size: " +EntityManager.size()+"/"+entitiesArray.size());
-	        	logger.log(Level.INFO, "EntityManager-IDLIST-Size: " +EntityManager.idList.size()+"/"+entitiesArray.size());
+//            		this.runReady = true;
+            	}
+        	}
+        	/** Handle Duplicated Entries here */
+        	if(this.restartDuplicated && (initEndIndex >= entitiesArray.size()-this.initPackageSize) ) {
+        		/** start once again */
+        		this.initStartIndex = 0;
+        		this.initEndIndex = 0;
+        		restartDuplicated = false;
+        	} else {
+        		/** don't restart */
+        		this.initStartIndex = EntityManager.size();
+        	}
+        	
+        	logger.log(Level.INFO, "EntityManager-Size: " +EntityManager.size()+"/"+entitiesArray.size());
+        	logger.log(Level.INFO, "EntityManager-IDLIST-Size: " +EntityManager.idList.size()+"/"+entitiesArray.size());
 
-        	} else /**if (EntityManager.size() == roomRef.get().getEntities().size())*/ {
-        		/** Now we are ready for the SpaceManager */
-	        	logger.log(Level.INFO, "EntityManager READY; entityCount: "+EntityManager.size());
-	        	/** init EntityManager for the restart-case */
-	        	if (SpaceManager.spaceList.size() == 0) {
-	        		SpaceManager.spaceList = new HashMap<BigInteger, Space>();
-	        		SpaceManager.idList = new ArrayList<BigInteger>();
-            		/** reset our indices and packageSize */
-            		this.initStartIndex = 0;
-            		this.initPackageSize = 1;
-            		this.initEndIndex = 0;
-            		this.restartDuplicated = false;
-	        	}
-	        	/** we must create our spacesArray in each step */
-        		spacesArray = new ArrayList<ManagedReference<ServerSpace>>(roomRef.get().getSpaces().get().values());
-	        	
-        		/** set the actual endIndex */
-        		this.initEndIndex = this.initStartIndex + this.initPackageSize;
-            	if (this.initEndIndex > roomRef.get().getSpaces().get().size()) this.initEndIndex = roomRef.get().getSpaces().get().size();
+    	} else /**if (EntityManager.size() == roomRef.get().getEntities().size())*/ {
+    		/** Now we are ready for the SpaceManager */
+        	logger.log(Level.INFO, "EntityManager READY; entityCount: "+EntityManager.size());
+        	/** init EntityManager for the restart-case */
+        	if (SpaceManager.spaceList.size() == 0) {
+        		SpaceManager.spaceList = new HashMap<BigInteger, Space>();
+        		SpaceManager.idList = new ArrayList<BigInteger>();
+        		/** reset our indices and packageSize */
+        		this.initStartIndex = 0;
+        		this.initPackageSize = 1;
+        		this.initEndIndex = 0;
+        		this.restartDuplicated = false;
+        	}
+        	/** we must create our spacesArray in each step */
+    		spacesArray = new ArrayList<ManagedReference<ServerSpace>>(roomRef.get().getSpaces().get().values());
+        	
+    		/** set the actual endIndex */
+    		this.initEndIndex = this.initStartIndex + this.initPackageSize;
+        	if (this.initEndIndex > roomRef.get().getSpaces().get().size()) this.initEndIndex = roomRef.get().getSpaces().get().size();
 
-            	/** now loop through the package and add each Entity of the persistent data to the sending-relevant EntityManager */
-	        	for (int i = this.initStartIndex; i<this.initEndIndex; i++) {
-	    			ManagedReference<ServerSpace> space = spacesArray.get(i);
-	        		ServerSpace sp = space.get();
+        	/** now loop through the package and add each Entity of the persistent data to the sending-relevant EntityManager */
+        	for (int i = this.initStartIndex; i<this.initEndIndex; i++) {
+    			ManagedReference<ServerSpace> space = spacesArray.get(i);
+        		ServerSpace sp = space.get();
 //	        		Space realSpace = new Space(sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale());
-	        		Space realSpace = new Space(sp.getPolygon(), (int) sp.getX(), (int) sp.getY(), sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale(), sp.getArea(), sp.getTextureName());
-	        		if(!SpaceManager.add(realSpace)) {
-	            		/** something went wrong -> RESTART!!! */
-	            		this.restartDuplicated = true;
-	            		logger.log(Level.INFO, "Doppelte ID: "+ realSpace.getId());
+        		Space realSpace = new Space(sp.getPolygon(), (int) sp.getX(), (int) sp.getY(), sp.getName(), sp.getId(), sp.getRGB(), sp.isFilled(), sp.getTrans(), sp.getScale(), sp.getArea(), sp.getTextureName());
+        		if(!SpaceManager.add(realSpace)) {
+            		/** something went wrong -> RESTART!!! */
+            		this.restartDuplicated = true;
+            		logger.log(Level.INFO, "Doppelte ID: "+ realSpace.getId());
 //	            		EntityManager.entityList = new HashMap<BigInteger, Entity>();
 //	            		EntityManager.idList = new ArrayList<BigInteger>();
-	            	}
-	            	logger.log(Level.INFO, "SpaceManager-Size: " +SpaceManager.size()+"/"+spacesArray.size());
-	        	}
-	        	if(this.restartDuplicated && (initEndIndex > spacesArray.size()-this.initPackageSize) ) {
-	        		/** start once again */
-	        		this.initStartIndex = 0;
-            		this.initEndIndex = 0;
-            		restartDuplicated = false;
-	        	} else {
-	        		/** don't restart */
-	        		this.initStartIndex = SpaceManager.size();
-	        		
-	        	}
-	        	
-	        	/** if everything is ready */
-	        	if (SpaceManager.size() == spacesArray.size()) {
-	        		/** init the external images and so on */
-	        	    ServerTextureManager.manager.initExternalImages(GameStates.externalImagesPath);
-	        	    initializeTileSetManager();
-	        	    PlayerManager.emptyAll();
-	        	    roomRef.get().removeAllPlayers();
-	        	    /** DONE */
-	        	    logger.log(Level.INFO, "### EVERYTHING IS INITIALIZED ###");
-	        	}
+            	}
+            	logger.log(Level.INFO, "SpaceManager-Size: " +SpaceManager.size()+"/"+spacesArray.size());
+        	}
+        	if(this.restartDuplicated && (initEndIndex > spacesArray.size()-this.initPackageSize) ) {
+        		/** start once again */
+        		this.initStartIndex = 0;
+        		this.initEndIndex = 0;
+        		restartDuplicated = false;
+        	} else {
+        		/** don't restart */
+        		this.initStartIndex = SpaceManager.size();
+        		
+        	}
+        	
+        	/** if everything is ready */
+        	if (SpaceManager.size() == spacesArray.size()) {
+        		/** init the external images and so on */
+        	    ServerTextureManager.manager.initExternalImages(GameStates.externalImagesPath);
+        	    initializeTileSetManager();
+        	    PlayerManager.emptyAll();
+        	    roomRef.get().removeAllPlayers();
+        	    /** DONE */
+        	    logger.log(Level.INFO, "### EVERYTHING IS INITIALIZED ###");
+        	}
 //	        	logger.log(Level.INFO, "Initializing SpaceManager");
 //	        	for (ManagedReference<ServerSpace> space: roomRef.get().getSpaces()) {
 //	//        		realSpace = new Space(, space.get().getId(), 0, 0);
@@ -557,47 +624,10 @@ public class World
 //	            	SpaceManager.add(realSpace);
 //	        	}
 //	        	logger.log(Level.INFO, "SpaceManager READY; spaceCount: "+SpaceManager.size());
-    		}
-//        	}
-        } else {
-        	/** Here everything is already initialized, so we can start computing*/
-	    	
-        	
-        	/** Start Entity Tasks */
-        	UpdateWorldTaskSimple uwtReal;
-	    	for(ManagedReference<UpdateWorldTaskSimple> uwt: uwtSimple) {
-	    		uwtReal = uwt.get();
-	    		uwtReal.run();
-	    	}
-	    	SendUpdatePlayersTaskSimple supReal;
-	    	for (ManagedReference<SendUpdatePlayersTaskSimple> sup : supSimple) {
-	    		supReal = sup.get();
-	    		supReal.run();
-	    	}
-	    	
-	    	/** Start Space Tasks */
-	    	UpdateWorldSpaces uwsReal;
-	    	for(ManagedReference<UpdateWorldSpaces> uws: uwsSimple) {
-	    		uwsReal = uws.get();
-	    		uwsReal.run();
-	    	}
-	    	SendUpdatePlayersSpaces supsReal;
-	    	for (ManagedReference<SendUpdatePlayersSpaces> sups : supsSimple) {
-	    		supsReal = sups.get();
-	    		supsReal.run();
-	    	}
-	    	
-	    	/** Start Players Task */
-	    	SendUpdatePlayers supPlayer;
-	    	for (ManagedReference<SendUpdatePlayers> supPl : supPlayers) {
-	    		supPlayer = supPl.get();
-	    		supPlayer.run();
-	    	}
-	    	
-	 
-	    	
-        }
-    }
+		}
+	}
+}
+
 	
     /** add an additional UpdateTask (size depends on Entities) */
 	public boolean addUpdateTask(UpdateWorldTaskSimple uwt) {
@@ -674,6 +704,22 @@ public class World
 	        return supPlayers.add(dataManager.createReference(supPlayer));
 		}
 		
+		/** add an additional SendTask (size depends on Entities) */
+		public boolean addInitializeTask(InitializePlayersTask initTask) {
+	        logger.log(Level.INFO, "{0} placed in {1}",
+	            new Object[] { initTask, this });
+
+	        // NOTE: we can't directly save the item in the list, or
+	        // we'll end up with a local copy of the item. Instead, we
+	        // must save a ManagedReference to the item.
+
+	        DataManager dataManager = AppContext.getDataManager();
+	        dataManager.markForUpdate(this);
+
+	        return initTasks.add(dataManager.createReference(initTask));
+		}
+		
+		
 		
 		private void initializeRessources() {
 			// Directory path to svg-files
@@ -733,15 +779,15 @@ public class World
 		public void initializeTileSetManager() {
 			// just add all TileSets
 			TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "shipTileName", 50, 50);
-			TileSet tileSet2 = new TileSet("tilesets/players/standardShip.png", "shipTileName2", 50, 50);
-			TileSet tileSet_green = new TileSet("tilesets/players/standardShip_green.png", "shipTileName_green", 50, 50);
-			TileSet tileSet_yellow = new TileSet("tilesets/players/standardShip_yellow.png", "shipTileName_yellow", 50, 50);
-			TileSet tileSet_blue = new TileSet("tilesets/players/standardShip_blue.png", "shipTileName_blue", 50, 50);
-			Entity playerEntity2 = new Entity(tileSet2, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new Entity(tileSet, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new Entity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new Entity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new Entity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			TileSet tileSet2 = new TileSet("tilesets/entities/standardShip.png", "shipTileName2", 50, 50);
+			TileSet tileSet_green = new TileSet("tilesets/entities/standardShip_green.png", "shipTileName_green", 50, 50);
+			TileSet tileSet_yellow = new TileSet("tilesets/entities/standardShip_yellow.png", "shipTileName_yellow", 50, 50);
+			TileSet tileSet_blue = new TileSet("tilesets/entities/standardShip_blue.png", "shipTileName_blue", 50, 50);
+			PlayerEntity playerEntity2 = new PlayerEntity(tileSet2, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new PlayerEntity(tileSet, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new PlayerEntity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new PlayerEntity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+			playerEntity2 = new PlayerEntity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		}
 		
 	 

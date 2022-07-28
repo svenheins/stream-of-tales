@@ -8,7 +8,8 @@ public class PlayerEntity extends Entity {
 	private long firstServerLogin;
 	private int experience;
 	private String country;
-	
+	private long lastSeen;
+	private boolean visible;
 	
 	/** TileSet-Constructor */
 	public PlayerEntity(TileSet tileSet, String name, BigInteger id, float x,
@@ -18,6 +19,8 @@ public class PlayerEntity extends Entity {
 		this.country = "";
 		this.firstServerLogin = System.currentTimeMillis();
 		this.experience = 0;
+		this.lastSeen = System.currentTimeMillis();
+		this.setVisible(false);
 	}
 
 
@@ -58,6 +61,26 @@ public class PlayerEntity extends Entity {
 
 	public void setCountry(String country) {
 		this.country = country;
+	}
+
+
+	public long getLastSeen() {
+		return lastSeen;
+	}
+
+
+	public void setLastSeen(long lastSeen) {
+		this.lastSeen = lastSeen;
+	}
+
+
+	public boolean isVisible() {
+		return visible;
+	}
+
+
+	public void setVisible(boolean visible) {
+		this.visible = visible;
 	}
 	
 	

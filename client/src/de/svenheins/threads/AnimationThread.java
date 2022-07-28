@@ -30,17 +30,32 @@ public class AnimationThread implements Runnable {
 				GamePanel.gp.updatePlayerSprite();
 				
 				for (int i = EntityManager.size()-1; i >= 0; i--) {
-					Entity entity = EntityManager.get(EntityManager.idList.get(i));
+					Entity entity = null;
+					try {
+						entity = EntityManager.get(EntityManager.idList.get(i));
+					} catch (IndexOutOfBoundsException exception){
+						System.out.println(exception);
+					}
 					if(entity != null) entity.updateSprite();
 				}
 				
 				for (int j=PlayerManager.size()-1;j>=0; j--){
-					Entity e2 = PlayerManager.get(PlayerManager.idList.get(j));
+					Entity e2 = null;
+					try {
+						e2 = PlayerManager.get(PlayerManager.idList.get(j));
+					} catch (IndexOutOfBoundsException exception) {
+						System.out.println(exception);
+					}
 					if(e2 != null) e2.updateSprite(); 
 				}
 //				for (int k = SpaceManager.size()-1; k >=0; k--) {
 				for (int k = SpaceManager.size()-1; k >= 0; k --) {
-					Space space = SpaceManager.get(SpaceManager.idList.get(k));
+					Space space = null;
+					try {
+						space = SpaceManager.get(SpaceManager.idList.get(k));
+					} catch (IndexOutOfBoundsException exception ) {
+						System.out.println(exception);
+					}
 					if(space != null) space.updateSpace();
 				}
 				

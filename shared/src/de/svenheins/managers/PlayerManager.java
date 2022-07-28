@@ -14,6 +14,7 @@ public class PlayerManager{
 	public static HashMap<BigInteger, PlayerEntity> playerList = new HashMap<BigInteger, PlayerEntity>();
 	
 	public static List<BigInteger> idList = new ArrayList<BigInteger>();
+//	public static HashMap<BigInteger, long > playerLastSeen = new HashMap<BigInteger, long>();
 	
 	
 	public static boolean remove(BigInteger index) {
@@ -35,6 +36,7 @@ public class PlayerManager{
 //			if (playerList.containsKey(entity.getId()) || entity.getId().signum()==-1 ) {	
 			return false;
 		} else {
+			entity.setLastSeen(System.currentTimeMillis());
 			playerList.put(entity.getId(), entity);
 			idList.add(entity.getId());
 //			System.out.println("PlayerManager.add ID: "+entity.getId());
@@ -59,6 +61,7 @@ public class PlayerManager{
 			float objectY, float objectMX, float objectMY) {
 		if (PlayerManager.playerList.containsKey(objectId)) {
 			PlayerEntity entity = PlayerManager.playerList.get(objectId);
+			entity.setLastSeen(System.currentTimeMillis());
 			if (entity != null) {
 				entity.setX(objectX);
 				entity.setY(objectY);
@@ -77,6 +80,7 @@ public class PlayerManager{
 			/** do nothing if key is not yet set*/
 			return false;
 		} else {
+			entity.setLastSeen(System.currentTimeMillis());
 			playerList.put(entity.getId(), entity);
 			idList.add(entity.getId());
 			return true;
@@ -87,9 +91,10 @@ public class PlayerManager{
 	public static void updatePlayerAddons(BigInteger objectId, String playerName, String tileName, int width, int height, String country, String groupName, int experience) {
 		if (PlayerManager.playerList.containsKey(objectId)) {
 			PlayerEntity entity = PlayerManager.playerList.get(objectId);
+			entity.setLastSeen(System.currentTimeMillis());
 			if (entity != null) {
 				TileSet tileSet = TileSetManager.manager.getTileSet(tileName);
-//		    	System.out.println("got tileset: "+tileName_add + " from player "+name_player_add);
+		    	System.out.println("got tileset: "+tileName + " from player "+ playerName);
 		    	PlayerEntity playerEntity = new PlayerEntity(tileSet, playerName, objectId, 0, 0, GameStates.animationDelay);
 //		    	playerEntity.setTileSetName(tileName_add);
 //		    	playerEntity.setTileSetPathName(tilePathName);
@@ -128,6 +133,7 @@ public class PlayerManager{
 		if(entityArray.length > 0) {
 			for (int i =0; i< entityArray.length; i++) {
 				if (playerList.containsKey(entityArray[i].getId()) ) System.out.println("Doppelte ID: " + entityArray[i].getId());
+				entityArray[i].setLastSeen(System.currentTimeMillis());
 				playerList.put(entityArray[i].getId(), entityArray[i]);
 				idList.add(entityArray[i].getId());
 				System.out.println("IDs: " + entityArray[i].getId());

@@ -4,7 +4,7 @@ public enum OPCODE {
 	/**
      * Client to server opcodes.
      */
-	EDIT_OBJECT, 
+//	EDIT_OBJECT, 
 	EDIT_SPACE_ADDONS,
     MOVEME, 
     UPLOAD_OBJECT, 
@@ -29,5 +29,6 @@ public enum OPCODE {
      * Common opcodes.
      */
     READY, CHAT, INITENTITIES, INITSPACES, INITTEXTURES, INITPLAYERS  //, SPACE, EYE
+, JOINSPACECHANNEL, LEAVESPACECHANNEL
 
 }

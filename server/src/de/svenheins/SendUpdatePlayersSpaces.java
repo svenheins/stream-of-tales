@@ -122,7 +122,7 @@ public class SendUpdatePlayersSpaces
 				
 				
 	//			room.get().updateSendPlayersSpaces(0, 0);
-				room.get().updateSendPlayersSpaces(startIndex, endIndex);
+				room.get().updateSendPlayersSpaces();
 				this.index += 1;
 				if (this.index >= (sizeThisTask/ packageSize)+1) this.index = 0;
 			}

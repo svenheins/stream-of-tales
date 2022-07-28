@@ -34,6 +34,16 @@ public class ClientMessages extends Messages{
         return buffer;
     }
     
+    public static ByteBuffer chat(String str) {
+    	byte[] bytes = new byte[1 + 4 + str.length()];
+    	ByteBuffer chatBuffer = ByteBuffer.wrap(bytes);
+    	chatBuffer.put((byte) OPCODE.CHAT.ordinal());
+    	chatBuffer.putInt(str.length()); // 4
+    	chatBuffer.put(str.getBytes()); // playerName.length() 
+    	chatBuffer.flip();
+    	return chatBuffer;
+    }
+    
     
 //    public static ByteBuffer getEntityState(int id) {
 //        byte[] bytes = new byte[1+4];
@@ -75,7 +85,7 @@ public class ClientMessages extends Messages{
     public static ByteBuffer editObjectState(OBJECTCODE objCode, BigInteger id,  float[] state) {
         byte[] bytes = new byte[1 + 4 + 8 + 16];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        buffer.put((byte) OPCODE.EDIT_OBJECT.ordinal());
+        buffer.put((byte) OPCODE.OBJECTSTATE.ordinal());
         buffer.putInt(objCode.ordinal());
         
         /** ID */
@@ -147,6 +157,24 @@ public class ClientMessages extends Messages{
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.LOGOUT.ordinal());
 //        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer joinSpaceChannel(BigInteger spaceId) {
+    	byte[] bytes = new byte[1 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.JOINSPACECHANNEL.ordinal());
+        buffer.putLong(spaceId.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer leaveSpaceChannel(BigInteger spaceId) {
+    	byte[] bytes = new byte[1 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.LEAVESPACECHANNEL.ordinal());
+        buffer.putLong(spaceId.longValue()); // 8 Bytes
         buffer.flip();
         return buffer;
     }

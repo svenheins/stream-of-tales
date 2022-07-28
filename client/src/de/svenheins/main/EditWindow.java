@@ -96,7 +96,24 @@ public class EditWindow {
             }
         });
         spacePanel.add(colorButton);
-                
+        
+        JButton joinButton = new JButton("Join SpaceChannel");
+        joinButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+        		GameWindow.gw.send(ClientMessages.joinSpaceChannel(space.getId()));
+//        		GameWindow.gw.joinSpaceChannel(space.getId());
+            }
+        });
+        spacePanel.add(joinButton);
+        JButton leaveButton = new JButton("Leave SpaceChannel");
+        leaveButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+        		GameWindow.gw.send(ClientMessages.leaveSpaceChannel(space.getId()));
+//        		GameWindow.gw.leaveSpaceChannel(space.getId());
+            }
+        });
+        spacePanel.add(leaveButton);
+        
         JComboBox comboTexture = new JComboBox();
         String[] sortedTextureList = ClientTextureManager.manager.getTextureNames();
         Arrays.sort(sortedTextureList);
@@ -148,6 +165,40 @@ public class EditWindow {
         
         spacePanel.add(buttonScale);
         spacePanel.add(textFieldScale);
+        
+        final JTextField textFieldTrans = new JTextField(""+(int)space.getTrans(), 6);
+        JButton buttonTrans = new JButton("Trans");
+        buttonTrans.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	String strTrans = textFieldTrans.getText();
+    			try {
+    				float editTransFloat = Float.parseFloat(strTrans);
+//    				int editTrans = Integer.parse(strTrans);
+    				if (GameWindow.gw.isLoggedIn()) {
+    					/** here we are connected */
+    					// TODO: request edit from server
+//    					space.scale(editTransFloat);
+//    					entity.setY((float) editY);
+//    					GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.ENTITY, entity.getId(),  new float[]{editX, editY, entity.getMX(), entity.getMY(), entity.getHeight(), entity.getWidth()}));
+    					int isFilled = 0;
+    					if (space.isFilled()) isFilled = 1;// else isFilled = 0;
+    					GameWindow.gw.send(ClientMessages.editSpaceAddons(space.getId(), space.getTextureName(), space.getRGB(), editTransFloat, isFilled, space.getScale() , space.getArea()));
+        				
+    				} else
+    				{
+    					/** we launch a standalone-Client */
+//    					entity.setY((float) editY);
+//    					space.scale(editScaleFloat);
+    				}
+    			} catch (NumberFormatException numberException) {
+    				System.out.println("Wrong number format!");
+    			}
+//            	meinJDialog.dispose();
+            }
+        });
+        
+        spacePanel.add(buttonTrans);
+        spacePanel.add(textFieldTrans);
         
         JButton saveButton = new JButton("Save to disk");
         saveButton.addActionListener(new ActionListener() {

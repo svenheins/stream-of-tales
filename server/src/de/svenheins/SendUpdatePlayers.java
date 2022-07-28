@@ -95,8 +95,7 @@ public class SendUpdatePlayers
 			int endIndex = this.index + this.packageSize;
 			if (endIndex > this.end) endIndex =this.end;
 			
-			room.get().updateSendPlayers(index, endIndex);
-//			room.get().updateSendPlayersEntities(delta, begin, end);
+//			room.get().updateSendPlayers(index, endIndex);
 			
 			this.index += this.packageSize;
 			if (this.index >= this.end) this.index = this.begin;

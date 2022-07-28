@@ -23,6 +23,8 @@ package de.svenheins;
 
 import com.sun.sgs.app.AppContext;
 import java.io.Serializable;
+import java.math.BigInteger;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 import com.sun.sgs.app.DataManager;
@@ -52,6 +54,7 @@ public class SendUpdatePlayersTaskSimple
     private int begin, end;
     int index;
 	int packageSize;
+	Iterator<BigInteger> itKeys;
     
     /** The  room. */
     private ManagedReference<WorldRoom> room = null;
@@ -64,6 +67,7 @@ public class SendUpdatePlayersTaskSimple
     	this.end = end;
     	this.packageSize = packageSize;
     	this.index = this.begin;
+    	itKeys = this.room.get().getEntities().get().keySet().iterator();
     }
 
     /**
@@ -95,11 +99,15 @@ public class SendUpdatePlayersTaskSimple
 			int endIndex = this.index + this.packageSize;
 			if (endIndex > this.end) endIndex =this.end;
 			
-			room.get().updateSendPlayersEntities(index, endIndex);
-//			room.get().updateSendPlayersEntities(delta, begin, end);
+			
+//			room.get().updateSendPlayersEntities();
+			room.get().updateSendPlayersEntities(index, endIndex, itKeys);
 			
 			this.index += this.packageSize;
-			if (this.index >= this.end) this.index = this.begin;
+			if (this.index >= this.end) {
+				this.index = this.begin;
+				itKeys = this.room.get().getEntities().get().keySet().iterator();
+			}
         }
 	}
     

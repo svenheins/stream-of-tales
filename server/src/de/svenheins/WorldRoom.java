@@ -90,8 +90,8 @@ public class WorldRoom extends WorldObject
 //    private static List<ManagedReference<ServerEntity>> entitiesArray = null;
     
     /** The set of sprites in this room. */
-    private final HashMap<BigInteger, ManagedReference<ServerSpace>> spaces =
-        new HashMap<BigInteger, ManagedReference<ServerSpace>>();
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerSpace>>> spaces;// =
+//        new HashMap<BigInteger, ManagedReference<ServerSpace>>();
     
 //    private static List<ManagedReference<ServerSpace>> spacesArray = null;
 
@@ -124,6 +124,9 @@ public class WorldRoom extends WorldObject
         DataManager dm = AppContext.getDataManager();
         ScalableHashMap<BigInteger, ManagedReference<ServerEntity>> tempEntities = new ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>();
         entities = dm.createReference(tempEntities);
+        
+        ScalableHashMap<BigInteger, ManagedReference<ServerSpace>> tempSpaces = new ScalableHashMap<BigInteger, ManagedReference<ServerSpace>>();
+        spaces = dm.createReference(tempSpaces);
         
         ScalableHashMap<String, ManagedReference<ServerPlayer>> tempPlayers = new ScalableHashMap<String, ManagedReference<ServerPlayer>>();
         serverPlayers = dm.createReference(tempPlayers);
@@ -231,7 +234,7 @@ public class WorldRoom extends WorldObject
 	        BigInteger spaceID = dataManager.getObjectId(space);
 	        refSpace.getForUpdate().setId(spaceID);
 	        
-	        spaces.put(spaceID, refSpace);
+	        spaces.get().put(spaceID, refSpace);
 	        this.setLastAddedSpaceID(spaceID);
 	        logger.log(Level.INFO, "created new ID: {0}",
 	                new Object[] { spaceID});
@@ -257,8 +260,8 @@ public class WorldRoom extends WorldObject
      * @return {@code true} if the entity was edited with success
      */
     public boolean editSpace(BigInteger id, float[] state) {
-       if ( spaces.containsKey(id)) {
-    	   ServerSpace space = spaces.get(id).getForUpdate();
+       if ( spaces.get().containsKey(id)) {
+    	   ServerSpace space = spaces.get().get(id).getForUpdate();
 //    	   space.setX(state[0]);
 //    	   space.setY(state[1]);
     	   space.setAllXY(state[0], state[1]);
@@ -280,8 +283,8 @@ public class WorldRoom extends WorldObject
      * @return {@code true} if the entity was edited with success
      */
     public boolean editSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
-       if ( spaces.containsKey(id)) {
-    	   ServerSpace space = spaces.get(id).getForUpdate();
+       if ( spaces.get().containsKey(id)) {
+    	   ServerSpace space = spaces.get().get(id).getForUpdate();
 //    	   space.setX(state[0]);
 //    	   space.setY(state[1]);
     	   space.setTexture(textureName);
@@ -551,7 +554,7 @@ public class WorldRoom extends WorldObject
     	return entities;
     }
     
-    public HashMap<BigInteger, ManagedReference<ServerSpace>> getSpaces() {
+    public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerSpace>>> getSpaces() {
     	return spaces;
     }
     
@@ -602,7 +605,8 @@ public class WorldRoom extends WorldObject
 //		for (int i = begin; i<end; i++) {
     	for (int i = 0; i< SpaceManager.size(); i++) {
 //			ManagedReference<ServerSpace> space = spacesArray.get(i);
-    		ServerSpace s_space = spaces.get(SpaceManager.idList.get(i)).getForUpdate();//space.getForUpdate();
+//    		ServerSpace s_space = new ServerSpace(SpaceManager.get(SpaceManager.idList.get(i)));
+    		ServerSpace s_space = spaces.get().get(SpaceManager.idList.get(i)).getForUpdate();//space.getForUpdate();
     		
     		if (s_space instanceof ServerRegion) {
     			/** update dimensions */
@@ -641,14 +645,6 @@ public class WorldRoom extends WorldObject
 	    			
     			}
 			}
-//    		for (ManagedReference<WorldPlayer> player : players) {
-//    			if (player.get().isReady()) {
-//	    			BigInteger object_id = entity.get().getId();
-//	    			// get the six object-states: x,y,mx,my,width,height
-//	    			float[] object_state = new float[]{entity.get().getX(), entity.get().getY(),entity.get().getHorizontalMovement(),entity.get().getVerticalMovement(), entity.get().getWidth(), entity.get().getHeight()};
-//	    			player.get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.ENTITY, object_id, object_state));
-//    			}
-//    		}
     	}
     	
 //    	long durationOfUpdate = System.currentTimeMillis()-last;
@@ -660,7 +656,8 @@ public class WorldRoom extends WorldObject
     public void updateSendPlayersSpaces(int begin, int end) {
 //    	for (int i = begin; i<end; i++) {
     	for ( int i = 0; i < SpaceManager.idList.size(); i++) {
-			ServerSpace space = spaces.get(SpaceManager.idList.get(i)).get(); //spacesArray.get(i);
+//    		ServerSpace space = new ServerSpace(SpaceManager.get(SpaceManager.idList.get(i)));
+    		ServerSpace space = spaces.get().get(SpaceManager.idList.get(i)).get(); //spacesArray.get(i);
 			for (BigInteger playerID : players.keySet()) {
 				if (players.get(playerID).get().isReady()) {
 	    			BigInteger object_id = space.getId();
@@ -669,14 +666,6 @@ public class WorldRoom extends WorldObject
 	    			players.get(playerID).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.SPACE, object_id, object_state));
     			}
 			}
-//    		for (ManagedReference<WorldPlayer> player : players) {
-//    			if (player.get().isReady()) {
-//	    			BigInteger object_id = space.getId();
-//	    			// get the six object-states: x,y,mx,my,width,height
-//	    			float[] object_state = new float[]{space.getX(), space.getY(),space.getHorizontalMovement(),space.getVerticalMovement(), space.getWidth(), space.getHeight()};
-//	    			player.get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.SPACE, object_id, object_state));
-//    			}
-//    		}
     	}
     }
     
@@ -686,7 +675,7 @@ public class WorldRoom extends WorldObject
     }
     
     public int getCountSpaces() {
-    	return this.spaces.size();
+    	return this.spaces.get().size();
     }
     
     public int getCountPlayers() {
@@ -725,28 +714,7 @@ public class WorldRoom extends WorldObject
 				players.get(playerIDto).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.PLAYER, playerID));
 			}
 		}
-//		if (players.size()<index+2 || players.size() <=1) {
-//			/** do nothing, because there are not enough players logged in */
-//		} else
-//		{
-//			WorldPlayer worldPlayer;
-//		//			if (endIndex > players.size()) endIndex = players.size();
-////			for (int i = index; i<2; i++) {
-//			for(BigInteger playerIDfrom: players.keySet()) {
-////				WorldPlayer worldPlayer = players.get(PlayerManager.idList.get(i)).get(); //spacesArray.get(i);
-//				for (BigInteger playerIDto : players.keySet()) {
-//					/** send only if ready && not the same player */
-//					if (players.get(playerIDto).get().isReady() && playerIDto != playerIDfrom) {
-//		    			BigInteger object_id = playerIDfrom;
-//		    			// get the six object-states: x,y,mx,my,width,height
-//		    			worldPlayer = players.get(playerIDfrom).get();
-//		    			float[] object_state = new float[]{worldPlayer.getX(), worldPlayer.getY(),worldPlayer.getHorizontalMovement(),worldPlayer.getVerticalMovement(), worldPlayer.getWidth(), worldPlayer.getHeight()};
-//		    			players.get(playerIDto).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.PLAYER, object_id, object_state));
-//	    			}
-//				}
-////	    	}
-//			}
-//		}
+
 	}
 	
 	/** send init process if we got new spaces */
@@ -799,15 +767,7 @@ public class WorldRoom extends WorldObject
 		this.lastAddedSpaceID = lastAddedSpaceID;
 	}
     
-//    /** Update entityArray */
-//    public void updateEntityArray() {
-//    	entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
-//    }
-//    
-//    /** Update spacesArray */
-//    public void updateSpaceArray() {
-//    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
-//    }
+
 	
 	public boolean getHasReceivedNewSpace() {
 		return hasReceivedNewSpace;

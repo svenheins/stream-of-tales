@@ -38,7 +38,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 				/** be lucky and stay here */
 				setDesiredPosition((float)this.getX(), (float)this.getY());
 				setMovement(0, 0);
-				if( ((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).getForUpdate()).addResident(new Point((int) this.getX(), (int) this.getY()))) {
+				if( ((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).addResident(new Point((int) this.getX(), (int) this.getY()))) {
 					/** be happy */
 					this.setSatisfaction(1.0f);
 					this.setSettled(true);
@@ -91,7 +91,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 		float desY = localY;
 		float distance = this.range;
 		float tempDistance =0;
-		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces().values()) {
+		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces().get().values()) {
 //			if(new Random().nextBoolean()) continue;
 			ServerSpace s_space = serverSpace.get();
 			
@@ -176,8 +176,8 @@ public class ServerAgentEmployee extends ServerAgent  {
 	public boolean validateGoal() {
 		Point myPosition = new Point ((int) this.getX(), (int) this.getY());
 		if (this.getRegion() != null) {
-			ArrayList<Point> blockedPoints =((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).get()).getBlockedPoints();
-			if (blockedPoints.size() < ((ServerRegion) this.getRoom().getSpaces().get(this.getRegion()).get()).getResidents().size()) {
+			ArrayList<Point> blockedPoints =((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).get()).getBlockedPoints();
+			if (blockedPoints.size() < ((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).get()).getResidents().size()) {
 				return false;
 			} else
 				return true;

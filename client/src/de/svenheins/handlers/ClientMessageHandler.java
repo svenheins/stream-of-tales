@@ -209,6 +209,7 @@ public class ClientMessageHandler {
 		    		} else {
 		    			/** send "this one is complete, send next! */
 		    			System.out.println("next texture, please!");
+		    			GameWindow.gw.gameInfoConsole.appendInfo("Got the new texture "+name_texture+" by player "+playerName);
 		    			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
 		    		}
 				} else {
@@ -218,6 +219,8 @@ public class ClientMessageHandler {
 				System.out.println("texture is already there!");
 				/** send "this one is complete, send next! */
     			System.out.println("next texture, please!");
+    			String playerName = name_texture.substring(0, name_texture.indexOf("_"));
+    			GameWindow.gw.gameInfoConsole.appendInfo("I have already the texture: "+name_texture+" by player "+playerName+" - next please!");
     			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
 			}
     		

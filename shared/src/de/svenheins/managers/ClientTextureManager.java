@@ -21,8 +21,8 @@ import javax.imageio.stream.ImageInputStream;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 
-public class TextureManager {
-	public static TextureManager manager = new TextureManager();
+public class ClientTextureManager {
+	public static ClientTextureManager manager = new ClientTextureManager();
 	private HashMap<String, BufferedImage> map = new HashMap<String, BufferedImage>();
 	
 	private List<byte[]> uploadTexture = new ArrayList<byte[]>();

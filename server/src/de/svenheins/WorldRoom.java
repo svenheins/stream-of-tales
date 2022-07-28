@@ -591,6 +591,18 @@ public class WorldRoom extends WorldObject
 			}
 		}
 	}
+	
+	public void sendTextureToPlayers( String textureName, String byPlayerName) {
+		for(BigInteger playerIDto: players.keySet()) {
+			WorldPlayer player = players.get(playerIDto).get();
+			String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
+			if (player.isReady() && !playerName.equals(byPlayerName)) {
+				logger.log(Level.INFO, "sending texture {0} to player {1}",
+				            new Object[] { textureName, playerName });
+				player.startTextureDownload(textureName);
+			}
+		}
+	}
 
 	public BigInteger getLastAddedSpaceID() {
 		return lastAddedSpaceID;

@@ -21,7 +21,7 @@ import javax.imageio.stream.ImageInputStream;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 
-public class TextureManager {
+public class ClientTextureManager {
 	public static TextureManager manager = new TextureManager();
 	private HashMap<String, BufferedImage> map = new HashMap<String, BufferedImage>();
 	

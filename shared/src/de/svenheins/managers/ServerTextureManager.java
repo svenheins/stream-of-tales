@@ -21,16 +21,12 @@ import javax.imageio.stream.ImageInputStream;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 
-public class TextureManager {
-	public static TextureManager manager = new TextureManager();
+public class ServerTextureManager {
+	public static ServerTextureManager manager = new ServerTextureManager();
 	private HashMap<String, BufferedImage> map = new HashMap<String, BufferedImage>();
 	
-	private List<byte[]> uploadTexture = new ArrayList<byte[]>();
-	private String uploadTextureName = "";
-	private int bytesOfUploadTexture = 0;
-	private int numberOfPacketsUploadTexture=0;
+	private HashMap<String, UploadTexture> uploadTexture = new HashMap<String, UploadTexture>();
 	
-	private ArrayList<String> textureUploadList = new ArrayList<String>();
 	
 	private List<byte[]> downloadTexture = new ArrayList<byte[]>();
 	private String downloadTextureName = "";
@@ -41,16 +37,20 @@ public class TextureManager {
 	
 	public void init() {
 //		this.map = new HashMap<String, BufferedImage>();
-		this.uploadTexture = new ArrayList<byte[]>();
-		uploadTextureName = "";
-		bytesOfUploadTexture = 0;
-		numberOfPacketsUploadTexture=0;
+		this.uploadTexture = new HashMap<String, UploadTexture>();
+//		uploadTextureName = "";
+//		bytesOfUploadTexture = 0;
+//		numberOfPacketsUploadTexture=0;
 		downloadTexture = new ArrayList<byte[]>();
 		downloadTextureName = "";
 		bytesOfDownloadTexture = 0;
 		actualDownloadIndex = 0;
 		numberOfPacketsDownloadTexture = 0;
 		nameOfPlayerDownloadTexture="";
+	}
+	
+	public void createPlayerUploadTexture(String playerName) {
+		uploadTexture.put(playerName, new UploadTexture());
 	}
 	
 	public BufferedImage getTexture(String src) {
@@ -142,8 +142,10 @@ public class TextureManager {
 	}
 	
 	/** upload an existing texture to server*/
-	public void prepareTextureForUpload(String str) {
-		uploadTextureName = str;
+	public void prepareTextureForUpload(String playerName, String str) {
+//		uploadTexture
+		UploadTexture up = new UploadTexture();
+		up.setUploadTextureName(str);
 		/** get the BufferedImage */
 		BufferedImage bi = manager.getTexture(str);
 		String fileFormat = "";
@@ -164,14 +166,15 @@ public class TextureManager {
 		/** divide byte array into packets and add each to the ArrayList */
 		if (byteImage != null) {
 			/** clear uploadTexture-ArrayList */
-			uploadTexture = new ArrayList<byte[]>();
-			bytesOfUploadTexture = byteImage.length;
+			up.setUploadTexture(new ArrayList<byte[]>());
+//			uploadTexture.put(playerName, new ArrayList<byte[]>());
+			up.setBytesOfUploadTexture( byteImage.length );
 			int packetCount = (int) (byteImage.length/1024);
 			int rest = byteImage.length % 1024;
 			if ( rest != 0) {
 				packetCount += 1;
 			}
-			this.setNumberOfPacketsUploadTexture(packetCount);
+			up.setNumberOfPacketsUploadTexture(packetCount);
 			/** create byte array that are added to the ArrayList */
 			byte[] addPartOfByteImage = null;
 			for (int i = 0; i<packetCount ; i++) {
@@ -189,25 +192,27 @@ public class TextureManager {
 					addPartOfByteImage = Arrays.copyOfRange(byteImage, startIndex, endIndex);
 				}
 				/** now we can add the byte[] to the ArrayList */
-				uploadTexture.add(addPartOfByteImage);
+//				ArrayList<byte[]> uploadTextureListForPlayer = uploadTexture.get(playerName);
+				up.addPartOfTexture(addPartOfByteImage);
+				uploadTexture.put(playerName, up);
 			}
 		}
 		/** everything is well prepared now */
 	}
 	
 	/** get a specific index of the actual uploadTexture */
-	public byte[] getTexturePacket(int actualIndex) {
-		return uploadTexture.get(actualIndex);
+	public byte[] getTexturePacket(String playerName, int actualIndex) {
+		return uploadTexture.get(playerName).getPacket(actualIndex);
 	}
 	
 	/** get length of Texture-Packets */
-	public int getLengthOfUploadTexture() {
-		return uploadTexture.size();
+	public int getLengthOfUploadTexture(String playerName) {
+		return uploadTexture.get(playerName).getSize();
 	}
 	
 	/** get bytes of upload Texture */
-	public int getBytesOfUploadTexture() {
-		return bytesOfUploadTexture;
+	public int getBytesOfUploadTexture(String playerName) {
+		return uploadTexture.get(playerName).getBytesOfUploadTexture();
 	}
 	
 	/** init download */
@@ -324,18 +329,6 @@ public class TextureManager {
 		this.resetDownload();
 	}
 	
-	public String getUploadTextureName() {
-		return uploadTextureName;
-	}
-
-	public int getNumberOfPacketsUploadTexture() {
-		return numberOfPacketsUploadTexture;
-	}
-
-	public void setNumberOfPacketsUploadTexture(int numberOfPacketsUploadTexture) {
-		this.numberOfPacketsUploadTexture = numberOfPacketsUploadTexture;
-	}
-	
 	
 	public boolean contains(String name) {
 		return map.containsKey(name);
@@ -349,21 +342,31 @@ public class TextureManager {
 		return downloadTextureName;
 	}
 	
-	public ArrayList<String> getTextureUploadList() {
-		return textureUploadList;
+	public ArrayList<String> getTextureUploadList(String playerName) {
+		return uploadTexture.get(playerName).getTextureUploadList();
 	}
 	
-	public void setTextureUploadList(ArrayList<String> list) {
-		this.textureUploadList = list;
+	public void setTextureUploadList(String playerName, ArrayList<String> list) {
+		uploadTexture.get(playerName).setTextureUploadList(list);
 	}
 	
-	public int prepareNextTextureForUpload(String oldTexture) {
-		this.textureUploadList.remove(oldTexture);
-		if (this.textureUploadList.size() > 0) {
-			this.prepareTextureForUpload(textureUploadList.get(0));
-			return textureUploadList.size();
+	public String getUploadTextureName(String playerName) {
+		return uploadTexture.get(playerName).getUploadTextureName();
+	}
+	
+	public int prepareNextTextureForUpload(String playerName, String oldTexture) {
+		ArrayList<String> list = uploadTexture.get(playerName).getTextureUploadList();
+		list.remove(oldTexture);
+//		this.textureUploadList.remove(oldTexture);
+		if (list.size() > 0) {
+			this.prepareTextureForUpload(playerName, list.get(0));
+			return list.size();
 		} else {
 			return 0;
 		}
+	}
+
+	public int getNumberOfPacketsUploadTexture(String playerName) {
+		return uploadTexture.get(playerName).getNumberOfPacketsUploadTexture();
 	}
 }

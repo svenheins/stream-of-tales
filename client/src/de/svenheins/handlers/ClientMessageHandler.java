@@ -194,6 +194,7 @@ public class ClientMessageHandler {
     		/** Init Entities */
 			BigInteger id_entity;
 			String name_entity;
+			TileSet tileEntity;
 			ArrayList<Entity> entityList = new ArrayList<Entity>();
 			/** for each available packet do */
     		while (packet.hasRemaining()) {
@@ -206,7 +207,9 @@ public class ClientMessageHandler {
     			byte[] nameBytes = new byte[packet.getInt()];
     			packet.get(nameBytes);
     			name_entity = new String(nameBytes); // name
-    			entityList.add(new Entity(name_entity, id_entity, 0,0, 0, 0));
+    			tileEntity = new TileSet(name_entity, name_entity, 50, 50);
+    			entityList.add(new Entity(tileEntity,name_entity, id_entity, 0,0,GameStates.animationDelay));
+//    			entityList.add(new Entity(name_entity, id_entity, 0,0, 0, 0));
     		}
     		/** transform list into array */
     		Entity[] entities = new Entity[entityList.size()];

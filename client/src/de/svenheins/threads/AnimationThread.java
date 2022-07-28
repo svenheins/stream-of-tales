@@ -6,6 +6,7 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GamePanel;
+import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 
@@ -28,6 +29,11 @@ public class AnimationThread implements Runnable {
 //				System.out.println("real time: "+System.currentTimeMillis());
 				GamePanel.gp.updatePlayerSprite();
 				
+				for (int i = EntityManager.size()-1; i >= 0; i--) {
+					Entity entity = EntityManager.get(EntityManager.idList.get(i));
+					if(entity != null) entity.updateSprite();
+				}
+				
 				for (int j=PlayerManager.size()-1;j>=0; j--){
 					Entity e2 = PlayerManager.get(PlayerManager.idList.get(j));
 					if(e2 != null) e2.updateSprite(); 
@@ -37,6 +43,8 @@ public class AnimationThread implements Runnable {
 					Space space = SpaceManager.get(SpaceManager.idList.get(k));
 					if(space != null) space.updateSpace();
 				}
+				
+				
 			}
 			// OUTPUT
 			if (millis >1000 && GamePanel.gp.showStats ==true) {

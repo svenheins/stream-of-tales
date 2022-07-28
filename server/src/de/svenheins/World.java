@@ -222,17 +222,18 @@ public class World
         
         /** Create ServerAgents (extend Entities) */
         Entity realAgent;
-        String iterativSpriteStringAgent = "eye12.png";
+        String iterativSpriteStringAgent = "standardShip_green.png";
         Sprite it_spriteAgent = SpriteManager.manager.getSprite(iterativSpriteStringAgent);
+//        TileSet tileSetEnemy = new TileSet("eye12.png", "enemy", 10, 6);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
-        int numAgentsEntrepreneur = 0;
+        int numAgentsEntrepreneur = 600;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {
-        	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgent.getWidth());
-        	it_y = (float) (Math.random()*GameStates.getHeight()-it_s_spriteAgent.getHeight());
-        	it_mx = 10;//Math.random()*50+0;
-        	it_my = 10;//Math.random()*50+0;
+        	it_x = (float) (Math.random()*2*GameStates.getWidth()-it_s_spriteAgent.getWidth());
+        	it_y = (float) (Math.random()*2*GameStates.getHeight()-it_s_spriteAgent.getHeight());
+        	it_mx = (float) (-10+Math.random()*30);//Math.random()*50+0;
+        	it_my = (float) (-10+Math.random()*30);//Math.random()*50+0;
         	entityIDIndex = entityIDIndex.add(BigInteger.valueOf(1));
         	it_s_entityAgent = new ServerAgentEntrepreneur(it_s_spriteAgent, entityIDIndex, it_x, it_y, it_mx, it_my);
         	room.addEntity(it_s_entityAgent);
@@ -245,11 +246,11 @@ public class World
         }
         /** Create ServerEmployees (extend Entities) */
         Entity realAgentEmployee;
-        String iterativSpriteStringAgentEmployee = "eye.png";
+        String iterativSpriteStringAgentEmployee = "enemy.png";
         Sprite it_spriteAgentEmployee = SpriteManager.manager.getSprite(iterativSpriteStringAgentEmployee);
         ServerSprite it_s_spriteAgentEmployee = new ServerSprite(iterativSpriteStringAgentEmployee, it_spriteAgentEmployee.getHeight(), it_spriteAgentEmployee.getWidth());
         ServerEntity it_s_entityAgentEmployee;
-        int numAgentsEmployee = 0;
+        int numAgentsEmployee = 20;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEmployee; i++) {
         	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_spriteAgentEmployee.getWidth());
@@ -277,23 +278,18 @@ public class World
         String hexaString = "Sechseck.svg";
         Space hexaSpace;
         int rowsHexagons = 10;
-        int colsHexagons = 8;
+        int colsHexagons = 10;
         float hexX, hexY, hexMX, hexMY;
         float climateHexagon;
         int capacityHexagon;
         for (int i = 0; i<rowsHexagons*colsHexagons; i++) {
         	spaceIds = spaceIds.add(BigInteger.valueOf(1));
         	int[] rgb = MyUtil.niceColorGenerator();
-//        	int red = 25*(int) (Math.random()*10);
-//        	int green = red/10;
-//        	int blue = red / 2;
+
             hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 2.0f);
             hexX = (float) (i % colsHexagons)*hexaSpace.getWidth();
             hexY = (float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.75f));
-//            System.out.println("height: "+hexaSpace.getHeight());
-//            System.out.println("width: "+hexaSpace.getWidth());
-//            System.out.println("x: "+hexX);
-//            System.out.println("y: "+hexY);
+
             if ((i/colsHexagons) % 2 == 0) hexX += hexaSpace.getWidth()/2;
             hexMX = 0;//Math.random()*50+0;
             hexMY = 0;//Math.random()*50+0;
@@ -308,66 +304,7 @@ public class World
 	        SpaceManager.add(hexaSpace);	
 	        logger.log(Level.INFO, "SpacePlates intitialized: count = " + SpaceManager.size());
         }
-        
-//        /** Create Konvergenzregion */
-//        String konvString = "Konvergenzregion1.svg";
-//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-//        Space konvSpace = new Space(konvString, spaceIds, new int[]{95, 208, 95}, true, 1.0f, 2.0f);
-//        konvSpace.setAllXY(0, 0);
-//        konvSpace.setMovement(0, 0);
-//        float climateKonvergenzregion = 0.0f;
-//        int capacityKonvergenzregion = numAgentsEntrepreneur-50;
-//        ServerRegion s_konvSpace = new ServerRegion(konvSpace, climateKonvergenzregion, capacityKonvergenzregion);
-//        room.addSpace(s_konvSpace);
-//        konvSpace.setId(s_konvSpace.getId());
-//        SpaceManager.add(konvSpace);
-//        /** Create Hamburg */
-//        String hamburgString = "Hamburg1.svg";
-//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-//        Space hamburgSpace = new Space(hamburgString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
-//        hamburgSpace.setAllXY(454, 87);
-//        hamburgSpace.setMovement(0, 0);
-//        float climate = 1.0f;
-//        int capacity = 20;
-//        ServerRegion s_hamburgSpace = new ServerRegion(hamburgSpace, climate, capacity);
-//        room.addSpace(s_hamburgSpace);
-//        hamburgSpace.setId(s_hamburgSpace.getId());
-//        SpaceManager.add(hamburgSpace);
-//        /** Create Bremen */
-//        String bremenString = "Bremen1.svg";
-//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-//        Space bremenSpace = new Space(bremenString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
-//        bremenSpace.setAllXY(-11, 363);
-//        bremenSpace.setMovement(0, 0);
-//        climate = 1.0f;
-//        capacity = 15;
-//        ServerRegion s_bremenSpace = new ServerRegion(bremenSpace, climate, capacity);
-//        room.addSpace(s_bremenSpace);
-//        bremenSpace.setId(s_bremenSpace.getId());
-//        SpaceManager.add(bremenSpace);
-//        /** Create Zwischenstueck nach Hannover */
-//        String zwString = "ZwHannover.svg";
-//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-//        Space zwSpace = new Space(zwString, spaceIds, new int[]{99, 123, 151}, true, 0.5f, 2.0f);
-//        zwSpace.setAllXY(431, 765);
-//        zwSpace.setMovement(0, 0);
-//        ServerSpace s_zwSpace = new ServerSpace(zwSpace);
-//        room.addSpace(s_zwSpace);
-//        zwSpace.setId(s_zwSpace.getId());
-//        SpaceManager.add(zwSpace);
-//        /** Create Hannover */
-//        String hannoverString = "Hannover1.svg";
-//        spaceIds = spaceIds.add(BigInteger.valueOf(1));
-//        Space hannoverSpace = new Space(hannoverString, spaceIds, new int[]{99, 123, 151}, true, 1.0f, 2.0f);
-//        hannoverSpace.setAllXY(384, 865);
-//        hannoverSpace.setMovement(0, 0);
-//        climate = 1.0f;
-//        capacity = 15;
-//        ServerRegion s_hannoverSpace = new ServerRegion(hannoverSpace, climate, capacity);
-//        room.addSpace(s_hannoverSpace);
-//        hannoverSpace.setId(s_hannoverSpace.getId());
-//        SpaceManager.add(hannoverSpace);
-//        
+
         /** Keep a reference to the Room */
         setRoom(room);
 
@@ -501,7 +438,7 @@ public class World
     	/** Check if the Server was down or has to be reinitialized*/
 //        if (EntityManager.get(EntityManager.idList.get(roomRef.get().getEntities().size()-1)) == null || SpaceManager.get(EntityManager.idList.get(roomRef.get().getSpaces().size()-1)) == null) {
         /** if the Spaces are not initialized, the Entities have to be checked, too */
-    	if (SpaceManager.size() < roomRef.get().getSpaces().size()) {	
+    	if (SpaceManager.size() < roomRef.get().getSpaces().get().size()) {	
     	/** check if the EntityManger is still in the filling process (so the last item should be null) */
 //        	if (EntityManager.get(EntityManager.idList.get(roomRef.get().getEntities().size()-1)) == null) {
             if( EntityManager.size() < roomRef.get().getEntities().get().size()) {
@@ -518,7 +455,7 @@ public class World
             		
             		/** reset our indices and packageSize */
             		this.initStartIndex = 0;
-            		this.initPackageSize = 25;
+            		this.initPackageSize = 1;
             		this.initEndIndex = 0;
             	}
             	/** we must create our entityArray in each step */
@@ -566,16 +503,16 @@ public class World
 	        		SpaceManager.idList = new ArrayList<BigInteger>();
             		/** reset our indices and packageSize */
             		this.initStartIndex = 0;
-            		this.initPackageSize = 5;
+            		this.initPackageSize = 1;
             		this.initEndIndex = 0;
             		this.restartDuplicated = false;
 	        	}
 	        	/** we must create our spacesArray in each step */
-        		spacesArray = new ArrayList<ManagedReference<ServerSpace>>(roomRef.get().getSpaces().values());
+        		spacesArray = new ArrayList<ManagedReference<ServerSpace>>(roomRef.get().getSpaces().get().values());
 	        	
         		/** set the actual endIndex */
         		this.initEndIndex = this.initStartIndex + this.initPackageSize;
-            	if (this.initEndIndex > roomRef.get().getSpaces().size()) this.initEndIndex = roomRef.get().getSpaces().size();
+            	if (this.initEndIndex > roomRef.get().getSpaces().get().size()) this.initEndIndex = roomRef.get().getSpaces().get().size();
 
             	/** now loop through the package and add each Entity of the persistent data to the sending-relevant EntityManager */
 	        	for (int i = this.initStartIndex; i<this.initEndIndex; i++) {

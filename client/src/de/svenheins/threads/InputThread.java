@@ -10,6 +10,7 @@ import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.handlers.InputHandler;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Player;
+import de.svenheins.objects.PlayerEntity;
 
 
 public class InputThread implements Runnable{
@@ -17,11 +18,11 @@ public class InputThread implements Runnable{
 	
 	private long duration, last;
 	private Player[] players;
-	private Entity playerEntity;
+	private PlayerEntity playerEntity;
 	
-	public InputThread(Player[] players, Entity playerEntity) {
+	public InputThread(Player[] players) {
 		this.players = players;
-		this.playerEntity = playerEntity;
+//		this.playerEntity = playerEntity;
 	}
 	
 	@Override
@@ -53,6 +54,7 @@ public class InputThread implements Runnable{
 //				ShipEntity s = ships[h];
 				InputHandler input = players[h].getInputHandler();
 				Player p = players[h];
+				playerEntity = GamePanel.gp.getPlayerEntity();
 				playerEntity.setMovement(0, 0);
 //				GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //				p.setLastAttack(p.getLastAttack()+duration);
@@ -78,6 +80,7 @@ public class InputThread implements Runnable{
 					}
 					if (input.right && !input.left){
 						playerEntity.setHorizontalMovement(Entity.DEFAULT_MOVEMENT_ON_X);
+//						System.out.println("right with " +Entity.DEFAULT_MOVEMENT_ON_X);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+20, GamePanel.gp.getViewPointY());
 						
 					}
@@ -96,10 +99,10 @@ public class InputThread implements Runnable{
 						GamePanel.gp.setPause(!GamePanel.gp.isPaused());
 						input.pause = false;
 					}
-					if (input.zoomIn) {
+					if (input.zoomIn && GamePanel.gp.getZoomFactor()<10.0f) {
 						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()*1.1f);
 					}
-					if (input.zoomOut) {
+					if (input.zoomOut && GamePanel.gp.getZoomFactor()>0.1f) {
 						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()/1.1f);
 					}
 					if (input.options ){
@@ -114,8 +117,8 @@ public class InputThread implements Runnable{
 					}
 //					GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //				}
-					if (GameWindow.gw.isLoggedIn()) {
-						GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY(), playerEntity.getHeight(), playerEntity.getWidth()}));
+					if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
+						GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY()}));
 					}
 			}
 		}

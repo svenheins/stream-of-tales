@@ -10,8 +10,10 @@ import de.svenheins.handlers.FileAddTextureAction;
 import de.svenheins.handlers.FileOpenAction;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TextureManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.Entity;
@@ -183,21 +185,21 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	    this.setReadyForNextMessage(true);
  
 		consoleInput = new ConsoleInputHandler();
-		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-80, new int[]{120, 120, 220}, 0.75f, true, 20);
+		gameConsole = new IngameConsole(new Point(20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 220}, 0.5f, true, true, 14);
 		gw.addKeyListener(consoleInput);
 		this.showConsole = false;
 		
 		gw.addKeyListener(GamePanel.gp.getPlayer().getInputHandler());
 		
 		/** InfoConsole */
-		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-60, new int[]{120, 120, 120}, 0.75f, false, 14);
-        this.showInfoConsole = false;
+		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2 + 20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 120}, 0.5f, false, false, 14);
+        this.showInfoConsole = true;
 		
 //        if(device.isFullScreenSupported()){
 //            device.setFullScreenWindow(this);
 //        }
 		
-		setResizable(true);
+		setResizable(false);
 		
 		add(panel);
 		
@@ -223,6 +225,19 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 			}
 		});
 		menu.add(mainMenuItem);
+		
+		JMenuItem logoutItem = new JMenuItem("Logout");
+		logoutItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				GameModus.modus = GameModus.MAINMENU;
+				gw.logout();
+				
+			}
+
+			
+		});
+		menu.add(logoutItem);
+		
 		JMenuItem exitItem = new JMenuItem("Exit");
 		exitItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -260,13 +275,28 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		mbar.add(menu2);
 		// Comment to unsupport Menu
 		this.setJMenuBar(mbar);
-		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+//		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		
 		setVisible(true);
 		gw.setFocusable(true);
 		gw.requestFocus();
 		
 		
+	}
+	
+	public void logout() {
+		simpleClient.logout(true);
+		gw.send(ClientMessages.logMeOut());
+		GamePanel.gp.setInitializedPlayer(false);
+		GamePanel.gp.setServerInitialized(false);
+		clearAllManagers();
+		this.setLoggedIn(false);
+	}
+	
+	public void clearAllManagers() {
+		PlayerManager.emptyAll();
+		EntityManager.emptyAll();
+		SpaceManager.emptyAll();
 	}
 	
 	
@@ -288,6 +318,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      */
     public void appendOutput(String x) {
 //        outputArea.append(x + "\n");
+    	gameInfoConsole.appendSimpleDate(x);
     }
 
     /**
@@ -567,8 +598,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
          * Formats and displays messages received on a channel.
          */
         public void receivedMessage(ClientChannel channel, ByteBuffer message) {
-            appendOutput("[" + channel.getName() + "/ " + channelNumber +
-                "] " + decodeString(message));
+//            appendOutput("[" + channel.getName() + "/ " + channelNumber +
+//                "] " + decodeString(message));
+            appendOutput(decodeString(message));
         }
     }
     
@@ -730,5 +762,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 
 	public void setReadyForNextMessage(boolean readyForNextMessage) {
 		this.readyForNextMessage = readyForNextMessage;
+	}
+	
+	public ClientChannel getChannelByName(String name) {
+		return channelsByName.get(name);
 	}
 }

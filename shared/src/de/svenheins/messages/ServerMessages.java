@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import de.svenheins.managers.ServerTextureManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 
 /** Message from the server TO the client */
@@ -34,7 +35,7 @@ public class ServerMessages extends Messages{
 
     /** get object state */
     public static ByteBuffer sendObjectState (OBJECTCODE objCode, BigInteger id,  float[] state) {
-        byte[] bytes = new byte[1 + 4 + 8 + 24];
+        byte[] bytes = new byte[1 + 4 + 8 + 16];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.OBJECTSTATE.ordinal());
         
@@ -50,10 +51,10 @@ public class ServerMessages extends Messages{
         buffer.putFloat(state[2]);
         // my
         buffer.putFloat(state[3]);
-        // height
-        buffer.putFloat(state[4]);
-        // width
-        buffer.putFloat(state[5]);
+//        // height
+//        buffer.putFloat(state[4]);
+//        // width
+//        buffer.putFloat(state[5]);
         buffer.flip();
         return buffer;
     }
@@ -203,6 +204,114 @@ public class ServerMessages extends Messages{
     	} 	
     	buffer.flip();
     		
+        return buffer;
+    }
+    
+    /** send players to client */
+    public static ByteBuffer sendPlayers(PlayerEntity[] localObjects) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+    	/** get the length of Bytes that must be reserved for the names */
+		int namesLength = 0;
+		int tileNameLength = 0;
+		int tileFileNameLength = 0;
+    	
+		for (int i = 0; i<localObjects.length; i++) {
+			namesLength += localObjects[i].getName().length();
+			tileNameLength += localObjects[i].getTileSet().getName().length();
+			tileFileNameLength += localObjects[i].getTileSet().getFileName().length();
+		}
+		/** use Object-specific send-routine */
+		/** init bytes */
+		bytes = new byte[1 + 36*localObjects.length + namesLength + tileNameLength + tileFileNameLength];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITPLAYERS.ordinal()); 
+    	
+        PlayerEntity[] lPlayer = localObjects;
+        /** place all objects of the specific class */
+        BigInteger id;
+        String name;
+        String tileName;
+        String tileFileName;
+        float playerWidth;
+        float playerHeight;
+        long animationDelay;
+        PlayerEntity p;
+        for (int i = 0; i<localObjects.length; i++) {
+    		p = lPlayer[i];
+        	id = p.getId();
+    		name = p.getName();
+    		tileName = p.getTileSet().getName();
+    		tileFileName = p.getTileSet().getFileName();
+    		playerWidth = p.getWidth();
+    		playerHeight = p.getHeight();
+    		animationDelay = p.getAnimation().getTimeBetweenAnimation();
+        	
+    		buffer.putLong(id.longValue()); // 8
+    		buffer.putInt(name.length()); // 4
+        	buffer.put(name.getBytes()); // name.length
+        	buffer.putInt(tileName.length()); // 4
+        	buffer.put(tileName.getBytes()); // tileName.length
+        	buffer.putInt(tileFileName.length()); // 4
+        	buffer.put(tileFileName.getBytes()); // tileName.length
+        	buffer.putFloat(playerWidth); // 4 
+        	buffer.putFloat(playerHeight); // 4
+        	buffer.putLong(animationDelay); // 4
+    	} 	
+    	buffer.flip();
+    		
+        return buffer;
+    }
+    
+    public static ByteBuffer sendMe(BigInteger id, String tileName, String tilePathName, String groupName, long firstServerLogin, int experience, String country, float x, float y, float mx, float my) {
+    	byte[] bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4];
+    	ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITME.ordinal()); // 1
+ 
+        buffer.putLong(id.longValue()); // + 8 
+        buffer.putInt(tileName.length()); // 4
+    	buffer.put(tileName.getBytes()); // tileName.length
+    	buffer.putInt(tilePathName.length()); // 4
+    	buffer.put(tilePathName.getBytes()); // tileName.length
+    	buffer.putInt(groupName.length()); // + 4 
+    	buffer.put(groupName.getBytes()); // + groupName.length() 
+    	buffer.putLong(firstServerLogin); // + 8 
+    	buffer.putInt(experience); // + 4 
+    	buffer.putInt(country.length()); // + 4 
+    	buffer.put(country.getBytes()); // + country.length() 
+    	buffer.putFloat(x); // + 4 
+    	buffer.putFloat(y); // + 4 
+    	buffer.putFloat(mx); // + 4 
+    	buffer.putFloat(my); // + 4
+    	
+        
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** edit player-addons */
+    public static ByteBuffer editPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+        byte[] bytes = new byte[1 + 8 + 4 + playerName.length() + 4 + tileName.length() +4 + tilePathName.length() + 4 + 4 + 4 + country.length() + 4 + groupName.length() + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.EDIT_PLAYER_ADDONS.ordinal());
+        /** ID */
+        buffer.putLong(id.longValue()); // 8 Bytes
+        
+        buffer.putInt(playerName.length()); // 4
+    	buffer.put(playerName.getBytes()); // playerName.length() 
+    	buffer.putInt(tileName.length()); // 4 
+    	buffer.put(tileName.getBytes()); // tileName.length() 
+    	buffer.putInt(tilePathName.length()); // 4 
+    	buffer.put(tilePathName.getBytes()); // tileName.length() 
+    	buffer.putInt(tileWidth); // 4 
+    	buffer.putInt(tileHeight); // 4 
+    	buffer.putInt(country.length()); // 4 
+    	buffer.put(country.getBytes()); // country.length() 
+    	buffer.putInt(groupName.length()); // 4 
+    	buffer.put(groupName.getBytes()); // groupName.length() 
+    	buffer.putInt(experience); // 4
+        
+        buffer.flip();
         return buffer;
     }
     

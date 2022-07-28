@@ -9,7 +9,7 @@ public class GUI {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		running = true;
-		new GameWindow("Grafikengine", 1024, 768);
+		new GameWindow("Client", 1100, 700);
 	}
 
 }

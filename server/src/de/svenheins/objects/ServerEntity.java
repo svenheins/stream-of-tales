@@ -27,9 +27,11 @@ public class ServerEntity extends WorldObject{
 	protected String[] animation;
 	protected boolean b_stdAni;
 	protected long lastTimestamp;
+	protected String tileSetPathName;
+	protected String tileSetName;
 	
     /** The {@link WorldRoom} this player is in, or null if none. */
-    private ManagedReference<WorldRoom> currentRoomRef = null;
+    protected ManagedReference<WorldRoom> currentRoomRef = null;
     /** The {@link Logger} for this class. */
     protected static final Logger logger =
         Logger.getLogger(ServerEntity.class.getName());
@@ -52,6 +54,8 @@ public class ServerEntity extends WorldObject{
 		this.height = sprite.getHeight();
 		this.width = sprite.getWidth();
 		this.lastTimestamp = System.currentTimeMillis();
+		this.setTileSetName("");
+		this.setTileSetPathName("");
 	}
 	
 //	public void moveOnX(long duration){
@@ -151,5 +155,21 @@ public class ServerEntity extends WorldObject{
         }
 
         currentRoomRef = dataManager.createReference(room);
+    }
+    
+    public void setTileSetPathName(String pathName) {
+    	this.tileSetPathName = pathName;
+    }
+    
+    public String getTileSetPathName() {
+    	return tileSetPathName;
+    }
+    
+    public void setTileSetName(String name) {
+    	this.tileSetName = name;
+    }
+    
+    public String getTileSetName() {
+    	return tileSetName;
     }
 }

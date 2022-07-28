@@ -73,7 +73,7 @@ public class ClientMessages extends Messages{
      * @return ByteBuffer
      */
     public static ByteBuffer editObjectState(OBJECTCODE objCode, BigInteger id,  float[] state) {
-        byte[] bytes = new byte[1 + 4 + 8 + 24];
+        byte[] bytes = new byte[1 + 4 + 8 + 16];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.EDIT_OBJECT.ordinal());
         buffer.putInt(objCode.ordinal());
@@ -88,10 +88,10 @@ public class ClientMessages extends Messages{
         buffer.putFloat(state[2]);
         // my
         buffer.putFloat(state[3]);
-        // height
-        buffer.putFloat(state[4]);
-        // width
-        buffer.putFloat(state[5]);
+//        // height
+//        buffer.putFloat(state[4]);
+//        // width
+//        buffer.putFloat(state[5]);
         buffer.flip();
         return buffer;
     }
@@ -120,6 +120,73 @@ public class ClientMessages extends Messages{
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITTEXTURES.ordinal());
 //        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer initPlayers() {
+        byte[] bytes = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITPLAYERS.ordinal());
+//        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer initMe() {
+        byte[] bytes = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITME.ordinal());
+//        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer logMeOut() {
+        byte[] bytes = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.LOGOUT.ordinal());
+//        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer getPlayerData(BigInteger id) {
+        byte[] bytes = new byte[1 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.PLAYERDATA.ordinal());
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** edit player-addons */
+    public static ByteBuffer editPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+        byte[] bytes = new byte[1 + 8 + 4 + playerName.length() + 4 + tileName.length() +4 + tilePathName.length() + 4 + 4 + 4 + country.length() + 4 + groupName.length() + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.EDIT_PLAYER_ADDONS.ordinal());
+        /** ID */
+        buffer.putLong(id.longValue()); // 8 Bytes
+        
+        buffer.putInt(playerName.length()); // 4
+    	buffer.put(playerName.getBytes()); // playerName.length() 
+    	buffer.putInt(tileName.length()); // 4 
+    	buffer.put(tileName.getBytes()); // tileName.length() 
+    	buffer.putInt(tilePathName.length()); // 4 
+    	buffer.put(tilePathName.getBytes()); // tileName.length() 
+    	buffer.putInt(tileWidth); // 4 
+    	buffer.putInt(tileHeight); // 4 
+    	buffer.putInt(country.length()); // 4 
+    	buffer.put(country.getBytes()); // country.length() 
+    	buffer.putInt(groupName.length()); // 4 
+    	buffer.put(groupName.getBytes()); // groupName.length() 
+    	buffer.putInt(experience); // 4
+        
         buffer.flip();
         return buffer;
     }

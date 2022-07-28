@@ -95,7 +95,7 @@ public class Space extends LocalObject{
 		addPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+str)));
 		this.setId(id);
 		this.setName(str);
-		this.scale = scale;
+		this.scale = 1.0f;
 		this.scale(scale);
 		this.textureName = "";
 		this.setAllXY(0, 0);
@@ -122,7 +122,7 @@ public class Space extends LocalObject{
 		//addPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+str)));
 		this.setId(id);
 		this.setName(str);
-		this.scale = scale;
+		this.scale = 1.0f;
 		this.setArea(area);
 //		this.scale(scale);
 //		this.width = this.width*scale;
@@ -186,6 +186,11 @@ public class Space extends LocalObject{
 
 	public ArrayList<Polygon> getPolygon() {
 		return polygon;
+	}
+	
+	public void setPolygonPart(int index, Polygon polygon) {
+		this.polygon.remove(index);
+		this.polygon.add(index, polygon);
 	}
 
 	public void setPolygon(ArrayList<Polygon> polygon) {
@@ -473,10 +478,18 @@ public class Space extends LocalObject{
 		Point positionOld = new Point((int)this.getX(), (int)this.getY());
 		this.setAllXY(0, 0);
 		for (int i = 0; i<this.getPolygon().size(); i++) {
-			for (int j =0; j< this.getPolygon().get(i).npoints; j++) {
-				this.getPolygon().get(i).xpoints[j] = (int) (this.getPolygon().get(i).xpoints[j] * factor);
-				this.getPolygon().get(i).ypoints[j] = (int) (this.getPolygon().get(i).ypoints[j] * factor);
+			int[] xcoords = this.getPolygon().get(i).xpoints;
+			int[] ycoords = this.getPolygon().get(i).ypoints;
+			for (int j = 0; j< xcoords.length; j++) {
+				xcoords[j] = (int) (xcoords[j]*factor);
+				ycoords[j] = (int) (ycoords[j]*factor);
 			}
+			setPolygonPart(i,new Polygon( xcoords,  ycoords,  xcoords.length));
+//			this.setPolygon(new Polygon(xcoords, ycoords, xcoords.length));
+//			for (int j =0; j< this.getPolygon().get(i).npoints; j++) {
+//				this.getPolygon().get(i).xpoints[j] = (int) (this.getPolygon().get(i).xpoints[j] * factor);
+//				this.getPolygon().get(i).ypoints[j] = (int) (this.getPolygon().get(i).ypoints[j] * factor);
+//			}
 		}
 		this.setAllXY(positionOld.x, positionOld.y);
 		this.width = this.width*factor;

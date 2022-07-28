@@ -31,6 +31,7 @@ public class ConnectionWindow {
 	        	String strHost = hostField.getText();
 	        	String strPort = portField.getText();
 	        	String strLoginName = loginNameField.getText();
+	        	if (strLoginName.length() >15) strLoginName = strLoginName.substring(0, 15);
 	        	String strLoginPassword = loginPasswordField.getText();
 	        	GameWindow.gw.setHostName(strHost);
 	        	GameWindow.gw.setPortNumber(strPort);
@@ -40,6 +41,7 @@ public class ConnectionWindow {
 	        	GameWindow.gw.login();
 	        	
 	        	connectionDialog.dispose();
+	        	GameModus.modus = GameModus.LOADING;
 	        }
 	    });
 	    JButton cancelButton = new JButton("Cancel");

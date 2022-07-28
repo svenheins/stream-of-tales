@@ -10,6 +10,7 @@ import de.svenheins.animation.Animation;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.SpriteManager;
+import de.svenheins.managers.TileSetManager;
 
 
 public class Entity extends LocalObject {
@@ -21,6 +22,7 @@ public class Entity extends LocalObject {
 	protected Sprite sprite;
 	protected String[] standardAnimation;
 	protected Animation animation;
+	protected TileSet tile;
 	protected boolean b_stdAni;
 	
 	//protected AnimationManager animationManager;
@@ -37,6 +39,9 @@ public class Entity extends LocalObject {
 		this.y = y;
 		this.setId(id);
 		this.setName(src);
+		int spriteWidth = sprite.getWidth();
+		int spriteHeight = sprite.getHeight();
+		this.tile = TileSetManager.manager.getTileSet(src, spriteWidth,spriteHeight);
 		//my = DEFAULT_MOVEMENT_ON_Y;
 		//mx = DEFAULT_MOVEMENT_ON_X;
 		this.my = my;
@@ -45,13 +50,39 @@ public class Entity extends LocalObject {
 		this.width = sprite.getWidth();
 	}
 	
-	public Entity(String[] src, BigInteger id, float x, float y) {
+	public Entity(String animationName, String[] src, BigInteger id, float x, float y) {
 		standardAnimation = src;
-		animation = AnimationManager.manager.getAnimation(src);
+		animation = AnimationManager.manager.getAnimation(animationName, src);
 		sprite = SpriteManager.manager.getSprite(src[0]);
+		int spriteWidth = sprite.getWidth();
+		int spriteHeight = sprite.getHeight();
+		this.tile = TileSetManager.manager.getTileSet(src[0], spriteWidth,spriteHeight);
 		this.x = x;
 		this.y = y;
 		this.setId(id);
+		//my = DEFAULT_MOVEMENT_ON_Y;
+		//mx = DEFAULT_MOVEMENT_ON_X;
+		my = 0;
+		mx = 0;
+		this.height = sprite.getHeight();
+		this.width = sprite.getWidth();
+	}
+	
+	public Entity(TileSet tileSet, String name, BigInteger id, float x, float y, long animationDelay) {
+//		AnimationManager.manager.getAnimation(name, tileSet, 0, 0, animationDelay);
+//		AnimationManager.manager.getAnimation(name+"standard", tileSet, 0, 3, animationDelay);
+//		AnimationManager.manager.getAnimation(name+"standard", tileSet, 0, 3, animationDelay);
+//		System.out.println(name+"standard");
+		standardAnimation = tileSet.getTileNames(GameStates.ani_standard_start, GameStates.ani_standard_end);
+//		System.out.println(standardAnimation[0]+" "+standardAnimation[1]+" "+standardAnimation[2]+" "+standardAnimation[3]);
+		animation = AnimationManager.manager.getAnimation("standard", tileSet,  GameStates.ani_standard_start, GameStates.ani_standard_end, animationDelay);
+		TileSetManager.manager.getTileSet(tileSet);
+		sprite = new Sprite(tileSet.getTileImage(0));
+		this.x = x;
+		this.y = y;
+		this.setId(id);
+		this.setName(name);
+		this.tile = tileSet;
 		//my = DEFAULT_MOVEMENT_ON_Y;
 		//mx = DEFAULT_MOVEMENT_ON_X;
 		my = 0;
@@ -113,17 +144,19 @@ public class Entity extends LocalObject {
 	}
 	
 	public void updateSprite() {
-		float timeNow = System.currentTimeMillis();
-		float complete = timeNow - animation.getInstantOfAnimation();
-		if (this.animation != AnimationManager.manager.getAnimation(standardAnimation) && complete>0) {
-			if(complete < animation.getLength()*animation.getTimeBetweenAnimation())
-				this.setSprite(animation.getSprite(timeNow, this.standardAnimation));
-			else {
-				animation = AnimationManager.manager.getAnimation(standardAnimation);
-				this.setSprite(animation.getSprite(timeNow, standardAnimation));
-			}
-		} else
-			this.setSprite(AnimationManager.manager.getAnimation(standardAnimation).getSprite(timeNow, this.standardAnimation));
+		long timeNow = System.currentTimeMillis();
+		long complete = timeNow - animation.getInstantOfAnimation();
+//		if (this.animation != AnimationManager.manager.getAnimation("standard", this.getTileSet(), 0, 3, 300) && complete>0) {
+//			if(complete < animation.getLength()*animation.getTimeBetweenAnimation())
+//				this.setSprite(animation.getSprite(timeNow));
+//			else {
+//				animation = AnimationManager.manager.getAnimation("standard", this.getTileSet(), GameStates.ani_standard_start, GameStates.ani_standard_end, GameStates.animationDelay);
+//				this.setSprite(animation.getSprite(timeNow));
+//			}
+//		} else
+//			// set the actual Animation back to standard animation
+//			this.setSprite(AnimationManager.manager.getAnimation("standard", this.getTileSet(), GameStates.ani_standard_start, GameStates.ani_standard_end, GameStates.animationDelay).getSprite(timeNow));
+		this.setSprite(animation.getSprite(timeNow));
 	}
 	
 	
@@ -132,24 +165,31 @@ public class Entity extends LocalObject {
 		return this.animation;
 	}
 	
-	public void changeAnimation(String[] src, float timeBetweenAnimation, float instantOfAnimation) {
+	public void changeAnimation(String name, String[] src, long timeBetweenAnimation, long instantOfAnimation) {
+		animation = AnimationManager.manager.getAnimation(name, src);
+		animation.setTimeBetweenAnimation(timeBetweenAnimation);
+		animation.setInstantOfAnimation(instantOfAnimation);
+	}
+	
+	public void changeAnimation(String src, long timeBetweenAnimation, long instantOfAnimation) {
 		animation = AnimationManager.manager.getAnimation(src);
 		animation.setTimeBetweenAnimation(timeBetweenAnimation);
 		animation.setInstantOfAnimation(instantOfAnimation);
 	}
 	
-	public void changeAnimation(String src, float timeBetweenAnimation, float instantOfAnimation) {
-		animation = AnimationManager.manager.getAnimation(src);
-		animation.setTimeBetweenAnimation(timeBetweenAnimation);
-		animation.setInstantOfAnimation(instantOfAnimation);
-	}
-	
-	public void runAnimationOnce(String[] src, float timeBetweenAnimation, float instantOfAnimation){
-		animation = AnimationManager.manager.getAnimation(src);
+	public void runAnimationOnce(String name, String[] src, long timeBetweenAnimation, long instantOfAnimation){
+		animation = AnimationManager.manager.getAnimation(name, src);
 		animation.setTimeBetweenAnimation(timeBetweenAnimation);
 		animation.setInstantOfAnimation(instantOfAnimation);
 		animation.start();
 		
+	}
+	
+	public void setAnimation(Animation animation) {
+		this.animation= animation;
+		animation.setTimeBetweenAnimation(this.getAnimation().getTimeBetweenAnimation());
+		animation.setInstantOfAnimation(this.getAnimation().getInstantOfAnimation());
+//		animation.start();
 	}
 	
 	public void startAnimation() {
@@ -195,5 +235,12 @@ public class Entity extends LocalObject {
 		return this.getSprite().getWidth();
 	}
 	
+	public TileSet getTileSet() {
+		return tile;
+	}
+	
+	public void setTileSet(TileSet tile) {
+		this.tile = tile;
+	}
 	
 }

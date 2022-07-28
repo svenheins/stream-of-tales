@@ -11,10 +11,12 @@ import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 
 public class ServerUpdateThread implements Runnable {
@@ -42,16 +44,20 @@ public class ServerUpdateThread implements Runnable {
 			last = System.currentTimeMillis();
 			millis += duration;
 			frames +=1;
-			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.GAME ) {
+			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.LOADING ) {
 				if (!GamePanel.gp.isServerInitialized()) {
 					EntityManager.entityList = new HashMap<BigInteger, Entity>();
 					EntityManager.idList = new ArrayList<BigInteger>();
 					SpaceManager.spaceList = new HashMap<BigInteger, Space>();
 					SpaceManager.idList = new ArrayList<BigInteger>();
+					PlayerManager.playerList = new HashMap<BigInteger, PlayerEntity>();
+					PlayerManager.idList = new ArrayList<BigInteger>();
 					ClientTextureManager.manager.init();
 					GameWindow.gw.send(ClientMessages.initEntities());
 					GameWindow.gw.send(ClientMessages.initSpaces());
 					GameWindow.gw.send(ClientMessages.initTextures());
+					GameWindow.gw.send(ClientMessages.initPlayers());
+					GameWindow.gw.send(ClientMessages.initMe());
 					GamePanel.gp.setServerInitialized(true);
 				}
 

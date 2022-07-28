@@ -1,18 +1,21 @@
 package de.svenheins.animation;
 
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
 import de.svenheins.objects.Sprite;
+import de.svenheins.objects.TileSet;
 
 public class Animation {
 	
 	//private static final long serialVersionUID = 1L;
 	public List<Sprite> spriteList;
-	private float timeBetweenAnimation;
-	private float instantOfAnimation;
+	private long timeBetweenAnimation;
+	private long instantOfAnimation;
 	private boolean running;
 	private boolean ending;
+	private String name;
 	
 	//public Sprite sprite;
 	
@@ -26,17 +29,29 @@ public class Animation {
 	}
 	
 	// Full Constructor
-	public Animation(List<Sprite> spriteList, float delay) {
+	public Animation(List<Sprite> spriteList, long delay) {
 		this.timeBetweenAnimation = delay;
 		this.spriteList = spriteList;
 		this.instantOfAnimation  = System.currentTimeMillis();
 		this.running = false;
 	}
 	
-	public Sprite getSprite(float timeNow, String[] stdAnimation) {
+	/** constructor for TileSet */
+	public Animation(TileSet tileAnimation, long delay) {
+		this.timeBetweenAnimation = delay;
+		this.spriteList = new ArrayList<Sprite>();
+		for (BufferedImage image: tileAnimation.getTileSet()) {
+			spriteList.add(new Sprite(image));
+		}
+		this.instantOfAnimation  = System.currentTimeMillis();
+		this.running = false;
+		this.setName(tileAnimation.getName());
+	}
+	
+	public Sprite getSprite(long timeNow) {
 		if (spriteList.size() > 0) {
 			if ((running == true || ending == true) && timeBetweenAnimation > 0 && instantOfAnimation <= timeNow) {
-				float difference = timeNow - this.instantOfAnimation;
+				long difference = timeNow - this.instantOfAnimation;
 				int loop = ((int) Math.floor(difference / this.timeBetweenAnimation));
 				int index =  loop % spriteList.size();
 				// Check if the last Spriteframe was reached
@@ -50,11 +65,11 @@ public class Animation {
 			return null;
 	}
 	
-	public float getTimeBetweenAnimation() {
+	public long getTimeBetweenAnimation() {
 		return timeBetweenAnimation;
 	}
 	
-	public void setTimeBetweenAnimation(float timeBetweenAnimation) {
+	public void setTimeBetweenAnimation(long timeBetweenAnimation) {
 		this.timeBetweenAnimation = timeBetweenAnimation;
 	}
 	
@@ -63,7 +78,7 @@ public class Animation {
 		this.running = true;
 	}
 	
-	public void start( float waitMillis) {
+	public void start( long waitMillis) {
 		this.instantOfAnimation = System.currentTimeMillis() + waitMillis;
 		this.running = true;
 	}
@@ -81,14 +96,22 @@ public class Animation {
 		start();
 		end();
 	}
-	public float getInstantOfAnimation() {
+	public long getInstantOfAnimation() {
 		return instantOfAnimation;
 	}
-	public void setInstantOfAnimation(float instantOfAnimation) {
+	public void setInstantOfAnimation(long instantOfAnimation) {
 		this.instantOfAnimation = instantOfAnimation;
 	}
 	
 	public int getLength() {
 		return this.spriteList.size();
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 }

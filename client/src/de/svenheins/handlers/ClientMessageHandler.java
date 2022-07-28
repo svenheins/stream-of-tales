@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
+import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
@@ -16,13 +17,16 @@ import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TileSetManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.TileSet;
 
 public class ClientMessageHandler {
 	/* {@inheritDoc} */
@@ -42,8 +46,8 @@ public class ClientMessageHandler {
 	    		float objectY = packet.getFloat();
 	    		float objectMX = packet.getFloat();
 	    		float objectMY = packet.getFloat();
-	    		float objectWidth = packet.getFloat();
-	    		float objectHeight = packet.getFloat();
+//	    		float objectWidth = packet.getFloat();
+//	    		float objectHeight = packet.getFloat();
 	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
 	    		if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
 	    		if (objCode == OBJECTCODE.PLAYER) {
@@ -51,8 +55,9 @@ public class ClientMessageHandler {
 	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);	
 	    			} else {
 	    				/** new Player logged in (first update of this player)*/
-	    				GameWindow.gw.gameInfoConsole.appendInfo("Login of new Player: ID="+objectId);
-	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);
+	    				GameWindow.gw.gameInfoConsole.appendInfo("Login of new Player: ID="+objectId+", requesting data...");
+	    				GameWindow.gw.send(ClientMessages.getPlayerData(objectId));
+//	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);
 	    			}
 	    		}
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
@@ -153,9 +158,9 @@ public class ClientMessageHandler {
     			spaces[i] = spaceList.get(i);
 //    			System.out.println("ID="+spaces[i].getId());
     		}
-    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+spaceList.size()+ " Spaces");
+//    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+spaceList.size()+ " Spaces");
     		GamePanel.gp.loadSpaceList(spaces);
-    		GameWindow.gw.gameInfoConsole.appendInfo("There are "+SpaceManager.size()+ " Spaces");
+//    		GameWindow.gw.gameInfoConsole.appendInfo("There are "+SpaceManager.size()+ " Spaces");
     		break;
     		
     	case EDIT_SPACE_ADDONS: 
@@ -180,7 +185,7 @@ public class ClientMessageHandler {
 	    	}
 	    	
 	    	
-	    	System.out.println("change space: "+ id_sa + "; textureName: "+nameTexture_sa);
+//	    	System.out.println("change space: "+ id_sa + "; textureName: "+nameTexture_sa);
 	    	
     		break;
     	case INITENTITIES:
@@ -208,14 +213,155 @@ public class ClientMessageHandler {
     		for (int i = 0; i<entityList.size(); i++){
     			entities[i] = entityList.get(i);
     		}
-    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entities.length+ " entities from array");
+//    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entities.length+ " entities from array");
     		GamePanel.gp.loadEntityList(entities);	
-			GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entityList.size()+ " entityList");
-			GameWindow.gw.gameInfoConsole.appendInfo("There are "+EntityManager.size()+ " Entities");
+//			GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entityList.size()+ " entityList");
+//			GameWindow.gw.gameInfoConsole.appendInfo("There are "+EntityManager.size()+ " Entities");
 //			System.out.println("got entities: "+entities.length);
 //			if (entities.length>253)
 //			GamePanel.gp.setServerInitialized(true);
 			
+    		break;
+    	case INITPLAYERS:
+    		/** no more need for init requests*/
+    		GamePanel.gp.setServerInitialized(true);
+    		/** Init Entities */
+			BigInteger id_player;
+			String name_player;
+			String name_player_TileSet;
+			String name_player_TileSet_FileName;
+			float spriteWidth, spriteHeight;
+			TileSet tile;
+			long animationDelay;
+			ArrayList<PlayerEntity> playerList = new ArrayList<PlayerEntity>();
+			/** for each available packet do */
+    		while (packet.hasRemaining()) {
+//    			byte[] bigByte = new byte[packet.getInt()];
+//				for (int i =0; i<bigByte.length; i++) {
+//					bigByte[i] = packet.get();
+//				}
+//	    		BigInteger objectId = new BigInteger(bigByte);
+    			
+    			id_player = BigInteger.valueOf(packet.getLong()); // ID
+    			byte[] nameBytes = new byte[packet.getInt()];
+    			packet.get(nameBytes);
+    			name_player = new String(nameBytes); // name
+    			
+//    			System.out.println("packet-nr.: "+id_player);
+//    			System.out.println("packet-name.: "+name_player);
+    			
+    			byte[] nameTileSetBytes = new byte[packet.getInt()];
+    			packet.get(nameTileSetBytes);
+    			name_player_TileSet = new String(nameTileSetBytes); // name
+    			byte[] nameTileSetFileNameBytes = new byte[packet.getInt()];
+    			packet.get(nameTileSetFileNameBytes);
+    			name_player_TileSet_FileName = new String(nameTileSetFileNameBytes); // name
+    			
+    			spriteWidth = packet.getFloat();
+    			spriteHeight = packet.getFloat();
+    			animationDelay = packet.getLong();
+    			
+    			/** only add if its not me myself */
+    			if (!name_player.equals(GameWindow.gw.getPlayer())) {
+//    				System.out.println(name_player +" VS "+ GameWindow.gw.getPlayer());
+    				tile = new TileSet(name_player_TileSet_FileName, name_player_TileSet, (int) spriteWidth, (int) spriteHeight);
+    				PlayerEntity playerEntity = new PlayerEntity(tile,name_player, id_player, 0,0, animationDelay);
+    				playerList.add(playerEntity);
+    				GameWindow.gw.gameInfoConsole.appendInfo("got data of player: "+name_player);
+    			}
+    		}
+    		/** transform list into array */
+    		PlayerEntity[] players = new PlayerEntity[playerList.size()];
+//    		System.out.println("playerSize: " + playerList.size());
+    		for (int i = 0; i<playerList.size(); i++){
+    			players[i] = playerList.get(i);
+    		}
+//    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entities.length+ " entities from array");
+    		GamePanel.gp.loadPlayerList(players);	
+//			GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entityList.size()+ " entityList");
+//			GameWindow.gw.gameInfoConsole.appendInfo("There are "+EntityManager.size()+ " Entities");
+//			System.out.println("got entities: "+entities.length);
+//			if (entities.length>253)
+//			GamePanel.gp.setServerInitialized(true);
+			
+    		break;
+    	case INITME:
+    		/** init the player himself */
+    		BigInteger myId = BigInteger.valueOf(packet.getLong());    		
+    		byte[] nameTileSetBytes = new byte[packet.getInt()];
+    		packet.get(nameTileSetBytes);
+    		String tileName = new String(nameTileSetBytes);
+    		byte[] nameTileSetPathBytes = new byte[packet.getInt()];
+    		packet.get(nameTileSetPathBytes);
+    		String tilePathName = new String(nameTileSetPathBytes);
+    		byte[] groupNameBytes = new byte[packet.getInt()];
+    		packet.get(groupNameBytes);
+    		String groupName = new String(groupNameBytes);
+    		long firstServerLogin = packet.getLong();
+    		int experience = packet.getInt();
+    		byte[] countryBytes = new byte[packet.getInt()];
+    		packet.get(countryBytes);
+    		String country = new String(countryBytes);
+    		
+    		float x = packet.getFloat();
+    		float y = packet.getFloat();
+    		float mx = packet.getFloat();
+    		float my = packet.getFloat();
+    		
+    		TileSet tileSet = new TileSet(tilePathName, tileName, GameStates.tileWidth, GameStates.tileHeight);
+    		PlayerEntity playerEntity = new PlayerEntity(tileSet, groupName, myId, x, y, GameStates.animationDelay);
+    		playerEntity.setGroupName(groupName);
+    		playerEntity.setFirstServerLogin(firstServerLogin);
+    		playerEntity.setExperience(experience);
+    		playerEntity.setCountry(country);
+    		playerEntity.setMovement(mx, my);
+    		playerEntity.setX(x);
+    		playerEntity.setY(y);
+//    		playerEntity.setMovement(10, 10);
+    		GamePanel.gp.setPlayerEntity(playerEntity);
+//    		System.out.println("OK, initme complete!"+x);
+    		GamePanel.gp.setInitializedPlayer(true);
+    		GameModus.modus = GameModus.GAME;
+    		
+    		break;
+    		
+    	case EDIT_PLAYER_ADDONS:
+    		/** ID */
+			BigInteger objectId_player = BigInteger.valueOf(packet.getLong()); // 8
+	        
+			byte[] nameBytes_player = new byte[packet.getInt()];
+			packet.get(nameBytes_player);
+			String name_player_add = new String(nameBytes_player); // name
+			byte[] tileNameBytes_player = new byte[packet.getInt()];
+			packet.get(tileNameBytes_player);
+			String tileName_add = new String(tileNameBytes_player); // name
+			byte[] tilePathNameBytes_player = new byte[packet.getInt()];
+			packet.get(tilePathNameBytes_player);
+			String tilePathName_add = new String(tilePathNameBytes_player); // name
+	    	int tileWidth = packet.getInt(); // 4 
+	    	int tileHeight = packet.getInt(); // 4 
+	    	byte[] countryBytes_add = new byte[packet.getInt()];
+			packet.get(countryBytes_add);
+			String country_add = new String(countryBytes_add); // name
+			byte[] groupNameBytes_add = new byte[packet.getInt()];
+			packet.get(groupNameBytes_add);
+			String groupName_add = new String(groupNameBytes_add); // name
+	    	int experience_add = packet.getInt(); // 4
+	    	
+	    	TileSet tileSet_add = TileSetManager.manager.getTileSet(tileName_add);
+	    	System.out.println("got tileset: "+tileName_add + " from player "+name_player_add+" ID="+objectId_player);
+	    	PlayerEntity playerEntity_overwrite = new PlayerEntity(tileSet_add, name_player_add, objectId_player, 0, 0, GameStates.animationDelay);
+//	    	playerEntity.setTileSetName(tileName_add);
+//	    	playerEntity.setTileSetPathName(tilePathName);
+	    	playerEntity_overwrite.setWidth(tileWidth);
+	    	playerEntity_overwrite.setHeight(tileHeight);
+	    	playerEntity_overwrite.setCountry(country_add);
+	    	playerEntity_overwrite.setGroupName(groupName_add);
+	    	playerEntity_overwrite.setExperience(experience_add);
+//	    	PlayerManager.overwrite(playerEntity_overwrite);
+	    	PlayerManager.updatePlayerAddons(objectId_player, name_player_add, tileName_add, tileWidth, tileHeight, country_add, groupName_add, experience_add);
+//	    	this.getRoom().editPlayerAddons(thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+	    	
     		break;
     	case SENDTEXTURE:
     		byte[] nameBytesTexture = new byte[packet.getInt()];
@@ -250,10 +396,10 @@ public class ClientMessageHandler {
 		    			GameWindow.gw.send(ClientMessages.sendReadyForNextTexturePacket(GameWindow.gw.getPlayer(), packetIndex));
 		    		} else {
 		    			/** send "this one is complete, send next! */
-		    			System.out.println("next texture, please!");
+//		    			System.out.println("next texture, please!");
 		    			GameWindow.gw.setReadyForNextMessage(true);
 		    			
-		    			GameWindow.gw.gameInfoConsole.appendInfo("Got the new texture "+name_texture+" by player "+playerName);
+		    			GameWindow.gw.gameInfoConsole.appendSimpleDate("Got the new texture "+name_texture+" by player "+playerName);
 		    			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
 		    		}
 				} else {
@@ -264,7 +410,7 @@ public class ClientMessageHandler {
 				/** send "this one is complete, send next! */
     			System.out.println("next texture, please!");
     			String playerName = name_texture.substring(0, name_texture.indexOf("_"));
-    			GameWindow.gw.gameInfoConsole.appendInfo("I have already the texture: "+name_texture+" by player "+playerName+" - next please!");
+//    			GameWindow.gw.gameInfoConsole.appendSimpleDate("I have already the texture: "+name_texture+" by player "+playerName+" - next please!");
     			GameWindow.gw.send(ClientMessages.sendNextTexture(name_texture));
     			GameWindow.gw.setReadyForNextMessage(true);
 			}
@@ -275,10 +421,21 @@ public class ClientMessageHandler {
 	    		OBJECTCODE objCode = OBJECTCODE.values()[packet.getInt()];
 	    		BigInteger objectId = BigInteger.valueOf(packet.getLong());;
 	    		
-	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.remove(objectId);
-	    		if (objCode == OBJECTCODE.ENTITY) EntityManager.remove(objectId);
-	    		if (objCode == OBJECTCODE.PLAYER) PlayerManager.remove(objectId);
-	    		GameWindow.gw.gameInfoConsole.appendInfo("Deleted: "+objectId);
+	    		String deleteText = "";
+	    		
+	    		if (objCode == OBJECTCODE.SPACE) {
+	    			deleteText = "Deleted space "+objectId;
+	    			SpaceManager.remove(objectId);
+	    		}
+	    		if (objCode == OBJECTCODE.ENTITY) {
+	    			deleteText = "Deleted entity "+objectId;
+	    			EntityManager.remove(objectId);
+	    		}
+	    		if (objCode == OBJECTCODE.PLAYER) {
+	    			deleteText = "Player "+ PlayerManager.get(objectId).getName() + " logged out";
+	    			PlayerManager.remove(objectId);
+	    		}
+	    		GameWindow.gw.gameInfoConsole.appendInfo(deleteText);
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
 //					GameWindow.gw.gameInfoConsole.appendInfo("Entity: x="+objectX+" y="+objectY);
 //				}

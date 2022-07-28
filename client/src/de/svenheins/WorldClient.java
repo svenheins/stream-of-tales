@@ -146,7 +146,7 @@ public class WorldClient extends Client
             return;
         }
 
-        String text = getInputText();
+        String text = this.player + ": " + getInputText();
         String channelName =
             (String) channelSelector.getSelectedItem();
         if (channelName.equalsIgnoreCase("<DIRECT>")) {

@@ -163,6 +163,10 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		
 		}
 		
+		if (GamePanel.gp.playerEntity.contains(point)) {
+			new EditWindow(GamePanel.gp.playerEntity);
+		}
+		
 		/** Set new ViewPoint 
 		 * (this is set automatically)
 		 * */
@@ -215,11 +219,11 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 				if (SpaceManager.get(i).getPolygon().get(j).contains(correctedPoint))
 				inside = true;
 			}
-			 if (inside) {
-					SpaceManager.get(i).setTrans(1.0f);
-				} else {
-					SpaceManager.get(i).setTrans(0.5f);
-				}
+//			 if (inside) {
+//					SpaceManager.get(i).setTrans(1.0f);
+//				} else {
+//					SpaceManager.get(i).setTrans(0.5f);
+//				}
 		}
 		
 		

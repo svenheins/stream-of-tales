@@ -82,7 +82,7 @@ public class ServerTextureManager {
 			try {
 				bufferedImage = ImageIO.read(new File(folderPath+src));
 				map.put(src, bufferedImage);
-				System.out.println("image added: "+src);
+//				System.out.println("image added: "+src);
 				return bufferedImage;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

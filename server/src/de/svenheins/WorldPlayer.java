@@ -41,9 +41,12 @@ import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
 
+import de.svenheins.main.GameStates;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TextureManager;
+import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
@@ -281,6 +284,10 @@ public class WorldPlayer
 			case INITSPACES:
 				this.initSpaces();
 				break;
+				
+			case INITTEXTURES:
+				this.initTextures();
+				break;
 //				OBJECTCODE objInitCode = OBJECTCODE.values()[message.getInt()];
 //				/** get the six object-states: x,y,mx,my,width,height */
 //				if (objInitCode == OBJECTCODE.ENTITY) {
@@ -384,7 +391,7 @@ public class WorldPlayer
 		    		getRoom().addSpace(new ServerSpace(spaceAdd));
 		    		/** now we got a new ID saved in the room */
 		    		spaceAdd.setId(getRoom().getLastAddedSpaceID());
-		    		System.out.println("last ID="+ spaceAdd.getId());
+//		    		System.out.println("last ID="+ spaceAdd.getId());
 			        SpaceManager.add(spaceAdd);	
 			        
 		    		//ServerSpace s_space =ServerRegion getRoom().getSpaces().
@@ -392,6 +399,73 @@ public class WorldPlayer
 				}
 				
 				break;
+				
+				/** parse upload Texture */
+			case UPLOAD_TEXTURE:
+				byte[] nameBytes = new byte[message.getInt()];
+	    		message.get(nameBytes);
+	    		String name = new String(nameBytes); // name
+		    	int packetId = message.getInt(); // packet id
+		    	int countPackets = message.getInt(); // packet count
+		    	int sizeOfActualPacket = message.getInt(); // packet size
+		    	/** get the image bytes */
+		    	byte[] imageBytes = new byte[sizeOfActualPacket];
+		    	message.get(imageBytes);
+		    	/** get Player name */
+		    	byte[] playerNameBytes = new byte[message.getInt()];
+	    		message.get(playerNameBytes);
+	    		String playerName = new String(playerNameBytes); // name of sending player
+		    	
+	    		logger.log(Level.INFO, "got the packet={0} for texture {1} from player {2} with {3} bytes",
+	    	            new Object[] { packetId, name, playerName, sizeOfActualPacket });
+	    		
+	    		if (!TextureManager.manager.contains(name)) {
+		    		/** init in the first step */
+		    		if(packetId == 0) {
+		    			TextureManager.manager.initDownload(name, countPackets, playerName);
+		    		}
+		    		TextureManager.manager.getPartOfDownload(name, packetId, imageBytes, playerName);
+		    		
+		    		if (packetId < countPackets-1) {
+		    			/** send the "received!!"-message if there are textures remaining */
+		    			getSession().send(ServerMessages.sendReadyForNextTexturePacket(this.getName(), packetId));
+		    		}
+	    		} else {
+	    			logger.log(Level.INFO, "got an upload request for {0} by player {1} but denied it, because the texture is already there!",
+		    	            new Object[] { name, playerName});
+	    		}
+	    		
+				break;
+			case READY_FOR_NEXT_TEXTURE_PACKET:
+				byte[] playerNameBytes_Ready = new byte[message.getInt()];
+				message.get(playerNameBytes_Ready);
+				String namePlayer = new String(playerNameBytes_Ready); // name
+	    		int oldPacket = message.getInt();
+	    		System.out.println("OK, packet "+oldPacket +" is ready, sending next one!");
+	    		
+	    		/** get next Packet and send it to the server */			
+	    		byte[] imagePacket = TextureManager.manager.getTexturePacket(oldPacket+1);
+	    		String textureName = TextureManager.manager.getUploadTextureName();
+	    		/** send the next packet */
+	    		getSession().send(ServerMessages.uploadTexture(textureName, oldPacket+1, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, getSession().getName()));
+	    		
+	    		break;
+			case READY_FOR_NEXT_TEXTURE:
+				byte[] oldTextureNameBytes = new byte[message.getInt()];
+				message.get(oldTextureNameBytes);
+				String oldTextureName = new String(oldTextureNameBytes); // name
+	    		System.out.println("OK, Texture "+oldTextureName +" is ready, sending next one!");
+	    		
+	    		/** get next Texture and prepare it */		
+	    		int remainingTextures = TextureManager.manager.prepareNextTextureForUpload(oldTextureName);
+	    		if (remainingTextures > 0) {
+		    		/** send the next packet */
+	    			String nextTextureName = TextureManager.manager.getUploadTextureName();
+//	    			byte[] imagePacketNew = TextureManager.manager.getTexturePacket(0);
+	    			getSession().send(ServerMessages.sendTextureStart(nextTextureName));	
+//		    		getSession().send(ServerMessages.uploadTexture(nextTextureName, 0, TextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacketNew.length, imagePacketNew, getSession().getName()));
+	    		}
+	    		break;	
 			case RESPAWN:
 	//		    int respawnId = packet.getInt();
 	//		    float respawnX = packet.getFloat();
@@ -419,7 +493,18 @@ public class WorldPlayer
 			}
 	}
 
-    public void initSpaces() {
+    private void initTextures() {
+    	ArrayList<String> externalTextures = TextureManager.manager.listExternalImages(GameStates.externalImagesPath);
+		TextureManager.manager.setTextureUploadList(externalTextures);
+    	if (externalTextures.size() >0) {
+			/** get first texture and send it to the client */
+			String texture = externalTextures.get(0);	
+			getSession().send(ServerMessages.sendTextureStart(texture));		
+			logger.log(Level.INFO, "first texture send");
+    	}
+	}
+
+	public void initSpaces() {
 		// TODO Auto-generated method stub
     	int countSpaces = currentRoomRef.get().getCountSpaces();
 		Space[] spaceArray;

@@ -6,10 +6,12 @@ import de.svenheins.WorldClient;
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.handlers.ConsoleInputHandler;
 import de.svenheins.handlers.FileAddAction;
+import de.svenheins.handlers.FileAddTextureAction;
 import de.svenheins.handlers.FileOpenAction;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
@@ -164,7 +166,16 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
         GameStates.setHeight(hoehe);
         
         /** init ressources */
-        initializeRessources();
+//        initializeRessources();
+        
+        /** create an image-folder */
+     	/** all non-existent ancestor directories are automatically created */
+	    boolean success = (new File("./ressources/images")).mkdirs();
+	    if (!success) {
+	         // Directory creation failed
+	    }
+	    /** init the external images */
+	    TextureManager.manager.initExternalImages(GameStates.externalImagesPath);
  
 		consoleInput = new ConsoleInputHandler();
 		gameConsole = new IngameConsole(new Point(20, 20), GameStates.getWidth()/2-60, GameStates.getHeight()-80, new int[]{120, 120, 220}, 0.75f, true, 20);
@@ -192,9 +203,14 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //		JMenuItem item = new JMenuItem("Open");
 //		item.addActionListener(new FileOpenAction(panel.getSpace()));
 //		menu.add(item);
-		JMenuItem item2 = new JMenuItem("Add");
+		JMenuItem item2 = new JMenuItem("Add Space");
 		item2.addActionListener(new FileAddAction(panel.getSpaceAdd()));
 		menu.add(item2);
+		
+		JMenuItem itemAddTexture = new JMenuItem("Add Texture");
+		itemAddTexture.addActionListener(new FileAddTextureAction());
+		menu.add(itemAddTexture);
+		
 		JMenuItem mainMenuItem = new JMenuItem("Menu");
 		mainMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -244,6 +260,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		setVisible(true);
 		gw.setFocusable(true);
 		gw.requestFocus();
+		
+		
 	}
 	
 	
@@ -693,5 +711,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 			e.printStackTrace();
 		}
 		  
+	}
+	
+	public String getPlayer(){
+		return this.player;
 	}
 }

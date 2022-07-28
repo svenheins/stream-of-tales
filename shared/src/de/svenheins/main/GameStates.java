@@ -3,6 +3,7 @@ package de.svenheins.main;
 public class GameStates {
 	public static String resourcePath = "/resources/";
 	public static String svgPath = "/resources/svg/";
+	public static String externalImagesPath = "./ressources/images/";
 	public static int width = 800;
 	public static int height = 600;
 	

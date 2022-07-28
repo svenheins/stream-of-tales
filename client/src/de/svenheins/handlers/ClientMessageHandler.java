@@ -12,6 +12,7 @@ import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.main.LoadingStates;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
@@ -42,23 +43,28 @@ public class ClientMessageHandler {
     		if (GamePanel.gp.isServerInitialized()) {
 	    		OBJECTCODE objCode = OBJECTCODE.values()[packet.getInt()];
 	    		BigInteger objectId = BigInteger.valueOf(packet.getLong());;
-	    		float objectX = packet.getFloat();
-	    		float objectY = packet.getFloat();
-	    		float objectMX = packet.getFloat();
-	    		float objectMY = packet.getFloat();
-//	    		float objectWidth = packet.getFloat();
-//	    		float objectHeight = packet.getFloat();
-	    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
-	    		if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
-	    		if (objCode == OBJECTCODE.PLAYER) {
-	    			if (PlayerManager.idList.contains(objectId)) {
-	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);	
-	    			} else {
-	    				/** new Player logged in (first update of this player)*/
-	    				GameWindow.gw.gameInfoConsole.appendInfo("Login of new Player: ID="+objectId+", requesting data...");
-	    				GameWindow.gw.send(ClientMessages.getPlayerData(objectId));
-//	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);
-	    			}
+	    		if (objectId.compareTo(GamePanel.gp.getPlayerEntity().getId())!=0) {
+//	    			System.out.println("got: "+objectId+" I am: "+GamePanel.gp.getPlayerEntity().getId() );
+		    		float objectX = packet.getFloat();
+		    		float objectY = packet.getFloat();
+		    		float objectMX = packet.getFloat();
+		    		float objectMY = packet.getFloat();
+	//	    		float objectWidth = packet.getFloat();
+	//	    		float objectHeight = packet.getFloat();
+		    		if (objCode == OBJECTCODE.SPACE) SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
+		    		if (objCode == OBJECTCODE.ENTITY) EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
+		    		if (objCode == OBJECTCODE.PLAYER) {
+//		    			System.out.println("Got Objectstate of Player");
+		    			if (PlayerManager.idList.contains(objectId)) {
+		    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);	
+//		    				System.out.println("got valid data of player "+objectId);
+		    			} else {
+		    				/** new Player logged in (first update of this player)*/
+		    				GameWindow.gw.gameInfoConsole.appendInfo("Getting new data of Player: ID="+objectId+", requesting data...");
+		    				GameWindow.gw.send(ClientMessages.getPlayerData(objectId));
+	//	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);
+		    			}
+		    		}
 	    		}
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
 //					GameWindow.gw.gameInfoConsole.appendInfo("Entity: x="+objectX+" y="+objectY);
@@ -160,6 +166,10 @@ public class ClientMessageHandler {
     		}
 //    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+spaceList.size()+ " Spaces");
     		GamePanel.gp.loadSpaceList(spaces);
+    		
+    		/** update GameModus if necessary */
+    		GameWindow.gw.setLoadingStates(LoadingStates.SPACES, 100);
+    		GameWindow.gw.updateGameModus();
 //    		GameWindow.gw.gameInfoConsole.appendInfo("There are "+SpaceManager.size()+ " Spaces");
     		break;
     		
@@ -218,11 +228,10 @@ public class ClientMessageHandler {
     		}
 //    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entities.length+ " entities from array");
     		GamePanel.gp.loadEntityList(entities);	
-//			GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entityList.size()+ " entityList");
-//			GameWindow.gw.gameInfoConsole.appendInfo("There are "+EntityManager.size()+ " Entities");
-//			System.out.println("got entities: "+entities.length);
-//			if (entities.length>253)
-//			GamePanel.gp.setServerInitialized(true);
+    		
+    		/** update GameModus if necessary */
+    		GameWindow.gw.setLoadingStates(LoadingStates.ENTITIES, 100);
+    		GameWindow.gw.updateGameModus();
 			
     		break;
     	case INITPLAYERS:
@@ -281,11 +290,10 @@ public class ClientMessageHandler {
     		}
 //    		GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entities.length+ " entities from array");
     		GamePanel.gp.loadPlayerList(players);	
-//			GameWindow.gw.gameInfoConsole.appendInfo("Loaded "+entityList.size()+ " entityList");
-//			GameWindow.gw.gameInfoConsole.appendInfo("There are "+EntityManager.size()+ " Entities");
-//			System.out.println("got entities: "+entities.length);
-//			if (entities.length>253)
-//			GamePanel.gp.setServerInitialized(true);
+    		
+//    		/** update GameModus if necessary */
+//    		GameWindow.gw.setLoadingStates(LoadingStates.PLAYERS, 100);
+//    		GameWindow.gw.updateGameModus();
 			
     		break;
     	case INITME:
@@ -324,7 +332,10 @@ public class ClientMessageHandler {
     		GamePanel.gp.setPlayerEntity(playerEntity);
 //    		System.out.println("OK, initme complete!"+x);
     		GamePanel.gp.setInitializedPlayer(true);
-    		GameModus.modus = GameModus.GAME;
+    		
+    		/** update GameModus if necessary */
+    		GameWindow.gw.setLoadingStates(LoadingStates.ME, 100);
+    		GameWindow.gw.updateGameModus();
     		
     		break;
     		
@@ -476,10 +487,21 @@ public class ClientMessageHandler {
 	    			ArrayList<String> emptyList = new ArrayList<String>();
 	    			emptyList.add(missingTextures.get(0));
 	    			GameWindow.gw.send(ClientMessages.sendMissingTextures(emptyList));
+	    		} else {
+	    			/** I have all textures !!! */
+	    			/** update GameModus if necessary */
+	        		GameWindow.gw.setLoadingStates(LoadingStates.TEXTURES, 100);
+	        		GameWindow.gw.updateGameModus();
 	    		}
 	    		GameWindow.gw.setReadyForNextMessage(true);
     		}
     		
+    		break;
+    	case CHAT:
+    		byte[] chatStringBytes = new byte[packet.getInt()];
+			packet.get(chatStringBytes);
+			String chatString = new String(chatStringBytes); // name
+    		GameWindow.gw.appendOutput(chatString);
     		break;
     	case MOVEMOB:
     		break;

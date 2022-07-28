@@ -16,6 +16,8 @@ import com.sun.sgs.client.ClientChannel;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.OPCODE;
 
 public class IngameConsole extends Space {
 	/**
@@ -88,9 +90,8 @@ public class IngameConsole extends Space {
 				lastLineSend = true;
 				ClientChannel channel = GameWindow.gw.getChannelByName("GLOBAL CHAT");
 	            try {
-	            	ByteBuffer lastLineAsBytes = this.getLastLineAsBytes();
-	            	if (lastLineAsBytes != null) {
-	            		channel.send(lastLineAsBytes);
+	            	if (!getLastLineAsString().equals("")) {
+	            		channel.send(ClientMessages.chat(getLastLineAsString()));
 	            	}
 	            } catch (Exception e) {
 	                e.printStackTrace();
@@ -125,6 +126,17 @@ public class IngameConsole extends Space {
 	            throw new Error("Required character set " + GameStates.MESSAGE_CHARSET +
 	                " not found", e);
 	        }
+		} else return null;
+	}
+	
+	private String getLastLineAsString() {
+		String text = this.consoleText.toString();
+//	    StringBuffer temp = this.consoleText;
+		int enters = this.getEnters();
+		if (enters == 1 && text.split("\n").length > 0) {
+			// last line of the text + the players prefix
+			String lastLine = GameWindow.gw.getPlayer() +": " + text.split("\n")[text.split("\n").length-1];
+			return lastLine;
 		} else return null;
 	}
 

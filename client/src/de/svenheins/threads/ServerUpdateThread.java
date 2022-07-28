@@ -44,7 +44,7 @@ public class ServerUpdateThread implements Runnable {
 			last = System.currentTimeMillis();
 			millis += duration;
 			frames +=1;
-			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.LOADING ) {
+			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.LOADING && GameWindow.gw.isLoggedIn()) {
 				if (!GamePanel.gp.isServerInitialized()) {
 					EntityManager.entityList = new HashMap<BigInteger, Entity>();
 					EntityManager.idList = new ArrayList<BigInteger>();

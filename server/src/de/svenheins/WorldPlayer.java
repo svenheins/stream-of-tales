@@ -28,6 +28,8 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -94,6 +96,10 @@ public class WorldPlayer
     /** The {@link WorldRoom} this player is in, or null if none. */
     private ManagedReference<WorldRoom> currentRoomRef = null;
     
+    /** channel-map */
+    private final HashMap<BigInteger, String> spaceChannels =
+            new HashMap<BigInteger, String>();
+    
     /**
      * Reference to the game channel used for communications
      */
@@ -125,6 +131,7 @@ public class WorldPlayer
             dataMgr.setBinding(playerBinding, player);
         }
         player.setSession(session, channelRef);
+        player.setInitializing(false);
 //        player.setId(id);
         
         String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
@@ -207,9 +214,45 @@ public class WorldPlayer
             /** add global chat channel */
             Channel channelChatGlobal = channelMgr.getChannel(World.CHANNEL_CHAT_GLOBAL);
             channelChatGlobal.join(session);
-           
         }
-        
+    }
+    
+    /** register for spaceChannel with ID = spaceId */
+    public void joinSpaceChannel(BigInteger spaceId) {
+    	if(!spaceChannels.containsKey(spaceId)) {
+    		String channelName = "SpaceChannel_"+spaceId;
+    		this.spaceChannels.put(spaceId, channelName);
+	    	logger.log(Level.INFO,
+	                "Adding {0} to {1}",
+	                new Object[] { this, channelName });
+	    	ChannelManager channelMgr = AppContext.getChannelManager();
+	    	Channel spaceChannel = channelMgr.getChannel(channelName);
+	    	spaceChannel.join(currentSessionRef.get());
+    	}
+    }
+    
+    /** leave spaceChannel with ID = spaceId */
+    public void leaveSpaceChannel(BigInteger spaceId) {
+    	if(spaceChannels.containsKey(spaceId)) {
+    		String channelName = "SpaceChannel_"+spaceId;
+    		this.spaceChannels.remove(spaceId);
+	    	logger.log(Level.INFO,
+	                "{0} is leaving {1}",
+	                new Object[] { this, channelName });
+	    	ChannelManager channelMgr = AppContext.getChannelManager();
+	    	Channel spaceChannel = channelMgr.getChannel(channelName);
+	    	spaceChannel.leave(currentSessionRef.get());
+	    	
+    	}
+    }
+    
+    /** clear SpaceChannels */
+    public void emptySpaceChannels() {
+    	if (!spaceChannels.isEmpty()) {
+    		for(BigInteger spaceId : spaceChannels.keySet()) {
+    			leaveSpaceChannel(spaceId);
+    		}
+    	}
     }
 
     /**
@@ -291,27 +334,23 @@ public class WorldPlayer
 //				break;
 			case INITENTITIES:
 				if(!this.isInitializing()) {
-					setInitializing(true);
-					int countEntities = currentRoomRef.get().getCountEntities();
-//					logger.log(Level.INFO, "countEntities = "+countEntities);
-					int end = 0;
-					Entity[] entityArray;
-	//				entityArray = getRoom().getEntities(this, 0, countEntities);
-	//				getSession().send(ServerMessages.sendEntities(entityArray));
-					for (int begin = 0; end<countEntities; begin+=200) {
-	//					begin = i*(countEntities/countPackets);
-	//					end= (i+1)*(countEntities/ countPackets);
-						end = begin+200;
-						if (end> countEntities) end = countEntities;
-						entityArray = getRoom().getEntities(this, begin, end);
-//						logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
-
-						getSession().send(ServerMessages.sendEntities(entityArray));
-//						logger.log(Level.INFO, "packet send");
+					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
+					this.getRoom().addPlayerInitializing(this.getId());
 					
-					}
-					this.ready = true;
-					this.setInitializing(false);
+					setInitializing(true);
+//					int countEntities = currentRoomRef.get().getCountEntities();
+//					int end = 0;
+//					Entity[] entityArray;
+//					Iterator<BigInteger> itKeys = getRoom().getEntities().get().keySet().iterator();
+//					
+//					for (int begin = 0; end<countEntities; begin+=10) {
+//						end = begin+10;
+//						if (end> countEntities) end = countEntities;
+//						entityArray = getRoom().getEntities(this, begin, end, itKeys);
+//						getSession().send(ServerMessages.sendEntities(entityArray));
+//					
+//					}
+					
 				}
 				break;
 			case INITSPACES:
@@ -327,6 +366,15 @@ public class WorldPlayer
 				break; 
 			case LOGOUT:
 				this.disconnected(true);
+				break;
+				
+			case JOINSPACECHANNEL:
+				BigInteger spaceId = BigInteger.valueOf(message.getLong());
+				this.joinSpaceChannel(spaceId);
+				break;
+			case LEAVESPACECHANNEL:
+				BigInteger spaceIdLeave = BigInteger.valueOf(message.getLong());
+				this.leaveSpaceChannel(spaceIdLeave);
 				break;
 			case PLAYERDATA:
 				BigInteger playerId = BigInteger.valueOf(message.getLong());
@@ -361,7 +409,7 @@ public class WorldPlayer
 		    	
 		    	
 				break;
-			case EDIT_OBJECT:
+			case OBJECTSTATE:
 				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
 //				byte[] bigByte = new byte[message.getInt()];
 //				for (int i =0; i<bigByte.length; i++) {

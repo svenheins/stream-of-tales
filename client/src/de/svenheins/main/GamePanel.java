@@ -27,6 +27,7 @@ import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
 
 import de.svenheins.threads.AnimationThread;
+import de.svenheins.threads.ChannelUpdateThread;
 import de.svenheins.threads.CollisionThread;
 import de.svenheins.threads.GraphicThread;
 import de.svenheins.threads.InputThread;
@@ -62,6 +63,7 @@ public class GamePanel extends JPanel {
 	private GraphicThread graphicThread;
 	private CollisionThread collisionThread;
 	private AnimationThread animationThread;
+	private ChannelUpdateThread channelUpdateThread;
 	public static GamePanel gp;
 	public static String resourcePath = "/resources/";
 	public static String svgPath = "/resources/svg/";
@@ -78,8 +80,8 @@ public class GamePanel extends JPanel {
 	
 	public IngameWindow mainMenu;
 	
-	public Space startButton;
-	public Space simulationButton;
+//	public Space startButton;
+//	public Space simulationButton;
 	public Space connectButton;
 	
 //	public IngameConsole gameConsole;
@@ -103,6 +105,7 @@ public class GamePanel extends JPanel {
 		new Thread(graphicThread).start();
 		new Thread(inputThread).start();
 		new Thread(animationThread).start();
+		new Thread(channelUpdateThread).start();
 	}
 	
 	/**
@@ -127,10 +130,10 @@ public class GamePanel extends JPanel {
 //		p2 = new Player("Spieler2", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S,KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_O));
 		players = new Player[]{p}; 
 		TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "shipTileName", 50, 50);
-		TileSet tileSet2 = new TileSet("tilesets/players/standardShip.png", "shipTileName2", 50, 50);
-		TileSet tileSet_green = new TileSet("tilesets/players/standardShip_green.png", "shipTileName_green", 50, 50);
-		TileSet tileSet_yellow = new TileSet("tilesets/players/standardShip_yellow.png", "shipTileName_yellow", 50, 50);
-		TileSet tileSet_blue = new TileSet("tilesets/players/standardShip_blue.png", "shipTileName_blue", 50, 50);
+		TileSet tileSet2 = new TileSet("tilesets/entities/standardShip.png", "shipTileName2", 50, 50);
+		TileSet tileSet_green = new TileSet("tilesets/entities/standardShip_green.png", "shipTileName_green", 50, 50);
+		TileSet tileSet_yellow = new TileSet("tilesets/entities/standardShip_yellow.png", "shipTileName_yellow", 50, 50);
+		TileSet tileSet_blue = new TileSet("tilesets/entities/standardShip_blue.png", "shipTileName_blue", 50, 50);
 		playerEntity = new PlayerEntity(tileSet, "localPlayer", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		Entity playerEntity2 = new Entity(tileSet2, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		playerEntity2 = new Entity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
@@ -144,10 +147,10 @@ public class GamePanel extends JPanel {
 //		consoleInput = new ConsoleInputHandler();
 		
 		// Init GUI-Objects
-		startButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Start.png", 0.5f);
-		startButton.setAllXY(100, 120);
-		simulationButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Simulation.png", 0.5f);
-		simulationButton.setAllXY(100, 190);
+//		startButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Start.png", 0.5f);
+//		startButton.setAllXY(100, 120);
+//		simulationButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Simulation.png", 0.5f);
+//		simulationButton.setAllXY(100, 190);
 		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
 		connectButton.setAllXY(100, 50);
 		
@@ -172,6 +175,7 @@ public class GamePanel extends JPanel {
 		collisionThread = new CollisionThread();
 		animationThread = new AnimationThread();
 		serverUpdateThread = new ServerUpdateThread(System.currentTimeMillis());
+		channelUpdateThread = new ChannelUpdateThread();
 	}
 	
 	public void config() {
@@ -292,7 +296,6 @@ public class GamePanel extends JPanel {
 		
 		g.setPaintMode();
 		if(playerEntity != null) {
-			
 			if(playerEntity.getSprite().getImage() != null) {
 //				GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
 				g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
@@ -304,9 +307,9 @@ public class GamePanel extends JPanel {
 		if(PlayerManager.size() >0) {
 			List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
 			for (BigInteger i: idListTempPlayers) {
-				Entity playerEntity= PlayerManager.get(i);
+				PlayerEntity playerEntity= PlayerManager.get(i);
 				if(playerEntity != null) {
-					if(playerEntity.getSprite().getImage() != null) {
+					if(playerEntity.getSprite().getImage() != null && playerEntity.isVisible()) {
 						g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
 					}
 				}
@@ -443,8 +446,8 @@ public class GamePanel extends JPanel {
 	
 	public void setPause(boolean pause) {
 		this.pause = pause;
-		if (pause) GameWindow.gw.item21.setText("Start");
-		else GameWindow.gw.item21.setText("Pause");
+//		if (pause) GameWindow.gw.item21.setText("Start");
+//		else GameWindow.gw.item21.setText("Pause");
 	}
 	
 	public boolean isPaused() {

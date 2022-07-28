@@ -99,6 +99,9 @@ public class WorldRoom extends WorldObject
     private final HashMap<BigInteger, ManagedReference<WorldPlayer>> players =
         new HashMap<BigInteger, ManagedReference<WorldPlayer>>();
     
+    /** the set of players, that are just initializing */
+    private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializing = new HashMap<BigInteger, Iterator<BigInteger>>();
+    
     /** The set of corresponding player-entities in this room. */
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerPlayer>>> serverPlayers;// = new HashMap<BigInteger, ManagedReference<ServerPlayer>>();
     
@@ -319,6 +322,7 @@ public class WorldRoom extends WorldObject
 	        refPlayer.getForUpdate().setId(playerID);
 	        
 	        players.put(refPlayer.getId(), refPlayer);
+
 //        }       
 	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
 	        
@@ -330,7 +334,7 @@ public class WorldRoom extends WorldObject
 		        ServerPlayer s_player;
 		       	s_player = new ServerPlayer(s_sprite, refPlayer.getId(), 0, 0, 0, 0);
 		       	s_player.setName(playerName);
-		       	s_player.setTileSetPathName("tilesets/players/standardShip.png");
+		       	s_player.setTileSetPathName("tilesets/entities/standardShip.png");
 		       	s_player.setTileSetName("shipTileName");
 		        this.addServerPlayer(s_player, playerName, refPlayer.getId());
 		        
@@ -342,7 +346,7 @@ public class WorldRoom extends WorldObject
 	        	ServerPlayer s_player = serverPlayers.get().get(playerName).get();
 	        	s_player.setId(refPlayer.getId());
 
-	        	TileSet tile = TileSetManager.manager.getTileSet(s_player.getTileSetName());
+	        	TileSet tile = TileSetManager.manager.getTileSetByPath(s_player.getTileSetName(), s_player.getTileSetPathName());
 		        playerEntity = new PlayerEntity(tile, playerName, s_player.getId(), s_player.getX(), s_player.getY(), GameStates.animationDelay);
 //		        System.out.println(s_player.getX());
 	        }
@@ -451,10 +455,12 @@ public class WorldRoom extends WorldObject
 	        DataManager dataManager = AppContext.getDataManager();
 	        dataManager.markForUpdate(this);
 	
+//	        player.emptySpaceChannels();	        
 	//        return players.get(player.getId()).remove(dataManager.createReference(player));
 	        players.remove(player.getId());
 	        PlayerManager.remove(player.getId());
 	        this.updateSendLogout(player.getId());
+	        this.playerInitializing.remove(player.getId());
 	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
 	        if (ServerTextureManager.manager.containsPlayer(playerName)) {
 	        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
@@ -507,9 +513,10 @@ public class WorldRoom extends WorldObject
     	int objectCounter = 0;
     	Space realSpace;
     	/** for each entity add the corresponding id to the intList */
-    	for (int i = begin; i<end; i++) {
-//			ServerSpace s_space = space.get();
-			realSpace = SpaceManager.get(SpaceManager.idList.get(i));
+    	for (BigInteger spaceId : spaces.get().keySet()) {
+			ServerSpace s_space = spaces.get().get(spaceId).get();
+			realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(),(int)  s_space.getY(), s_space.getName(), spaceId, s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale(), s_space.getArea(), s_space.getTextureName());
+//					SpaceManager.get(SpaceManager.idList.get(i));
 			objectList[objectCounter] = realSpace;
 			objectCounter++;
 		}
@@ -535,19 +542,55 @@ public class WorldRoom extends WorldObject
     }
     
     /** return Entities*/
-    public Entity[] getEntities(WorldPlayer worldPlayer, int begin, int end) {
+    public Entity[] getEntities(WorldPlayer worldPlayer, int begin, int end, Iterator<BigInteger> itKeys) {
     	Entity[] objectList = new Entity[end-begin];
     	int objectCounter = 0;
     	/** for each entity add the corresponding id to the intList */
 //    	entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities);
 		Entity realEntity;
+//		Iterator<BigInteger> itKeys = entities.get().keySet().iterator();
+		BigInteger actualID;
+//		for(int i = 0; i< begin; i++) {
+//			actualID = itKeys.next();
+//		}
+//    	for (BigInteger entId : entities.get().keySet()) {
     	for (int i = begin; i<end; i++) {
-//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
-			realEntity = EntityManager.get(EntityManager.idList.get(i));//new Entity(entity.get().getName(), entity.get().getId(), 0, 0);
-			objectList[objectCounter] = realEntity;
-			objectCounter++;
+    		if (itKeys.hasNext()) {
+    			actualID = itKeys.next();
+				ServerEntity entity = entities.get().get(actualID).get();
+				TileSet tileSet = TileSetManager.manager.getTileSetByPath(entity.getTileSetName(), entity.getTileSetPathName());
+				realEntity = new Entity(tileSet, entity.getName(), entity.getId(), entity.getX(), entity.getY(), GameStates.animationDelay);
+				objectList[objectCounter] = realEntity;
+				objectCounter++;
+    		}
 		}
     	return objectList;    	
+    }
+    
+    /** return next count Entities*/
+    public Entity[] getNextCountEntities(int count, Iterator<BigInteger> itKeys) {
+    	Entity[] objectListTemp = new Entity[count];
+    	int objectCounter = 0;
+    	/** for each entity add the corresponding id to the intList */
+		Entity realEntity;
+		BigInteger actualID;
+    	for (int i = 0; i<count; i++) {
+    		if (itKeys.hasNext()) {
+    			actualID = itKeys.next();
+				ServerEntity entity = entities.get().get(actualID).get();
+				TileSet tileSet = TileSetManager.manager.getTileSetByPath(entity.getTileSetName(), entity.getTileSetPathName());
+				realEntity = new Entity(tileSet, entity.getName(), entity.getId(), entity.getX(), entity.getY(), GameStates.animationDelay);
+				objectListTemp[objectCounter] = realEntity;
+				objectCounter++;
+    		} else {
+    			Entity[] objectList = new Entity[objectCounter];
+    			for (int j = 0; j < objectCounter; j++){
+    				objectList[j] = objectListTemp[j];
+    			}
+    			return objectList;
+    		}
+		}
+    	return objectListTemp;    	
     }
     
     public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> getEntities() {
@@ -563,88 +606,110 @@ public class WorldRoom extends WorldObject
      * Updates all objects in the WorldRoom
      * @param delta: time that passed until the last update-process
      */
-    public void updateEntities(int begin, int end) {
+    public void updateEntities(int begin, int end, Iterator<BigInteger> itKeys) {
     	long timestamp;
 //		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
-		Entity realEntity;
-		for (int i = begin; i<end; i++) {
-//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
-			ServerEntity se = entities.get().get(EntityManager.idList.get(i)).getForUpdate(); 
-//					EntityManager.get(EntityManager.idList.get(i)); 
-//    		ServerEntity se = entity.getForUpdate();
-    		
-    		timestamp = System.currentTimeMillis();
-    		se.move(timestamp);
-    		
-			if(se instanceof ServerAgentEntrepreneur) {
-//				logger.log(Level.INFO, "Agent gefunden!");
-				((ServerAgentEntrepreneur) se).updateLocation();
-			} else if(se instanceof ServerAgentEmployee) {
-//					logger.log(Level.INFO, "Agent gefunden!");
-				((ServerAgentEmployee) se).updateLocation();
-			} else {
-				if(se.getX() < 0) {se.setHorizontalMovement(Math.abs(se.getHorizontalMovement()));}
-				if(se.getX() > GameStates.getWidth()) {se.setHorizontalMovement(-Math.abs(se.getHorizontalMovement()));}
-				if(se.getY() < 0) {se.setVerticalMovement(Math.abs(se.getVerticalMovement()));}
-				if(se.getY() > GameStates.getHeight()) {se.setVerticalMovement(-Math.abs(se.getVerticalMovement()));}
+//    	Iterator<BigInteger> itKeys = entities.get().keySet().iterator();
+    	BigInteger actualID;
+//    	for(int i = 0; i< begin; i++) {
+//    		actualID = itKeys.next();
+//    	}
+    	
+//		Entity realEntity;
+//		for (BigInteger entId : entities.get().keySet()) {
+		for (int i = begin; i < end; i++ ) {
+			if (itKeys.hasNext()) {
+				actualID = itKeys.next();
+	//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
+				ServerEntity se = entities.get().get(actualID).getForUpdate(); 
+	//					EntityManager.get(EntityManager.idList.get(i)); 
+	//    		ServerEntity se = entity.getForUpdate();
+	    		
+	    		timestamp = System.currentTimeMillis();
+	    		se.move(timestamp);
+	    		
+				if(se instanceof ServerAgentEntrepreneur) {
+	//				logger.log(Level.INFO, "Agent gefunden!");
+					((ServerAgentEntrepreneur) se).updateLocation();
+				} else if(se instanceof ServerAgentEmployee) {
+	//					logger.log(Level.INFO, "Agent gefunden!");
+					((ServerAgentEmployee) se).updateLocation();
+				} else {
+					if(se.getX() < 0) {se.setHorizontalMovement(Math.abs(se.getHorizontalMovement()));}
+					if(se.getX() > GameStates.getWidth()) {se.setHorizontalMovement(-Math.abs(se.getHorizontalMovement()));}
+					if(se.getY() < 0) {se.setVerticalMovement(Math.abs(se.getVerticalMovement()));}
+					if(se.getY() > GameStates.getHeight()) {se.setVerticalMovement(-Math.abs(se.getVerticalMovement()));}
+				}
+				
+	//			realEntity = new Entity(se.getName(), se.getId(), se.getX(), se.getY(), se.getHorizontalMovement(), se.getVerticalMovement());
+	//    		if ( EntityManager.overwrite(realEntity) ) {
+	////    			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
+	//    		} else {
+	//    			logger.log(Level.INFO, "Overwrite error - space is not existent!");
+	//    		}
 			}
-			realEntity = new Entity(se.getName(), se.getId(), se.getX(), se.getY(), se.getHorizontalMovement(), se.getVerticalMovement());
-    		if ( EntityManager.overwrite(realEntity) ) {
-//    			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
-    		} else {
-    			logger.log(Level.INFO, "Overwrite error - space is not existent!");
-    		}
     	}
     	
     }
     
-    public void updateSpaces(int begin, int end) {
+    public void updateSpaces() {
     	long timestamp;
 //    	spacesArray = new ArrayList<ManagedReference<ServerSpace>>(spaces.values());
 
 //		for (int i = begin; i<end; i++) {
-    	for (int i = 0; i< SpaceManager.size(); i++) {
+    	for (BigInteger spaceId : spaces.get().keySet()) {
 //			ManagedReference<ServerSpace> space = spacesArray.get(i);
 //    		ServerSpace s_space = new ServerSpace(SpaceManager.get(SpaceManager.idList.get(i)));
-    		ServerSpace s_space = spaces.get().get(SpaceManager.idList.get(i)).getForUpdate();//space.getForUpdate();
+    		ServerSpace s_space = spaces.get().get(spaceId).getForUpdate();//space.getForUpdate();
     		
     		if (s_space instanceof ServerRegion) {
     			/** update dimensions */
-    			Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale(), s_space.getArea(), s_space.getTextureName());
-    			if ( SpaceManager.overwrite(realSpace) ) {
-//        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
-        		} else {
-        			logger.log(Level.INFO, "Overwrite error - space is not existent!");
-        		}
+    			// do nothing at all
+//    			Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale(), s_space.getArea(), s_space.getTextureName());
+//    			if ( SpaceManager.overwrite(realSpace) ) {
+////        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
+//        		} else {
+//        			logger.log(Level.INFO, "Overwrite error - space is not existent!");
+//        		}
     		} else {
     			timestamp = System.currentTimeMillis();
         		/** Spaces can move without limitations (_IF_ they move) */
 //        		if(s_space.getHorizontalMovement() != 0 || s_space.getVerticalMovement()!=0) 
         		s_space.move(timestamp);
-        		Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale(), s_space.getArea(), s_space.getTextureName());
-        		if ( SpaceManager.overwrite(realSpace) ) {
-//        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
-        		} else {
-        			logger.log(Level.INFO, "Overwrite error - space is not existent!");
-        		}
+//        		Space realSpace = new Space(s_space.getPolygon(), (int) s_space.getX(), (int) s_space.getY(), s_space.getName(), s_space.getId(), s_space.getRGB(), s_space.isFilled(), s_space.getTrans(), s_space.getScale(), s_space.getArea(), s_space.getTextureName());
+//        		if ( SpaceManager.overwrite(realSpace) ) {
+////        			logger.log(Level.INFO, "");//, new Object[] {se.getY(),  GameStates.getHeight()});
+//        		} else {
+//        			logger.log(Level.INFO, "Overwrite error - space is not existent!");
+//        		}
     		}
     		
     	}
     }
 
     /** send all Entities to all Players */
-    public void updateSendPlayersEntities(int begin, int end) {
-    	for (int i = begin; i<end; i++) {
-			ManagedReference<ServerEntity> entity = entities.get().get(EntityManager.idList.get(i));//entitiesArray.get(i);
-			for (BigInteger playerID : players.keySet()) {
-				if (players.get(playerID).get().isReady()) {
-	    			BigInteger object_id = entity.get().getId();
-	    			// get the six object-states: x,y,mx,my,width,height
-	    			float[] object_state = new float[]{entity.get().getX(), entity.get().getY(),entity.get().getHorizontalMovement(),entity.get().getVerticalMovement(), entity.get().getWidth(), entity.get().getHeight()};
-	    			players.get(playerID).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.ENTITY, object_id, object_state));
-	    			
-    			}
-			}
+    public void updateSendPlayersEntities(int begin, int end, Iterator<BigInteger> itKeys) {
+//    	Iterator<BigInteger> itKeys = entities.get().keySet().iterator();
+    	BigInteger actualID; 
+//    	for (int i = 0; i< begin; i++) {
+//    		actualID = itKeys.next();
+//    	}
+    	for ( int i = begin; i < end; i++) {
+//    	for (BigInteger entId : entities.get().keySet()) {
+    		if ( itKeys.hasNext()) {
+    			actualID = itKeys.next();
+				ServerEntity entity = entities.get().get(actualID).get();//entitiesArray.get(i);
+				for (BigInteger playerID : players.keySet()) {
+					if (players.get(playerID).get().isReady()) {
+		    			BigInteger object_id = entity.getId();
+		    			// get the six object-states: x,y,mx,my,width,height
+		    			float[] object_state = new float[]{entity.getX(), entity.getY(),entity.getHorizontalMovement(),entity.getVerticalMovement(), entity.getWidth(), entity.getHeight()};
+		    			players.get(playerID).get().getSession().send(ServerMessages.sendObjectState(OBJECTCODE.ENTITY, object_id, object_state));
+		    			
+	    			}
+				}
+//			if ( itKeys.hasNext()) actualID = itKeys.next();
+    		}
     	}
     	
 //    	long durationOfUpdate = System.currentTimeMillis()-last;
@@ -653,11 +718,11 @@ public class WorldRoom extends WorldObject
     }
 
     
-    public void updateSendPlayersSpaces(int begin, int end) {
+    public void updateSendPlayersSpaces() {
 //    	for (int i = begin; i<end; i++) {
-    	for ( int i = 0; i < SpaceManager.idList.size(); i++) {
+    	for (BigInteger spaceId : spaces.get().keySet()) {
 //    		ServerSpace space = new ServerSpace(SpaceManager.get(SpaceManager.idList.get(i)));
-    		ServerSpace space = spaces.get().get(SpaceManager.idList.get(i)).get(); //spacesArray.get(i);
+    		ServerSpace space = spaces.get().get(spaceId).get(); //spacesArray.get(i);
 			for (BigInteger playerID : players.keySet()) {
 				if (players.get(playerID).get().isReady()) {
 	    			BigInteger object_id = space.getId();
@@ -779,5 +844,44 @@ public class WorldRoom extends WorldObject
 	
 	public ServerPlayer getServerPlayer(String name) {
 		return serverPlayers.get().get(name).get();
+	}
+
+	public HashMap<BigInteger, Iterator<BigInteger>> getPlayerInitializing() {
+		return playerInitializing;
+	}
+	
+	public void addPlayerInitializing(BigInteger playerID) {
+		if (!this.playerInitializing.containsKey(playerID)) {
+			this.playerInitializing.put(playerID, this.getEntities().get().keySet().iterator());
+		}
+	}
+	
+	public void removePlayerInitializing(BigInteger playerID) {
+		if (this.playerInitializing.containsKey(playerID)) {
+			this.playerInitializing.remove(this.players.get(playerID));
+		}
+	}
+	
+	/** send count next entities to player, who need init */
+	public void initializePlayers() {
+		Entity[] entityArray;
+		for (BigInteger playerIds : playerInitializing.keySet()) {
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+				Iterator<BigInteger> itKeys = playerInitializing.get(playerIds);
+				entityArray = getNextCountEntities(20, itKeys);
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendEntities(entityArray));
+				if (itKeys.hasNext()) { 
+					this.playerInitializing.put(playerIds, itKeys);
+				} else {
+					this.playerInitializing.remove(playerIds);
+					this.players.get(playerIds).get().setReady(true);
+					this.players.get(playerIds).get().setInitializing(false);
+				}
+			} else {
+				this.playerInitializing.remove(playerIds);
+			}
+		}
+		
 	}
 }

@@ -29,8 +29,8 @@ public class GameStates {
 	public static int ani_u_end = 7;
 	public static int ani_d_start = 20;
 	public static int ani_d_end = 23;
-	public static String standardTilePathPlayers = "tilesets/players/";
-	public static String standardTileNamePlayer = standardTilePathPlayers+"standardShip2.png";
+	public static String standardTilePathPlayers = "tilesets/entities/";
+	public static String standardTileNamePlayer = standardTilePathPlayers+"standardShip.png";
 	
 	public static int getWidth() {
 		return width;

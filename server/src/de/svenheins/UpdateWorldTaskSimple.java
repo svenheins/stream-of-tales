@@ -1,6 +1,8 @@
 package de.svenheins;
 
 import java.io.Serializable;
+import java.math.BigInteger;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,6 +21,7 @@ public class UpdateWorldTaskSimple  implements Task, Serializable, ManagedObject
 	int index;
 	int packageSize;
 	private ManagedReference<WorldRoom> room = null;
+	private Iterator<BigInteger> itKeys;
 
 	private long lastTimestamp = System.currentTimeMillis();
 	
@@ -32,6 +35,7 @@ public class UpdateWorldTaskSimple  implements Task, Serializable, ManagedObject
 		DataManager dataManager = AppContext.getDataManager();
 		this.room = dataManager.createReference(worldRoom);
 		lastTimestamp = System.currentTimeMillis();
+		itKeys = room.get().getEntities().get().keySet().iterator();
 	}
 			
 	@Override
@@ -44,10 +48,13 @@ public class UpdateWorldTaskSimple  implements Task, Serializable, ManagedObject
 		int endIndex = this.index + this.packageSize;
 		if (endIndex > this.end) endIndex =this.end;
 		
-		this.room.get().updateEntities(index, endIndex);
+		this.room.get().updateEntities(this.index, endIndex, itKeys);
 		
 		this.index += this.packageSize;
-		if (this.index >= this.end) this.index = this.begin;
+		if (this.index >= this.end) {
+			this.index = this.begin;
+			itKeys = room.get().getEntities().get().keySet().iterator();
+		}
 //		this.room.get().updateEntities(delta, begin, end);
 //			phase ++;
 //			if (!AppContext.getTaskManager().shouldContinue()) {

@@ -3,6 +3,7 @@ package de.svenheins.main;
 
 //import de.svenheins.Client.NullClientChannelListener;
 import de.svenheins.WorldClient;
+import de.svenheins.functions.MyMath;
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.handlers.ConsoleInputHandler;
 import de.svenheins.handlers.FileAddAction;
@@ -31,6 +32,8 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.net.PasswordAuthentication;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -65,8 +68,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	private Dimension dim;
 	private GamePanel panel;
 	private StatPanel menuPanel;
-	public final JMenuItem item21= new JMenuItem("Pause");
-	public final JMenuItem item22= new JMenuItem("Server aktualisieren");
+	public final JMenuItem item21= new JMenuItem("reset zoom");
 	
 	public static GameWindow gw;
 	private GraphicsDevice device;
@@ -79,6 +81,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     private ConsoleInputHandler consoleInput;
     public IngameConsole gameConsole;
     public IngameConsole gameInfoConsole;
+    
+    private int[] loadingStates = new int[4];
 
 
     /** The name of the host property. */
@@ -114,6 +118,10 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     /** Map that associates a channel name with a {@link ClientChannel}. */
     protected final Map<String, ClientChannel> channelsByName =
         new HashMap<String, ClientChannel>();
+    
+    /** channel-map */
+    protected HashMap<BigInteger, String> spaceChannels =
+            new HashMap<BigInteger, String>();
     
     /** Sequence generator for counting channels. */
     protected final AtomicInteger channelNumberSequence =
@@ -182,6 +190,10 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	    /** init the external images */
 	    ClientTextureManager.manager.initExternalImages(GameStates.externalImagesPath);
 	    
+	    /** prepare the loading states */
+	    loadingStates = new int[]{0,0,0,0};
+	    
+	    
 	    this.setReadyForNextMessage(true);
  
 		consoleInput = new ConsoleInputHandler();
@@ -194,10 +206,6 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		/** InfoConsole */
 		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2 + 20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 120}, 0.5f, false, false, 14);
         this.showInfoConsole = true;
-		
-//        if(device.isFullScreenSupported()){
-//            device.setFullScreenWindow(this);
-//        }
 		
 		setResizable(false);
 		
@@ -248,28 +256,13 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		menu.add(exitItem);
 		
 		// Next Menu-Item
-		JMenu menu2 = new JMenu("Simulation");
+		JMenu menu2 = new JMenu("View");
 		item21.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-            	if (GamePanel.gp.isPaused()) {
-            		item21.setText("Pause");
-	            	GamePanel.gp.setPause(false);
-            	} else {
-	            	item21.setText("Start");
-	            	GamePanel.gp.setPause(true);
-            	}
-            }
-		});
-		item22.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-            	EntityManager.emptyAll();
-            	SpaceManager.emptyAll();
-            	GamePanel.gp.setServerInitialized(false);
-            	
+            		GamePanel.gp.setZoomFactor(1.0f);
             }
 		});
 		menu2.add(item21);
-		menu2.add(item22);
 
 		mbar.add(menu);
 		mbar.add(menu2);
@@ -297,6 +290,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		PlayerManager.emptyAll();
 		EntityManager.emptyAll();
 		SpaceManager.emptyAll();
+		/** prepare the loading states */
+	    loadingStates = new int[]{0,0,0,0};
 	}
 	
 	
@@ -533,6 +528,10 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
         String channelName = channel.getName();
         channelsByName.put(channelName, channel);
         appendOutput("Joined to channel " + channelName);
+        if (channelName.startsWith("SpaceChannel_")) {
+        	System.out.println("Got Space-Channel");
+        	joinSpaceChannel(BigInteger.valueOf(Long.parseLong(channelName.substring(13))));
+        }
 //        channelSelectorModel.addElement(channelName);
         return new WorldClientChannelListener();
     }
@@ -590,6 +589,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
          */
         public void leftChannel(ClientChannel channel) {
             appendOutput("Removed from channel " + channel.getName());
+            if (channel.getName().startsWith("SpaceChannel_")) {
+            	leaveSpaceChannel(BigInteger.valueOf(Long.parseLong(channel.getName().substring(13))));
+            }
         }
 
         /**
@@ -600,7 +602,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
         public void receivedMessage(ClientChannel channel, ByteBuffer message) {
 //            appendOutput("[" + channel.getName() + "/ " + channelNumber +
 //                "] " + decodeString(message));
-            appendOutput(decodeString(message));
+//            appendOutput(decodeString(message));
+            ClientMessageHandler.parseClientPacket(message);
         }
     }
     
@@ -766,5 +769,45 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	
 	public ClientChannel getChannelByName(String name) {
 		return channelsByName.get(name);
+	}
+	
+	public HashMap<BigInteger, String> getSpaceChannels() {
+		return this.spaceChannels;
+	}
+	
+	public void joinSpaceChannel(BigInteger spaceId) {
+		if (!spaceChannels.containsKey(spaceId)) {
+			this.spaceChannels.put(spaceId, "SpaceChannel_"+spaceId);
+		}
+	}
+	
+	public void leaveSpaceChannel(BigInteger spaceId) {
+		if (spaceChannels.containsKey(spaceId)) {
+			this.spaceChannels.remove(spaceId);
+		}
+	}
+	
+	public void updateGameModus() {
+		switch (GameModus.modus) {
+		case GameModus.LOADING:
+			if(MyMath.sum(loadingStates)<(loadingStates.length*100)) {
+				// do nothing and wait
+			} else {
+				// OK, ready for GAME
+				GameModus.modus = GameModus.GAME;
+			}
+			break;
+		case GameModus.GAME:
+		default:
+			break;
+		}
+	}
+	
+	public void setLoadingStates(int index, int value) {
+		loadingStates[index] = value;
+	}
+	
+	public int getLoadingState(int index) {
+		return loadingStates[index];
 	}
 }

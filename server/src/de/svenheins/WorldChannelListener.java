@@ -56,12 +56,12 @@ class WorldChannelListener
                                 ClientSession session, 
                                 ByteBuffer message)
     {
-        if (logger.isLoggable(Level.INFO)) {
-            logger.log(Level.INFO,
-                "Channel message from {0} on channel {1}",
-                new Object[] { session.getName(), channel.getName() }
-            );
-        }
+//        if (logger.isLoggable(Level.INFO)) {
+//            logger.log(Level.INFO,
+//                "Channel message from {0} on channel {1}",
+//                new Object[] { session.getName(), channel.getName() }
+//            );
+//        }
         channel.send(session, message);
     }
 }

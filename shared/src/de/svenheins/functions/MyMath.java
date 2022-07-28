@@ -177,4 +177,13 @@ public class MyMath {
 		int y = (int) (Math.random()*2*distance -distance);
 		return new Point((int) (point.x+x), (int) (point.y+y));
 	}
+	
+	/** calculate sum of int[] */
+	public static int sum(int[] intArray) {
+		int sumComplete = 0;
+		for (int i = 0; i < intArray.length; i++) {
+			sumComplete += intArray[i];
+		}
+		return sumComplete;
+	}
 }

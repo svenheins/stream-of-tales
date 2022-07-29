@@ -1,7 +1,6 @@
 package de.svenheins.managers;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class UploadTexture {
 	private String uploadTextureName = "";

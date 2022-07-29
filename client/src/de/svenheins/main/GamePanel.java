@@ -1,5 +1,6 @@
 package de.svenheins.main;
 import de.svenheins.functions.MyMath;
+import de.svenheins.functions.MyUtil;
 import de.svenheins.handlers.ConsoleInputHandler;
 import de.svenheins.handlers.InputHandler;
 import de.svenheins.handlers.MouseHandler;
@@ -14,12 +15,14 @@ import java.awt.image.BufferedImage;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.JPanel;
 
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.MapManager;
+import de.svenheins.managers.ObjectMapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 
@@ -86,6 +89,9 @@ public class GamePanel extends JPanel {
 	private double rotationDegree;
 	private int maxViewPointX, maxViewPointY, minViewPointX, minViewPointY;
 	private boolean deleteModus = false;
+	private String paintLayer = "cobble";
+	private int paintType = 110;
+	
 	
 	public IngameWindow mainMenu;
 	
@@ -139,7 +145,7 @@ public class GamePanel extends JPanel {
 		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I, KeyEvent.VK_1, KeyEvent.VK_2));
 //		p2 = new Player("Spieler2", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S,KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_O));
 		players = new Player[]{p}; 
-		TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "shipTileName", 50, 50);
+		TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
 		TileSet tileSet2 = new TileSet("tilesets/entities/standardShip.png", "shipTileName2", 50, 50);
 		TileSet tileSet_green = new TileSet("tilesets/entities/standardShip_green.png", "shipTileName_green", 50, 50);
 		TileSet tileSet_yellow = new TileSet("tilesets/entities/standardShip_yellow.png", "shipTileName_yellow", 50, 50);
@@ -214,6 +220,8 @@ public class GamePanel extends JPanel {
 		this.setZoomFactor(1.0f);
 		this.setRotationDegree(0);
 		this.setDeleteModus(false);
+		this.setPaintType(110);
+		this.setPaintLayer("cobble");
 		
 		// Modify the Cursor
 		//Cursor cursor = getToolkit().createCustomCursor(new ImageIcon(getClass().getResource(resourcePath+"images/"+"cursor.png")).getImage(), new Point(0,0), "Cursor");
@@ -296,26 +304,144 @@ public class GamePanel extends JPanel {
 		
 		/** Paint Maps */
 		g.setPaintMode();
-		List<Point> idListTempMaps = new ArrayList<Point>(MapManager.pointList);
-		for (Point p: idListTempMaps){
-			LocalMap localMap = MapManager.get(p);
+		MapManager cobbleManager = GameWindow.gw.mapManagers.get("cobble");
+		List<Point> idListcobbleMap = new ArrayList<Point>(cobbleManager.pointList);
+		for (Point p: idListcobbleMap){
+			LocalMap localMap = cobbleManager.get(p);
 			if(localMap != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*2)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*2))) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile = null;
 					for (int k = 0; k < localMap.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
-							tile = localMap.getTileImage(k, l);
+							tile = localMap.getTileImage(k, l, GameWindow.gw.getTileMapManager());
 							if( tile != null) {
 								g.drawImage(tile, (int) (localMap.getOrigin().x + k*32-viewPointX), (int) (localMap.getOrigin().y + l*32-viewPointY), this);
 							}
 						}
 					}
+				} else {
+					/** remove if too far away */
+					cobbleManager.remove(p);
 				}
-				//localMap.paint(g, (int) (-viewPointX),(int) (-viewPointY));
 			}
 			else
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
 		}
+		
+		MapManager grassManager = GameWindow.gw.mapManagers.get("grass");
+		List<Point> idListGrassMap = new ArrayList<Point>(grassManager.pointList);
+		for (Point p: idListGrassMap){
+			LocalMap localMap = grassManager.get(p);
+			if(localMap != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile = null;
+					for (int k = 0; k < localMap.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
+							tile = localMap.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if( tile != null) {
+								g.drawImage(tile, (int) (localMap.getOrigin().x + k*32-viewPointX), (int) (localMap.getOrigin().y + l*32-viewPointY), this);
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					grassManager.remove(p);
+				}
+			}
+			else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
+		}
+		MapManager snowManager = GameWindow.gw.mapManagers.get("snow");
+		List<Point> idListSnowMap = new ArrayList<Point>(snowManager.pointList);
+		for (Point p: idListSnowMap){
+			LocalMap localMap = snowManager.get(p);
+			if(localMap != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile = null;
+					for (int k = 0; k < localMap.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
+							tile = localMap.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if( tile != null) {
+								g.drawImage(tile, (int) (localMap.getOrigin().x + k*32-viewPointX), (int) (localMap.getOrigin().y + l*32-viewPointY), this);
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					snowManager.remove(p);
+				}
+			}
+			else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
+		}
+		
+		/** Paint Trees */
+		g.setPaintMode();
+		ObjectMapManager tree1MapManager = GameWindow.gw.objectMapManagers.get("tree1");
+		ObjectMapManager tree2MapManager = GameWindow.gw.objectMapManagers.get("tree2");
+		ArrayList<Point> idListTree1Map = new ArrayList<Point>(tree1MapManager.pointList);
+		ArrayList<Point> idListTree2Map = new ArrayList<Point>(tree2MapManager.pointList);
+		ArrayList<Point> pointSetTree = MyUtil.unionListNoDuplicates(idListTree1Map, idListTree2Map);
+		for (Point p: pointSetTree){
+			LocalMap localMap1 = tree1MapManager.get(p);
+			LocalMap localMap2 = tree2MapManager.get(p);
+			/** paint both tree parts simultaneously */
+			if(localMap1 != null && localMap2 != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile1 = null;
+					BufferedImage tile2 = null;
+					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap1.getLocalMap()[0].length; l++) {
+							tile1 = localMap1.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							tile2 = localMap2.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if(tile1 != null) {
+								g.drawImage(tile1, (int) (localMap1.getOrigin().x + k*32-viewPointX), (int) (localMap1.getOrigin().y + l*32-viewPointY), this);	
+							}
+							if(tile2 != null) {
+								g.drawImage(tile2, (int) (localMap2.getOrigin().x + k*32-viewPointX), (int) (localMap2.getOrigin().y+ GameStates.distanceOfSecondTreeLayer + l*32-viewPointY), this);	
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					tree1MapManager.remove(p);
+					tree2MapManager.remove(p);
+				}
+			}
+			else if(localMap1 != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile1 = null;
+					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap1.getLocalMap()[0].length; l++) {
+							tile1 = localMap1.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if(tile1 != null) {
+								g.drawImage(tile1, (int) (localMap1.getOrigin().x + k*32-viewPointX), (int) (localMap1.getOrigin().y + l*32-viewPointY), this);	
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					tree1MapManager.remove(p);
+				}
+			} else if(localMap2 != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap2.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap2.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile2 = null;
+					for (int k = 0; k < localMap2.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap2.getLocalMap()[0].length; l++) {
+							tile2 = localMap2.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if(tile2 != null) {
+								g.drawImage(tile2, (int) (localMap2.getOrigin().x + k*32-viewPointX), (int) (localMap2.getOrigin().y+ GameStates.distanceOfSecondTreeLayer + l*32-viewPointY), this);	
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					tree2MapManager.remove(p);
+				}
+			}
+//				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
+		}	
+		
 
 		/** Paint Server-Entities */
 		g.setPaintMode();
@@ -358,6 +484,99 @@ public class GamePanel extends JPanel {
 			}
 		}
 		/** reset Scale for all GUI-Elements */
+		
+		/** paint overlay-Tiles */
+		g.setPaintMode();
+		ObjectMapManager overlayTree1MapManager = GameWindow.gw.objectMapManagers.get("overlayTree1");
+		ObjectMapManager overlayTree2MapManager = GameWindow.gw.objectMapManagers.get("overlayTree2");
+		ArrayList<Point> idListOverlayTree1Map = new ArrayList<Point>(overlayTree1MapManager.pointList);
+		ArrayList<Point> idListOverlayTree2Map = new ArrayList<Point>(overlayTree2MapManager.pointList);
+		ArrayList<Point> pointSetOverlayTree = MyUtil.unionListNoDuplicates(idListOverlayTree1Map, idListOverlayTree2Map);
+		int distanceOverlayTree = GameStates.overlayOffsetY;
+		for (Point p: pointSetOverlayTree){
+			LocalMap localMap1 = overlayTree1MapManager.get(p);
+			LocalMap localMap2 = overlayTree2MapManager.get(p);
+			/** paint both tree parts simultaneously */
+			if(localMap1 != null && localMap2 != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile1 = null;
+					BufferedImage tile2 = null;
+					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap1.getLocalMap()[0].length; l++) {
+							tile1 = localMap1.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							tile2 = localMap2.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if(tile1 != null) {
+								g.drawImage(tile1, (int) (localMap1.getOrigin().x + k*32-viewPointX), distanceOverlayTree +(int) (localMap1.getOrigin().y + l*32-viewPointY), this);	
+							}
+							if(tile2 != null) {
+								g.drawImage(tile2, (int) (localMap2.getOrigin().x + k*32-viewPointX), distanceOverlayTree +(int) (localMap2.getOrigin().y+ GameStates.distanceOfSecondTreeLayer + l*32-viewPointY), this);	
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					overlayTree1MapManager.remove(p);
+					overlayTree2MapManager.remove(p);
+					
+				}
+			}
+			else if(localMap1 != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile1 = null;
+					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap1.getLocalMap()[0].length; l++) {
+							tile1 = localMap1.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if(tile1 != null) {
+								g.drawImage(tile1, (int) (localMap1.getOrigin().x + k*32-viewPointX), distanceOverlayTree+  (int) (localMap1.getOrigin().y + l*32-viewPointY), this);	
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					overlayTree1MapManager.remove(p);
+				}
+			} else if(localMap2 != null) {
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap2.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap2.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+					BufferedImage tile2 = null;
+					for (int k = 0; k < localMap2.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap2.getLocalMap()[0].length; l++) {
+							tile2 = localMap2.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if(tile2 != null) {
+								g.drawImage(tile2, (int) (localMap2.getOrigin().x + k*32-viewPointX), distanceOverlayTree + (int) (localMap2.getOrigin().y+ GameStates.distanceOfSecondTreeLayer + l*32-viewPointY), this);	
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					overlayTree2MapManager.remove(p);
+				}
+			}
+//				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
+		}
+//		ObjectMapManager overlayTree1MapManager = GameWindow.gw.objectMapManagers.get("overlayTree1");
+//		List<Point> idListOverlayTree1Map = new ArrayList<Point>(overlayTree1MapManager.pointList);
+//		for (Point p : idListOverlayTree1Map) {
+//			LocalMap localOverlayMap = overlayTree1MapManager.get(p);
+//			if(localOverlayMap != null) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localOverlayMap.getOrigin().x) < (GameStates.mapTotalWidth*2)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localOverlayMap.getOrigin().y) < (GameStates.mapTotalHeight*2))) {
+//					BufferedImage overlayTile = null;
+//					for (int k = 0; k < localOverlayMap.getLocalMap().length; k++) {
+//						for (int l = 0; l < localOverlayMap.getLocalMap()[0].length; l++) {
+//							overlayTile = localOverlayMap.getTileImage(k, l);
+//							if (localOverlayMap != null) overlayTile = localOverlayMap.getTileImage(k, l);
+//							if( (overlayTile != null) && (overlayTile != null)) {
+//								g.drawImage(overlayTile, (int) (localOverlayMap.getOrigin().x + k*32-viewPointX), (int) (localOverlayMap.getOrigin().y + l*32-viewPointY), this);
+//							}
+//						}
+//					}
+//				} else {
+//					/** remove if too far away */
+//					overlayTree1MapManager.remove(p);
+//				}
+//			}
+//			else
+//				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
+//		}
 		
 		// paint the console
 //		if (GameWindow.gw.getShowConsole()) {
@@ -609,5 +828,21 @@ public class GamePanel extends JPanel {
 
 	public void setDeleteModus(boolean deleteModus) {
 		this.deleteModus = deleteModus;
+	}
+
+	public String getPaintLayer() {
+		return paintLayer;
+	}
+
+	public void setPaintLayer(String paintLayer) {
+		this.paintLayer = paintLayer;
+	}
+
+	public int getPaintType() {
+		return paintType;
+	}
+
+	public void setPaintType(int paintType) {
+		this.paintType = paintType;
 	}
 }

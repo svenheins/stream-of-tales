@@ -328,13 +328,13 @@ public class WorldRoom extends WorldObject
 	        
 	        PlayerEntity playerEntity = null;
 	        if (!serverPlayers.get().containsKey(playerName)) {
-		        String serverSpriteString = "standardShip.png";
+		        String serverSpriteString = "tilesets/entities/player.png";
 		        Sprite sprite = SpriteManager.manager.getSprite(serverSpriteString);
 		        ServerSprite s_sprite = new ServerSprite(serverSpriteString, sprite.getHeight(), sprite.getWidth());
 		        ServerPlayer s_player;
 		       	s_player = new ServerPlayer(s_sprite, refPlayer.getId(), 0, 0, 0, 0);
 		       	s_player.setName(playerName);
-		       	s_player.setTileSetPathName("tilesets/entities/standardShip.png");
+		       	s_player.setTileSetPathName("tilesets/entities/player.png");
 		       	s_player.setTileSetName("shipTileName");
 		        this.addServerPlayer(s_player, playerName, refPlayer.getId());
 		        

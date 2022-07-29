@@ -9,8 +9,10 @@ public class GameStates {
     public static final String MESSAGE_CHARSET = "UTF-8";
 	public static int width = 800;
 	public static int height = 600;
-	public static int tileWidth = 50;
-	public static int tileHeight = 50;
+	public static int tileSetWidth = 32;
+	public static int tileSetHeight = 32;
+	public static int tileWidth = 32;
+	public static int tileHeight = 64;
 	public static int animationDelay = 200;
 	public static int ani_standard_start = 0;
 	public static int ani_standard_end = 3;
@@ -31,17 +33,20 @@ public class GameStates {
 	public static int ani_d_start = 20;
 	public static int ani_d_end = 23;
 	public static String standardTilePathPlayers = "tilesets/entities/";
-	public static String standardTileNamePlayer = standardTilePathPlayers+"standardShip.png";
+	public static String standardTileNamePlayer = standardTilePathPlayers+"player.png";
 	public static String standardTilePathMaps = "tilesets/maps/";
-	public static String tileSetFile = standardTilePathMaps + "tileSet.png";
+	public static String tileSetFile = standardTilePathMaps + "tileSet2.png";
 	public static boolean useChannels = true;
-	public static int mapWidth = 20;
-	public static int mapHeight = 15;
+	public static int mapWidth = 32; // EVEN and devide-able through 4!!!
+	public static int mapHeight = 20; // EVEN!!!
 	public static int mapTileSetWidth = 32;
 	public static int mapTileSetHeight = 32;
 	public static int mapTotalWidth = mapWidth*mapTileSetWidth;
 	public static int mapTotalHeight = mapHeight*mapTileSetHeight;
 	public static String standardMapFolder = "./ressources/maps/";
+	public static int overlayOffsetY = -2*mapTileSetWidth;
+	public static int factorOfViewDeleteDistance = 2;
+	public static int distanceOfSecondTreeLayer = 6;
 	
 	public static int getWidth() {
 		return width;

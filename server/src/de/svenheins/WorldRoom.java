@@ -328,7 +328,7 @@ public class WorldRoom extends WorldObject
 	        
 	        PlayerEntity playerEntity = null;
 	        if (!serverPlayers.get().containsKey(playerName)) {
-		        String serverSpriteString = "ship.png";
+		        String serverSpriteString = "standardShip.png";
 		        Sprite sprite = SpriteManager.manager.getSprite(serverSpriteString);
 		        ServerSprite s_sprite = new ServerSprite(serverSpriteString, sprite.getHeight(), sprite.getWidth());
 		        ServerPlayer s_player;

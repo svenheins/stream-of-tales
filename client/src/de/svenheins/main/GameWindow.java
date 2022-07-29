@@ -11,6 +11,7 @@ import de.svenheins.handlers.FileAddTextureAction;
 import de.svenheins.handlers.FileOpenAction;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.MapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
@@ -113,7 +114,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     private final Random random = new Random();
     
     /** The Player Name*/
-    protected String player;
+    protected String playerName;
+    /** gameMasterName */
+    protected String gameMasterName;
     
     /** Map that associates a channel name with a {@link ClientChannel}. */
     protected final Map<String, ClientChannel> channelsByName =
@@ -146,6 +149,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		simpleClient = new SimpleClient(this);
 		setLoggedIn(false);
 		setSuperUser(true);
+		setGameMasterName("standard");
 
 		/** Main-GamePanel
 		 * this panel will be scaled or rotated*/
@@ -189,6 +193,13 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	    }
 	    /** init the external images */
 	    ClientTextureManager.manager.initExternalImages(GameStates.externalImagesPath);
+	    
+	    /** create a map-folder */
+     	/** all non-existent ancestor directories are automatically created */
+	    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder)).mkdirs();
+	    if (!createMapFolderSccess) {
+	         // Directory creation failed
+	    }
 	    
 	    /** prepare the loading states */
 	    loadingStates = new int[]{0,0,0,0};
@@ -234,6 +245,21 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		});
 		menu.add(mainMenuItem);
 		
+		final JMenuItem setGameMaster = new JMenuItem("Set Game-Master");
+		setGameMaster.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	if (!GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
+            		GameWindow.gw.setGameMasterName(GameWindow.gw.getPlayerName());
+            		setGameMaster.setText("Set Player");
+            	} else {
+            		GameWindow.gw.setGameMasterName("standard");
+            		setGameMaster.setText("Set Game-Master");
+            	}
+            	
+            }
+		});
+		menu.add(setGameMaster);
+		
 		JMenuItem logoutItem = new JMenuItem("Logout");
 		logoutItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -263,18 +289,45 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
             }
 		});
 		menu2.add(item21);
+		
+		final JMenuItem deleteTile = new JMenuItem("Delete - Off");
+		// Next Menu-Item
+		JMenu tileMenu = new JMenu("Tile");
+		deleteTile.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	if (GamePanel.gp.isDeleteModus()) {
+            		GamePanel.gp.setDeleteModus(false);
+            		deleteTile.setText("Delete - Off");
+            	} else {
+            		GamePanel.gp.setDeleteModus(true);
+            		deleteTile.setText("Delete - On");
+            	}
+            	
+            }
+		});
+		tileMenu.add(deleteTile);
+		
+		final JMenuItem loadTiles = new JMenuItem("Load Tiles of this player");
+		// Next Menu-Item
+		loadTiles.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	MapManager.emptyAll();
+            	MapManager.loadLocalMaps(gw.getPlayerName());
+            	
+            }
+		});
+		tileMenu.add(loadTiles);
 
 		mbar.add(menu);
 		mbar.add(menu2);
+		mbar.add(tileMenu);
 		// Comment to unsupport Menu
 		this.setJMenuBar(mbar);
 //		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		
 		setVisible(true);
 		gw.setFocusable(true);
-		gw.requestFocus();
-		
-		
+		gw.requestFocus();	
 	}
 	
 	public void logout() {
@@ -290,6 +343,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		PlayerManager.emptyAll();
 		EntityManager.emptyAll();
 		SpaceManager.emptyAll();
+		MapManager.emptyAll();
 		/** prepare the loading states */
 	    loadingStates = new int[]{0,0,0,0};
 	}
@@ -414,11 +468,11 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      * to pop up a login dialog to get these fields from the player.
      */
     public PasswordAuthentication getPasswordAuthentication() {
-        this.player = this.getLoginName();//"guest-" + random.nextInt(1000);
+        this.playerName = this.getLoginName();//"guest-" + random.nextInt(1000);
 //    	this.player = "player";
-        setStatus("Logging in as " + player);
+        setStatus("Logging in as " + playerName);
         String password = this.getLoginPassword();
-        return new PasswordAuthentication(player, password.toCharArray());
+        return new PasswordAuthentication(playerName, password.toCharArray());
     	
     }
 
@@ -431,6 +485,20 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //        inputPanel.setEnabled(true);
         setStatus("Logged in");
         setLoggedIn(true);
+        /** create a map-folder */
+     	/** all non-existent ancestor directories are automatically created */
+	    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+"/"+this.getGameMasterName())).mkdirs();
+	    if (!createMapFolderSccess) {
+	         // Directory creation failed
+	    	System.out.println("Error at creating game-master map-folder!");
+	    }
+	    createMapFolderSccess = (new File(GameStates.standardMapFolder+"/"+this.getPlayerName())).mkdirs();
+	    if (!createMapFolderSccess) {
+	         // Directory creation failed
+	    	System.out.println("Error at creating playerName map-folder!");
+	    }
+	    
+    	MapManager.loadLocalMaps(gw.getPlayerName());
     }
 
     /**
@@ -753,8 +821,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		  
 	}
 	
-	public String getPlayer(){
-		return this.player;
+	public String getPlayerName(){
+		return this.playerName;
 	}
 
 
@@ -809,5 +877,13 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	
 	public int getLoadingState(int index) {
 		return loadingStates[index];
+	}
+	
+	public String getGameMasterName() {
+		return gameMasterName;
+	}
+	
+	public void setGameMasterName(String name) {
+		this.gameMasterName = name;
 	}
 }

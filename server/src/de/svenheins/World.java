@@ -206,24 +206,24 @@ public class World
         BigInteger entityIDIndex = BigInteger.valueOf(0);
         /** Create Entities */
         Entity realEntity;
-        String iterativSpriteString = "eye.png";
-        Sprite it_sprite = SpriteManager.manager.getSprite(iterativSpriteString);
-        ServerSprite it_s_sprite = new ServerSprite(iterativSpriteString, it_sprite.getHeight(), it_sprite.getWidth());
-        ServerEntity it_s_entity;
-        int numObjects = 0;
-        float it_x, it_y, it_mx, it_my;
-        for (int i = 0; i<numObjects; i++) {
-        	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_sprite.getWidth());
-        	it_y = (float) (Math.random()*GameStates.getHeight()-it_s_sprite.getHeight());
-        	it_mx = (float) (Math.random()*50+0);
-        	it_my = (float) (Math.random()*50+0);
-        	it_s_entity = new ServerEntity(it_s_sprite, entityIDIndex.add(BigInteger.valueOf(1)), it_x, it_y, it_mx, it_my);
-        	room.addEntity(it_s_entity);
-        	/** Add Entity to the EntityManager, which allows to communicate fastly*/
-        	realEntity = new Entity(it_s_entity.getName(), it_s_entity.getId(), 0, 0, 0, 0);
-        	EntityManager.add(realEntity);
-        	logger.log(Level.INFO, "EntityManager intitialized: count = " + EntityManager.size());
-        }
+//        String iterativSpriteString = "eye.png";
+//        Sprite it_sprite = SpriteManager.manager.getSprite(iterativSpriteString);
+//        ServerSprite it_s_sprite = new ServerSprite(iterativSpriteString, it_sprite.getHeight(), it_sprite.getWidth());
+//        ServerEntity it_s_entity;
+//        int numObjects = 0;
+//        float it_x, it_y, it_mx, it_my;
+//        for (int i = 0; i<numObjects; i++) {
+//        	it_x = (float) (Math.random()*GameStates.getWidth()-it_s_sprite.getWidth());
+//        	it_y = (float) (Math.random()*GameStates.getHeight()-it_s_sprite.getHeight());
+//        	it_mx = (float) (Math.random()*50+0);
+//        	it_my = (float) (Math.random()*50+0);
+//        	it_s_entity = new ServerEntity(it_s_sprite, entityIDIndex.add(BigInteger.valueOf(1)), it_x, it_y, it_mx, it_my);
+//        	room.addEntity(it_s_entity);
+//        	/** Add Entity to the EntityManager, which allows to communicate fastly*/
+//        	realEntity = new Entity(it_s_entity.getName(), it_s_entity.getId(), 0, 0, 0, 0);
+//        	EntityManager.add(realEntity);
+//        	logger.log(Level.INFO, "EntityManager intitialized: count = " + EntityManager.size());
+//        }
         
         /** Create ServerAgents (extend Entities) */
         Entity realAgent;
@@ -233,6 +233,7 @@ public class World
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
         int numAgentsEntrepreneur = 200;
+        float it_x, it_y, it_mx, it_my;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {
         	it_x = (float) (Math.random()*2*GameStates.getWidth()-it_s_spriteAgent.getWidth());
@@ -304,7 +305,7 @@ public class World
 	        	hexaSpace = new Space( "Rechteck.svg", BigInteger.valueOf(0),GameStates.standardBackgroundTexture , 1.0f);
 //	        	hexaSpace.setTexture("/ressources/images/admin_DUENE.JPG");
 	        	hexaSpace.scale(10000.0f);
-	            setOffX = -hexaSpace.getWidth()/2; //- (hexaSpace.getWidth()*colsHexagons/(2.5f));
+	            setOffX = -hexaSpace.getWidth()/2 -10; //- (hexaSpace.getWidth()*colsHexagons/(2.5f));
 	            setOffY = -hexaSpace.getHeight()/2; //- (hexaSpace.getHeight()*rowsHexagons/(2*2.0f));
 	            hexX = setOffX; //(float) (i % colsHexagons)*hexaSpace.getWidth()*(0.75f) + setOffX;
 	            hexY = setOffY; //(float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.5f)) + setOffY;

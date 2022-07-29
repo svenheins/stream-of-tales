@@ -1,4 +1,5 @@
 package de.svenheins.main;
+import de.svenheins.functions.MyMath;
 import de.svenheins.handlers.ConsoleInputHandler;
 import de.svenheins.handlers.InputHandler;
 import de.svenheins.handlers.MouseHandler;
@@ -36,6 +37,7 @@ import de.svenheins.threads.ChannelUpdateThread;
 import de.svenheins.threads.CollisionThread;
 import de.svenheins.threads.GraphicThread;
 import de.svenheins.threads.InputThread;
+import de.svenheins.threads.MapUpdateThread;
 import de.svenheins.threads.MoveThread;
 import de.svenheins.threads.ServerUpdateThread;
 
@@ -69,6 +71,7 @@ public class GamePanel extends JPanel {
 	private CollisionThread collisionThread;
 	private AnimationThread animationThread;
 	private ChannelUpdateThread channelUpdateThread;
+	private MapUpdateThread mapUpdateThread;
 	public static GamePanel gp;
 	public static String resourcePath = "/resources/";
 	public static String svgPath = "/resources/svg/";
@@ -82,6 +85,7 @@ public class GamePanel extends JPanel {
 	private float zoomFactor;
 	private double rotationDegree;
 	private int maxViewPointX, maxViewPointY, minViewPointX, minViewPointY;
+	private boolean deleteModus = false;
 	
 	public IngameWindow mainMenu;
 	
@@ -111,6 +115,7 @@ public class GamePanel extends JPanel {
 		new Thread(inputThread).start();
 		new Thread(animationThread).start();
 		new Thread(channelUpdateThread).start();
+		new Thread(mapUpdateThread).start();
 	}
 	
 	/**
@@ -186,6 +191,8 @@ public class GamePanel extends JPanel {
 		animationThread = new AnimationThread();
 		serverUpdateThread = new ServerUpdateThread(System.currentTimeMillis());
 		channelUpdateThread = new ChannelUpdateThread();
+		mapUpdateThread = new MapUpdateThread();
+		
 	}
 	
 	public void config() {
@@ -206,6 +213,7 @@ public class GamePanel extends JPanel {
 		this.maxViewPointY = 26169;
 		this.setZoomFactor(1.0f);
 		this.setRotationDegree(0);
+		this.setDeleteModus(false);
 		
 		// Modify the Cursor
 		//Cursor cursor = getToolkit().createCustomCursor(new ImageIcon(getClass().getResource(resourcePath+"images/"+"cursor.png")).getImage(), new Point(0,0), "Cursor");
@@ -243,9 +251,9 @@ public class GamePanel extends JPanel {
 			gamePaint(g);
 			//GamePanel.gp.loadEntityList();
 		}
-		if (GameModus.modus == GameModus.SIM) {
-			simPaint(g);
-		}
+//		if (GameModus.modus == GameModus.SIM) {
+//			simPaint(g);
+//		}
 		g.dispose();
 	}
 	
@@ -292,12 +300,14 @@ public class GamePanel extends JPanel {
 		for (Point p: idListTempMaps){
 			LocalMap localMap = MapManager.get(p);
 			if(localMap != null) {
-				BufferedImage tile = null;
-				for (int k = 0; k < localMap.getLocalMap().length; k++) {
-					for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
-						tile = localMap.getTileImage(k, l);
-						if( tile != null) {
-							g.drawImage(tile, (int) (localMap.getOrigin().x + k*32-viewPointX), (int) (localMap.getOrigin().y + l*32-viewPointY), this);
+				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*2)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*2))) {
+					BufferedImage tile = null;
+					for (int k = 0; k < localMap.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
+							tile = localMap.getTileImage(k, l);
+							if( tile != null) {
+								g.drawImage(tile, (int) (localMap.getOrigin().x + k*32-viewPointX), (int) (localMap.getOrigin().y + l*32-viewPointY), this);
+							}
 						}
 					}
 				}
@@ -324,11 +334,10 @@ public class GamePanel extends JPanel {
 			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
 		}
 		
-		
+		/** paint player Entity */
 		g.setPaintMode();
 		if(playerEntity != null) {
 			if(playerEntity.getSprite().getImage() != null) {
-//				GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
 				g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
 			}
 		}else
@@ -386,73 +395,73 @@ public class GamePanel extends JPanel {
 		GameWindow.gw.requestFocus();
 	}
 	
-	/** paint the simulation modus */
-	public void simPaint(Graphics2D g) {
-		g.scale(this.getZoomFactor(), this.getZoomFactor());
-		if (playerEntity != null) {
-			GamePanel.gp.setViewPoint((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2)-(int)(GameStates.getWidth()/2/zoomFactor), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2)-(int)(GameStates.getHeight()/2/zoomFactor));
-		}
-		/** Paint Spaces */
-//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Spaces: "+SpaceManager.idList.size());
-		g.setPaintMode();
-		List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
-		for (BigInteger i: idListTempSpaces){
-			Space space = SpaceManager.get(i);
-			if(space != null) {
-				if(space.getPolygon() != null) {
-//					GameWindow.gw.gameInfoConsole.appendInfo("Space "+space.getId());
-					space.paint(g, (int) (-viewPointX),(int) (-viewPointY));
-				}
-			}
-			else
-				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Space");
-		}
-
-		/** Paint Server-Entities */
-		g.setPaintMode();
-//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Entities: "+EntityManager.size());
-//		for (int i = 0; i < EntityManager.size(); i++) {
-		List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
-		for (BigInteger i: idListTempEntities) {
-			Entity e= EntityManager.get(i);
-			if(e != null) {
-				if(e.getSprite().getImage() != null) {
-//					GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
-					g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
-				}
-			}
-			else
-			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
-		}
-		
-		
-		g.setPaintMode();
-		if(playerEntity != null) {
-			
-			if(playerEntity.getSprite().getImage() != null) {
-//				GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
-				g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
-			}
-		}else
-			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
-		
-		g.setPaintMode();
-		if(PlayerManager.size() >0) {
-			List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
-			for (BigInteger i: idListTempPlayers) {
-				Entity playerEntity= PlayerManager.get(i);
-				if(playerEntity != null) {
-					if(playerEntity.getSprite().getImage() != null) {
-						g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
-					}
-				}
-				else
-				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
-			}
-		}
-		/** reset Scale for all GUI-Elements */
-		GameWindow.gw.requestFocus();
-	}
+//	/** paint the simulation modus */
+//	public void simPaint(Graphics2D g) {
+//		g.scale(this.getZoomFactor(), this.getZoomFactor());
+//		if (playerEntity != null) {
+//			GamePanel.gp.setViewPoint((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2)-(int)(GameStates.getWidth()/2/zoomFactor), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2)-(int)(GameStates.getHeight()/2/zoomFactor));
+//		}
+//		/** Paint Spaces */
+////		GameWindow.gw.gameInfoConsole.appendInfo("IdList Spaces: "+SpaceManager.idList.size());
+//		g.setPaintMode();
+//		List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
+//		for (BigInteger i: idListTempSpaces){
+//			Space space = SpaceManager.get(i);
+//			if(space != null) {
+//				if(space.getPolygon() != null) {
+////					GameWindow.gw.gameInfoConsole.appendInfo("Space "+space.getId());
+//					space.paint(g, (int) (-viewPointX),(int) (-viewPointY));
+//				}
+//			}
+//			else
+//				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Space");
+//		}
+//
+//		/** Paint Server-Entities */
+//		g.setPaintMode();
+////		GameWindow.gw.gameInfoConsole.appendInfo("IdList Entities: "+EntityManager.size());
+////		for (int i = 0; i < EntityManager.size(); i++) {
+//		List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
+//		for (BigInteger i: idListTempEntities) {
+//			Entity e= EntityManager.get(i);
+//			if(e != null) {
+//				if(e.getSprite().getImage() != null) {
+////					GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
+//					g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
+//				}
+//			}
+//			else
+//			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+//		}
+//		
+//		
+//		g.setPaintMode();
+//		if(playerEntity != null) {
+//			
+//			if(playerEntity.getSprite().getImage() != null) {
+////				GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
+//				g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
+//			}
+//		}else
+//			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+//		
+//		g.setPaintMode();
+//		if(PlayerManager.size() >0) {
+//			List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
+//			for (BigInteger i: idListTempPlayers) {
+//				Entity playerEntity= PlayerManager.get(i);
+//				if(playerEntity != null) {
+//					if(playerEntity.getSprite().getImage() != null) {
+//						g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
+//					}
+//				}
+//				else
+//				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+//			}
+//		}
+//		/** reset Scale for all GUI-Elements */
+//		GameWindow.gw.requestFocus();
+//	}
 
 	/** load the entities */
 	public void loadEntityList(Entity[] entities) {
@@ -592,5 +601,13 @@ public class GamePanel extends JPanel {
 
 	public void setInitializedPlayer(boolean initializedPlayer) {
 		this.initializedPlayer = initializedPlayer;
+	}
+
+	public boolean isDeleteModus() {
+		return deleteModus;
+	}
+
+	public void setDeleteModus(boolean deleteModus) {
+		this.deleteModus = deleteModus;
 	}
 }

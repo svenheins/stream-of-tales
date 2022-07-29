@@ -423,7 +423,7 @@ public class EditWindow {
 					entity.setTileSet( TileSetManager.manager.getTileSet((String) ((JComboBox) e.getSource()).getSelectedItem()));
 //					GameWindow.gw.send(ClientMessages.editPlayerAddons(space.getId(), space.getTextureName(), space.getRGB(), space.getTrans(), isFilled, space.getScale(), space.getArea()));
 					if (GameWindow.gw.isLoggedIn()) {
-						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayer(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));
+						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayerName(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));
 					}
 				}
 		});

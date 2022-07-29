@@ -1,2 +1,3 @@
 ## ignore java database files
 *.jdb
+*.map

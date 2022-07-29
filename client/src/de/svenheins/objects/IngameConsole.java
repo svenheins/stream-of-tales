@@ -119,7 +119,7 @@ public class IngameConsole extends Space {
 		int enters = this.getEnters();
 		if (enters == 1 && text.split("\n").length > 0) {
 			// last line of the text + the players prefix
-			String lastLine = GameWindow.gw.getPlayer() +": " + text.split("\n")[text.split("\n").length-1];
+			String lastLine = GameWindow.gw.getPlayerName() +": " + text.split("\n")[text.split("\n").length-1];
 			try {
 	            return ByteBuffer.wrap(lastLine.getBytes(GameStates.MESSAGE_CHARSET));
 	        } catch (UnsupportedEncodingException e) {
@@ -135,7 +135,7 @@ public class IngameConsole extends Space {
 		int enters = this.getEnters();
 		if (enters == 1 && text.split("\n").length > 0) {
 			// last line of the text + the players prefix
-			String lastLine = GameWindow.gw.getPlayer() +": " + text.split("\n")[text.split("\n").length-1];
+			String lastLine = GameWindow.gw.getPlayerName() +": " + text.split("\n")[text.split("\n").length-1];
 			return lastLine;
 		} else return null;
 	}

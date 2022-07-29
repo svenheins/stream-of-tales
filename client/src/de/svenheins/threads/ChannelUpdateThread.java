@@ -23,7 +23,7 @@ public class ChannelUpdateThread implements Runnable {
 	private long oldTime = System.currentTimeMillis();
 	private PlayerEntity playerEntity;
 	private float playerOldMX = 0;
-	private float playerOldMY =0;
+	private float playerOldMY = 0;
 	private final int sleepingTime = 75;
 	
 	@Override

@@ -1,11 +1,20 @@
 package de.svenheins.managers;
 
 import java.awt.Point;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.objects.LocalMap;
 import de.svenheins.objects.Tile;
@@ -70,14 +79,8 @@ public class MapManager {
 	
 
 	public static void createMap(Point point) {
-		Tile mapArray[][]=new Tile[GameStates.mapWidth][GameStates.mapHeight];
-//		for (int i = 0; i < mapArray.length; i++) {
-//			for (int j = 0; j < mapArray[0].length; j++) {
-//				mapArray[i][j] = ;
-//			}
-//		}
-		LocalMap map = new LocalMap(mapArray,"tilesets/maps/snow2.png", point);
-//		System.out.println("point: "+point.x+" " +point.y);
+		int mapArray[][] = new int[GameStates.mapWidth][GameStates.mapHeight];
+		LocalMap map = new LocalMap(mapArray,GameStates.tileSetFile, point);
 		localMapList.put(map.getOrigin(), map);
 		pointList.add(map.getOrigin());
 	}
@@ -91,63 +94,19 @@ public class MapManager {
 	
 	
 	public static void adjustSurrounding(LocalMap localMap, int localX, int localY) {
-//		if (localX <= 1) {
-//			if (localY <= 1) {
-//				/** upperLeft corner */
-//				setTileCorners(localMap, localX+1, localY+1);
-//			} else if (localY >= localMap.getLocalMap()[0].length-2) {
-//				/** upperRight corner */
-//				setTileCorners(localMap, localX-1, localY+1);
-//			} else {
-//				/** upper field */
-//				setTileCorners(localMap, localX, localY+1);
-//			}
-//		} else if (localX >= localMap.getLocalMap().length-2) {
-//			if (localY <= 1) {
-//				/** downLeft corner */
-//				setTileCorners(localMap, localX+1, localY-1);
-//			} else if (localY >= localMap.getLocalMap()[0].length-2) {
-//				/** downRight corner */
-//				setTileCorners(localMap, localX-1, localY-1);
-//			} else {
-//				/** down field */
-//				setTileCorners(localMap, localX, localY-1);
-//			}
-//		} else {
-//			if (localY <= 1) {
-//				/** left field */
-//				setTileCorners(localMap, localX+1, localY);
-//			} else if (localY >= localMap.getLocalMap()[0].length-2) {
-//				/** right field */
-//				setTileCorners(localMap, localX-1, localY);
-//			} else {
-//				/** middle field */
-				
-				setTileCorners(localMap, localX-1, localY-1);
-				setTileCorners(localMap, localX, localY-1);
-				setTileCorners(localMap, localX+1, localY-1);
-				setTileCorners(localMap, localX-1, localY);
-				//setTileCorners(localMap, localX, localY);
-				setTileCorners(localMap, localX+1, localY);
-				setTileCorners(localMap, localX-1, localY+1);
-				setTileCorners(localMap, localX, localY+1);
-				setTileCorners(localMap, localX+1, localY+1);
-				
-//				localMap.setTile(localX-1, localY-1, 45);
-//				if ((localMap.getTile(localX, localY-2) == 62) || (localMap.getTile(localX, localY-1) == 62)) localMap.setTile(localX, localY-1, 62); else localMap.setTile(localX, localY-1, 46);
-//				localMap.setTile(localX+1, localY-1, 47);
-//				localMap.setTile(localX-1, localY, 61);
-////				localMap.setTile(localX, localY, 46);
-//				localMap.setTile(localX+1, localY, 63);
-//				localMap.setTile(localX-1, localY+1, 77);
-//				localMap.setTile(localX, localY+1, 78);
-//				localMap.setTile(localX+1, localY+1, 79);
-//			}
-//		}
-		
+		setTileCorners(localMap, localX-1, localY-1);
+		setTileCorners(localMap, localX, localY-1);
+		setTileCorners(localMap, localX+1, localY-1);
+		setTileCorners(localMap, localX-1, localY);
+		//setTileCorners(localMap, localX, localY);
+		setTileCorners(localMap, localX+1, localY);
+		setTileCorners(localMap, localX-1, localY+1);
+		setTileCorners(localMap, localX, localY+1);
+		setTileCorners(localMap, localX+1, localY+1);
 	}
 	
-	public static void setTileCorners(LocalMap localMap, int localX, int localY) {
+	
+	public static void deleteSurrounding(LocalMap localMap, int localX, int localY) {
 		Point origin = localMap.getOrigin();
 		LocalMap ulMap;
 		LocalMap uMap;
@@ -158,16 +117,15 @@ public class MapManager {
 		LocalMap dlMap;
 		LocalMap dMap;
 		LocalMap drMap;
-		
-		Tile ulTile;
-		Tile uTile;
-		Tile urTile;
-		Tile lTile;
-		Tile rTile;
+		Point ulTile;
+		Point uTile;
+		Point urTile;
+		Point lTile;
+		Point rTile;
 		Point centerTile;
-		Tile dlTile;
-		Tile dTile;
-		Tile drTile;
+		Point dlTile;
+		Point dTile;
+		Point drTile;
 		
 		int maxIndexX = GameStates.mapWidth-1;
 		int maxIndexY = GameStates.mapHeight-1;
@@ -181,30 +139,30 @@ public class MapManager {
 						uMap = urMap = createMapIfNonExistent(getUpperMap(origin));
 						lMap = dlMap = createMapIfNonExistent(getLeftMap(origin));
 						centerMap = dMap = drMap = rMap = localMap;
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY);
-						uTile = uMap.getTile(0, maxIndexY);
-						urTile = urMap.getTile(1, maxIndexY);
-						lTile = lMap.getTile(maxIndexX, 0);
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
 						centerTile = new Point(0, 0);
-						rTile = rMap.getTile(1, 0);
-						dlTile = dlMap.getTile(maxIndexX, 1);
-						dTile = dMap.getTile(0, 1);
-						drTile = drMap.getTile(1, 1);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
 					} else {
 						// 2
 						ulMap = lMap = createMapIfNonExistent(getUpperLeftMap(origin));
 						uMap = urMap = centerMap = rMap = createMapIfNonExistent(getUpperMap(origin));
 						dlMap = createMapIfNonExistent(getLeftMap(origin));
 						dMap = drMap = localMap;
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY-1);
-						uTile = uMap.getTile(0, maxIndexY-1);
-						urTile = urMap.getTile(1, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX, maxIndexY);
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
 						centerTile = new Point(0, maxIndexY);
-						rTile = rMap.getTile(1, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX, 0);
-						dTile = dMap.getTile(0, 0);
-						drTile = drMap.getTile(1, 0);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
 					}
 				} else if (localY >= GameStates.mapHeight-1) {
 					if (localY == GameStates.mapHeight-1) {
@@ -213,44 +171,44 @@ public class MapManager {
 						uMap = urMap = centerMap = rMap = localMap;
 						dlMap = createMapIfNonExistent(getLowerLeftMap(origin));
 						dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY-1);
-						uTile = uMap.getTile(0, maxIndexY-1);
-						urTile = urMap.getTile(1, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX, maxIndexY);
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
 						centerTile = new Point(0, maxIndexY);
-						rTile = rMap.getTile(1, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX, 0);
-						dTile = dMap.getTile(0, 0);
-						drTile = drMap.getTile(1, 0);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
 					} else {
 						// 4
 						ulMap = createMapIfNonExistent(getLeftMap(origin));
 						uMap = urMap = localMap;
 						lMap = dlMap = createMapIfNonExistent(getLowerLeftMap(origin));
 						centerMap = rMap = dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY);
-						uTile = uMap.getTile(0, maxIndexY);
-						urTile = urMap.getTile(1, maxIndexY);
-						lTile = lMap.getTile(maxIndexX, 0);
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
 						centerTile = new Point(0, 0);
-						rTile = rMap.getTile(1, 0);
-						dlTile = dlMap.getTile(maxIndexX, 1);
-						dTile = dMap.getTile(0, 1);
-						drTile = drMap.getTile(1, 1);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
 					}
 				} else {
 					// 5
 					ulMap = lMap = dlMap = createMapIfNonExistent(getLeftMap(origin));
 					uMap = urMap = centerMap = rMap = dMap = drMap = localMap;
-					ulTile = ulMap.getTile(maxIndexX, localY-1);
-					uTile = uMap.getTile(0, localY-1);
-					urTile = urMap.getTile(1, localY-1);
-					lTile = lMap.getTile(maxIndexX, localY);
+					ulTile = new Point(maxIndexX, localY-1);
+					uTile = new Point(0, localY-1);
+					urTile = new Point(1, localY-1);
+					lTile = new Point(maxIndexX, localY);
 					centerTile = new Point(0, localY);
-					rTile = rMap.getTile(1, localY);
-					dlTile = dlMap.getTile(maxIndexX, localY+1);
-					dTile = dMap.getTile(0, localY+1);
-					drTile = drMap.getTile(1, localY+1);
+					rTile = new Point(1, localY);
+					dlTile = new Point(maxIndexX, localY+1);
+					dTile = new Point(0, localY+1);
+					drTile = new Point(1, localY+1);
 				}
 			} else {
 				if (localY <= 0) {
@@ -260,30 +218,30 @@ public class MapManager {
 						urMap = createMapIfNonExistent(getUpperMap(origin));
 						lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLeftMap(origin));
 						rMap = drMap = localMap;
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY);
-						uTile = uMap.getTile(maxIndexX, maxIndexY);
-						urTile = urMap.getTile(0, maxIndexY);
-						lTile = lMap.getTile(maxIndexX-1, 0);
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
 						centerTile = new Point(maxIndexX, 0);
-						rTile = rMap.getTile(0, 0);
-						dlTile = dlMap.getTile(maxIndexX-1, 1);
-						dTile = dMap.getTile(maxIndexX, 1);
-						drTile = drMap.getTile(0, 1);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
 					} else {
 						// 7
 						ulMap = uMap = lMap = centerMap = createMapIfNonExistent(getUpperLeftMap(origin));
 						urMap = rMap = createMapIfNonExistent(getUpperMap(origin));
 						dlMap = dMap = createMapIfNonExistent(getLeftMap(origin));
 						drMap = localMap;
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY-1);
-						uTile = uMap.getTile(maxIndexX, maxIndexY-1);
-						urTile = urMap.getTile(0, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX-1, maxIndexY);
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
 						centerTile = new Point(maxIndexX, maxIndexY);
-						rTile = rMap.getTile(0, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX-1, 0);
-						dTile = dMap.getTile(maxIndexX, 0);
-						drTile = drMap.getTile(0, 0);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
 					}
 				} else if (localY >= GameStates.mapHeight-1) {
 					if (localY == GameStates.mapHeight-1) {
@@ -292,44 +250,44 @@ public class MapManager {
 						urMap = rMap = localMap;
 						dlMap = dMap = createMapIfNonExistent(getLowerLeftMap(origin));
 						drMap = createMapIfNonExistent(getLowerMap(origin));
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY-1);
-						uTile = uMap.getTile(maxIndexX, maxIndexY-1);
-						urTile = urMap.getTile(0, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX-1, maxIndexY);
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
 						centerTile = new Point(maxIndexX, maxIndexY);
-						rTile = rMap.getTile(0, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX-1, 0);
-						dTile = dMap.getTile(maxIndexX, 0);
-						drTile = drMap.getTile(0, 0);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
 					} else {
 						// 9
 						ulMap = uMap = createMapIfNonExistent(getLeftMap(origin));
 						urMap = localMap;
 						lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLowerLeftMap(origin));
 						rMap = drMap = createMapIfNonExistent(getLowerMap(origin));
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY);
-						uTile = uMap.getTile(maxIndexX, maxIndexY);
-						urTile = urMap.getTile(0, maxIndexY);
-						lTile = lMap.getTile(maxIndexX-1, 0);
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
 						centerTile = new Point(maxIndexX, 0);
-						rTile = rMap.getTile(0, 0);
-						dlTile = dlMap.getTile(maxIndexX-1, 1);
-						dTile = dMap.getTile(maxIndexX, 1);
-						drTile = drMap.getTile(0, 1);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
 					}
 				} else {
 					// 10
 					ulMap = uMap = lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLeftMap(origin));
 					urMap = rMap = drMap = localMap;
-					ulTile = ulMap.getTile(maxIndexX-1, localY-1);
-					uTile = uMap.getTile(maxIndexX, localY-1);
-					urTile = urMap.getTile(0, localY-1);
-					lTile = lMap.getTile(maxIndexX-1, localY);
+					ulTile = new Point(maxIndexX-1, localY-1);
+					uTile = new Point(maxIndexX, localY-1);
+					urTile = new Point(0, localY-1);
+					lTile = new Point(maxIndexX-1, localY);
 					centerTile = new Point(maxIndexX, localY);
-					rTile = rMap.getTile(0, localY);
-					dlTile = dlMap.getTile(maxIndexX-1, localY+1);
-					dTile = dMap.getTile(maxIndexX, localY+1);
-					drTile = drMap.getTile(0, localY+1);
+					rTile = new Point(0, localY);
+					dlTile = new Point(maxIndexX-1, localY+1);
+					dTile = new Point(maxIndexX, localY+1);
+					drTile = new Point(0, localY+1);
 				}
 			}
 		} else if (localX >= GameStates.mapWidth-1) {
@@ -341,30 +299,30 @@ public class MapManager {
 						urMap = createMapIfNonExistent(getUpperRightMap(origin));
 						lMap = centerMap = dlMap = dMap = localMap;
 						rMap = drMap = createMapIfNonExistent(getRightMap(origin));
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY);
-						uTile = uMap.getTile(maxIndexX, maxIndexY);
-						urTile = urMap.getTile(0, maxIndexY);
-						lTile = lMap.getTile(maxIndexX-1, 0);
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
 						centerTile = new Point(maxIndexX, 0);
-						rTile = rMap.getTile(0, 0);
-						dlTile = dlMap.getTile(maxIndexX-1, 1);
-						dTile = dMap.getTile(maxIndexX, 1);
-						drTile = drMap.getTile(0, 1);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
 					} else {
 						// 12
 						ulMap = uMap = lMap = centerMap = createMapIfNonExistent(getUpperMap(origin));
 						urMap = rMap = createMapIfNonExistent(getUpperRightMap(origin));
 						dlMap = dMap = localMap;
 						drMap = createMapIfNonExistent(getLeftMap(origin));
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY-1);
-						uTile = uMap.getTile(maxIndexX, maxIndexY-1);
-						urTile = urMap.getTile(0, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX-1, maxIndexY);
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
 						centerTile = new Point(maxIndexX, maxIndexY);
-						rTile = rMap.getTile(0, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX-1, 0);
-						dTile = dMap.getTile(maxIndexX, 0);
-						drTile = drMap.getTile(0, 0);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
 					}
 				} else if (localY >= GameStates.mapHeight-1) {
 					if (localY == GameStates.mapHeight-1) {
@@ -373,44 +331,44 @@ public class MapManager {
 						urMap = rMap = createMapIfNonExistent(getRightMap(origin));
 						dlMap = dMap = createMapIfNonExistent(getLowerMap(origin));
 						drMap = createMapIfNonExistent(getLowerRightMap(origin));
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY-1);
-						uTile = uMap.getTile(maxIndexX, maxIndexY-1);
-						urTile = urMap.getTile(0, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX-1, maxIndexY);
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
 						centerTile = new Point(maxIndexX, maxIndexY);
-						rTile = rMap.getTile(0, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX-1, 0);
-						dTile = dMap.getTile(maxIndexX, 0);
-						drTile = drMap.getTile(0, 0);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
 					} else {
 						// 14
 						ulMap = uMap = localMap;
 						urMap = createMapIfNonExistent(getRightMap(origin));
 						lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLowerMap(origin));
 						rMap = drMap = createMapIfNonExistent(getLowerRightMap(origin));
-						ulTile = ulMap.getTile(maxIndexX-1, maxIndexY);
-						uTile = uMap.getTile(maxIndexX, maxIndexY);
-						urTile = urMap.getTile(0, maxIndexY);
-						lTile = lMap.getTile(maxIndexX-1, 0);
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
 						centerTile = new Point(maxIndexX, 0);
-						rTile = rMap.getTile(0, 0);
-						dlTile = dlMap.getTile(maxIndexX-1, 1);
-						dTile = dMap.getTile(maxIndexX, 1);
-						drTile = drMap.getTile(0, 1);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
 					}
 				} else {
 					// 15
 					ulMap = uMap = lMap = centerMap = dlMap = dMap = localMap;
 					urMap = rMap = drMap = createMapIfNonExistent(getRightMap(origin));
-					ulTile = ulMap.getTile(maxIndexX-1, localY-1);
-					uTile = uMap.getTile(maxIndexX, localY-1);
-					urTile = urMap.getTile(0, localY-1);
-					lTile = lMap.getTile(maxIndexX-1, localY);
+					ulTile = new Point(maxIndexX-1, localY-1);
+					uTile = new Point(maxIndexX, localY-1);
+					urTile = new Point(0, localY-1);
+					lTile = new Point(maxIndexX-1, localY);
 					centerTile = new Point(maxIndexX, localY);
-					rTile = rMap.getTile(0, localY);
-					dlTile = dlMap.getTile(maxIndexX-1, localY+1);
-					dTile = dMap.getTile(maxIndexX, localY+1);
-					drTile = drMap.getTile(0, localY+1);
+					rTile = new Point(0, localY);
+					dlTile = new Point(maxIndexX-1, localY+1);
+					dTile = new Point(maxIndexX, localY+1);
+					drTile = new Point(0, localY+1);
 				}
 			} else {
 				if (localY <= 0) {
@@ -420,30 +378,30 @@ public class MapManager {
 						uMap = urMap = createMapIfNonExistent(getUpperRightMap(origin));
 						lMap = dlMap = localMap;
 						centerMap = rMap = dMap = drMap = createMapIfNonExistent(getRightMap(origin));
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY);
-						uTile = uMap.getTile(0, maxIndexY);
-						urTile = urMap.getTile(1, maxIndexY);
-						lTile = lMap.getTile(maxIndexX, 0);
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
 						centerTile = new Point(0, 0);
-						rTile = rMap.getTile(1, 0);
-						dlTile = dlMap.getTile(maxIndexX, 1);
-						dTile = dMap.getTile(0, 1);
-						drTile = drMap.getTile(1, 1);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
 					} else {
 						// 17
 						ulMap = lMap = createMapIfNonExistent(getUpperMap(origin));
 						uMap = urMap = centerMap = rMap = createMapIfNonExistent(getUpperRightMap(origin));
 						dlMap = localMap;
 						dMap = drMap = createMapIfNonExistent(getRightMap(origin));
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY-1);
-						uTile = uMap.getTile(0, maxIndexY-1);
-						urTile = urMap.getTile(1, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX, maxIndexY);
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
 						centerTile = new Point(0, maxIndexY);
-						rTile = rMap.getTile(1, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX, 0);
-						dTile = dMap.getTile(0, 0);
-						drTile = drMap.getTile(1, 0);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
 					}
 				} else if (localY >= GameStates.mapHeight-1) {
 					if (localY == GameStates.mapHeight-1) {
@@ -452,44 +410,44 @@ public class MapManager {
 						uMap = urMap = centerMap = rMap = createMapIfNonExistent(getRightMap(origin));
 						dlMap = createMapIfNonExistent(getLowerMap(origin));
 						dMap = drMap = createMapIfNonExistent(getLowerRightMap(origin));
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY-1);
-						uTile = uMap.getTile(0, maxIndexY-1);
-						urTile = urMap.getTile(1, maxIndexY-1);
-						lTile = lMap.getTile(maxIndexX, maxIndexY);
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
 						centerTile = new Point(0, maxIndexY);
-						rTile = rMap.getTile(1, maxIndexY);
-						dlTile = dlMap.getTile(maxIndexX, 0);
-						dTile = dMap.getTile(0, 0);
-						drTile = drMap.getTile(1, 0);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
 					} else {
 						// 19
 						ulMap = localMap;
 						uMap = urMap = createMapIfNonExistent(getRightMap(origin));
 						lMap = dlMap = createMapIfNonExistent(getLowerMap(origin));
 						centerMap = rMap = dMap = drMap = createMapIfNonExistent(getLowerRightMap(origin));
-						ulTile = ulMap.getTile(maxIndexX, maxIndexY);
-						uTile = uMap.getTile(0, maxIndexY);
-						urTile = urMap.getTile(1, maxIndexY);
-						lTile = lMap.getTile(maxIndexX, 0);
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
 						centerTile = new Point(0, 0);
-						rTile = rMap.getTile(1, 0);
-						dlTile = dlMap.getTile(maxIndexX, 1);
-						dTile = dMap.getTile(0, 1);
-						drTile = drMap.getTile(1, 1);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
 					}
 				} else {
 					// 20
 					ulMap = lMap = dlMap = localMap;
 					uMap = urMap = centerMap = rMap = dMap = drMap = createMapIfNonExistent(getRightMap(origin)); 
-					ulTile = ulMap.getTile(maxIndexX, localY-1);
-					uTile = uMap.getTile(0, localY-1);
-					urTile = urMap.getTile(1, localY-1);
-					lTile = lMap.getTile(maxIndexX, localY);
+					ulTile = new Point(maxIndexX, localY-1);
+					uTile = new Point(0, localY-1);
+					urTile = new Point(1, localY-1);
+					lTile = new Point(maxIndexX, localY);
 					centerTile = new Point(0, localY);
-					rTile = rMap.getTile(1, localY);
-					dlTile = dlMap.getTile(maxIndexX, localY+1);
-					dTile = dMap.getTile(0, localY+1);
-					drTile = drMap.getTile(1, localY+1);
+					rTile = new Point(1, localY);
+					dlTile = new Point(maxIndexX, localY+1);
+					dTile = new Point(0, localY+1);
+					drTile = new Point(1, localY+1);
 				}
 			}
 		} else {
@@ -498,94 +456,559 @@ public class MapManager {
 					// 21
 					ulMap = uMap = urMap = createMapIfNonExistent(getUpperMap(origin));
 					lMap = centerMap = rMap = dlMap = dMap = drMap = localMap;
-					ulTile = ulMap.getTile(localX-1, maxIndexY);
-					uTile = uMap.getTile(localX, maxIndexY);
-					urTile = urMap.getTile(localX+1, maxIndexY);
-					lTile = lMap.getTile(localX-1, 0);
+					ulTile = new Point(localX-1, maxIndexY);
+					uTile = new Point(localX, maxIndexY);
+					urTile = new Point(localX+1, maxIndexY);
+					lTile = new Point(localX-1, 0);
 					centerTile = new Point(localX, 0);
-					rTile = rMap.getTile(localX+1, 0);
-					dlTile = dlMap.getTile(localX-1, 1);
-					dTile = dMap.getTile(localX, 1);
-					drTile = drMap.getTile(localX+1, 1);
+					rTile = new Point(localX+1, 0);
+					dlTile = new Point(localX-1, 1);
+					dTile = new Point(localX, 1);
+					drTile = new Point(localX+1, 1);
 				} else {
 					// 22
 					ulMap = uMap = urMap = lMap = centerMap = rMap = createMapIfNonExistent(getUpperMap(origin));
 					dlMap = dMap = drMap = localMap;
-					ulTile = ulMap.getTile(localX-1, maxIndexY-1);
-					uTile = uMap.getTile(localX, maxIndexY-1);
-					urTile = urMap.getTile(localX+1, maxIndexY-1);
-					lTile = lMap.getTile(localX-1, maxIndexY);
+					ulTile = new Point(localX-1, maxIndexY-1);
+					uTile = new Point(localX, maxIndexY-1);
+					urTile = new Point(localX+1, maxIndexY-1);
+					lTile = new Point(localX-1, maxIndexY);
 					centerTile = new Point(localX, maxIndexY);
-					rTile = rMap.getTile(localX+1, maxIndexY);
-					dlTile = dlMap.getTile(localX-1, 0);
-					dTile = dMap.getTile(localX, 0);
-					drTile = drMap.getTile(localX+1, 0);
+					rTile = new Point(localX+1, maxIndexY);
+					dlTile = new Point(localX-1, 0);
+					dTile = new Point(localX, 0);
+					drTile = new Point(localX+1, 0);
 				}
 			} else if (localY >= GameStates.mapHeight-1) {
 				if (localY == GameStates.mapHeight-1) {
 					// 23
 					ulMap = uMap = urMap = lMap = centerMap = rMap = localMap;
 					dlMap = dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
-					ulTile = ulMap.getTile(localX-1, maxIndexY-1);
-					uTile = uMap.getTile(localX, maxIndexY-1);
-					urTile = urMap.getTile(localX+1, maxIndexY-1);
-					lTile = lMap.getTile(localX-1, maxIndexY);
+					ulTile = new Point(localX-1, maxIndexY-1);
+					uTile = new Point(localX, maxIndexY-1);
+					urTile = new Point(localX+1, maxIndexY-1);
+					lTile = new Point(localX-1, maxIndexY);
 					centerTile = new Point(localX, maxIndexY);
-					rTile = rMap.getTile(localX+1, maxIndexY);
-					dlTile = dlMap.getTile(localX-1, 0);
-					dTile = dMap.getTile(localX, 0);
-					drTile = drMap.getTile(localX+1, 0);
+					rTile = new Point(localX+1, maxIndexY);
+					dlTile = new Point(localX-1, 0);
+					dTile = new Point(localX, 0);
+					drTile = new Point(localX+1, 0);
 				} else {
 					// 24
 					ulMap = uMap = urMap = localMap;
 					lMap = centerMap = rMap = dlMap = dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
-					ulTile = ulMap.getTile(localX-1, maxIndexY);
-					uTile = uMap.getTile(localX, maxIndexY);
-					urTile = urMap.getTile(localX+1, maxIndexY);
-					lTile = lMap.getTile(localX-1, 0);
+					ulTile = new Point(localX-1, maxIndexY);
+					uTile = new Point(localX, maxIndexY);
+					urTile = new Point(localX+1, maxIndexY);
+					lTile = new Point(localX-1, 0);
 					centerTile = new Point(localX, 0);
-					rTile = rMap.getTile(localX+1, 0);
-					dlTile = dlMap.getTile(localX-1, 1);
-					dTile = dMap.getTile(localX, 1);
-					drTile = drMap.getTile(localX+1, 1);
+					rTile = new Point(localX+1, 0);
+					dlTile = new Point(localX-1, 1);
+					dTile = new Point(localX, 1);
+					drTile = new Point(localX+1, 1);
 				}
 			} else {
 				// 25
 				ulMap = uMap = urMap = lMap = centerMap = rMap = dlMap = dMap = drMap = localMap;
-				ulTile = ulMap.getTile(localX-1,localY-1);
-				uTile = uMap.getTile(localX, localY-1);
-				urTile = urMap.getTile(localX+1, localY-1);
-				lTile = lMap.getTile(localX-1, localY);
+				ulTile = new Point(localX-1,localY-1);
+				uTile = new Point(localX, localY-1);
+				urTile = new Point(localX+1, localY-1);
+				lTile = new Point(localX-1, localY);
 				centerTile = new Point(localX, localY);
-				rTile = rMap.getTile(localX+1, localY);
-				dlTile = dlMap.getTile(localX-1, localY+1);
-				dTile = dMap.getTile(localX, localY+1);
-				drTile = drMap.getTile(localX+1, localY+1);
+				rTile = new Point(localX+1, localY);
+				dlTile = new Point(localX-1, localY+1);
+				dTile = new Point(localX, localY+1);
+				drTile = new Point(localX+1, localY+1);
 			}
 		}
 		
+		/** delete all tiles in environment **/
+		centerMap.setTile(centerTile.x, centerTile.y, 0 ); // new Tile(0, false, false, false, false));
+		ulMap.setTile(ulTile.x, ulTile.y, 0 ); // new Tile(0, false, false, false, false));
+		ulMap.setDr(ulTile.x, ulTile.y, 0 );
+		uMap.setTile(uTile.x, uTile.y, 0 ); // new Tile(0, false, false, false, false));
+		uMap.setDl(uTile.x, uTile.y, 0 );
+		uMap.setDr(uTile.x, uTile.y, 0 );
+		urMap.setTile(urTile.x, urTile.y, 0 ); // new Tile(0, false, false, false, false));
+		uMap.setDl(urTile.x, urTile.y, 0 );
+		lMap.setTile(lTile.x, lTile.y, 0 ); // new Tile(0, false, false, false, false));
+		lMap.setUr(lTile.x, lTile.y, 0 );
+		lMap.setDr(lTile.x, lTile.y, 0 );
+		rMap.setTile(rTile.x, rTile.y, 0 ); // new Tile(0, false, false, false, false));
+		rMap.setUl(rTile.x, rTile.y, 0 );
+		rMap.setDl(rTile.x, rTile.y, 0 );
+		dlMap.setTile(dlTile.x, dlTile.y, 0 ); // new Tile(0, false, false, false, false));
+		dlMap.setUr(dlTile.x, dlTile.y, 0 );
+		dMap.setTile(dTile.x, dTile.y, 0 ); // new Tile(0, false, false, false, false));
+		dMap.setUr(dTile.x, dTile.y, 0 );
+		dMap.setUl(dTile.x, dTile.y, 0 );
+		drMap.setTile(drTile.x, drTile.y, 0 ); // new Tile(0, false, false, false, false));
+		drMap.setUl(drTile.x, drTile.y, 0 );
+		/** and adjust the surrounding */
+		adjustSurrounding(ulMap, ulTile.x, ulTile.y);
+		adjustSurrounding(uMap, uTile.x, uTile.y);
+		adjustSurrounding(urMap, urTile.x, urTile.y);
+		adjustSurrounding(lMap, lTile.x, lTile.y);
+		adjustSurrounding(rMap, rTile.x, rTile.y);
+		adjustSurrounding(dlMap, dlTile.x, dlTile.y);
+		adjustSurrounding(dMap, dTile.x, dTile.y);
+		adjustSurrounding(drMap, drTile.x, drTile.y);
+	}
+	
+	
+	public static void setTileCorners(LocalMap localMap, int localX, int localY) {
+		Point origin = localMap.getOrigin();
+		LocalMap ulMap;
+		LocalMap uMap;
+		LocalMap urMap;
+		LocalMap lMap;
+		LocalMap rMap;
+		LocalMap centerMap;
+		LocalMap dlMap;
+		LocalMap dMap;
+		LocalMap drMap;
+		Point ulTile;
+		Point uTile;
+		Point urTile;
+		Point lTile;
+		Point rTile;
+		Point centerTile;
+		Point dlTile;
+		Point dTile;
+		Point drTile;
 		
-//		if (localMap.getTile(localX-1, localY-1) == null) localMap.setTile(localX-1, localY-1, new Tile(0, false, false, false, false ));
-//		if (localMap.getTile(localX+1, localY+1) == null) localMap.setTile(localX+1, localY+1, new Tile(0, false, false, false, false ));
-//		if (localMap.getTile(localX-1, localY+1) == null) localMap.setTile(localX-1, localY+1, new Tile(0, false, false, false, false ));
-//		if (localMap.getTile(localX+1, localY-1) == null) localMap.setTile(localX+1, localY-1, new Tile(0, false, false, false, false ));
-//		if (localMap.getTile(localX, localY-1) == null) localMap.setTile(localX, localY-1, new Tile(0, false, false, false, false ));
-//		if (localMap.getTile(localX, localY+1) == null) localMap.setTile(localX, localY+1, new Tile(0, false, false, false, false ));
-//		if (localMap.getTile(localX+1, localY) == null) localMap.setTile(localX+1, localY, new Tile(0, false, false, false, false ));
-//		if (localMap.getTile(localX-1, localY) == null) localMap.setTile(localX-1, localY, new Tile(0, false, false, false, false ));
-//		boolean dl = localMap.getTile(localX-1, localY+1).hasUr() || localMap.getTile(localX, localY+1).hasUl() || localMap.getTile(localX-1, localY).hasDr();
-//		boolean dr = localMap.getTile(localX+1, localY+1).hasUl() || localMap.getTile(localX, localY+1).hasUr() || localMap.getTile(localX+1, localY).hasDl();
-//		boolean ur = localMap.getTile(localX+1, localY-1).hasDl() || localMap.getTile(localX, localY-1).hasDr() || localMap.getTile(localX+1, localY).hasUl();
-//		boolean ul = localMap.getTile(localX-1, localY-1).hasDr() || localMap.getTile(localX, localY-1).hasDl() || localMap.getTile(localX-1, localY).hasUr();
+		int maxIndexX = GameStates.mapWidth-1;
+		int maxIndexY = GameStates.mapHeight-1;
 		
-		boolean dl = dlTile.hasUr() || dTile.hasUl() || lTile.hasDr();
-		boolean dr = drTile.hasUl() || dTile.hasUr() || rTile.hasDl();
-		boolean ur = urTile.hasDl() || uTile.hasDr() || rTile.hasUl();
-		boolean ul = ulTile.hasDr() || uTile.hasDl() || lTile.hasUr();
+		if (localX <= 0) {
+			if (localX == 0) {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 1
+						ulMap = createMapIfNonExistent(getUpperLeftMap(origin));
+						uMap = urMap = createMapIfNonExistent(getUpperMap(origin));
+						lMap = dlMap = createMapIfNonExistent(getLeftMap(origin));
+						centerMap = dMap = drMap = rMap = localMap;
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
+						centerTile = new Point(0, 0);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
+					} else {
+						// 2
+						ulMap = lMap = createMapIfNonExistent(getUpperLeftMap(origin));
+						uMap = urMap = centerMap = rMap = createMapIfNonExistent(getUpperMap(origin));
+						dlMap = createMapIfNonExistent(getLeftMap(origin));
+						dMap = drMap = localMap;
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
+						centerTile = new Point(0, maxIndexY);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 3
+						ulMap = lMap = createMapIfNonExistent(getLeftMap(origin));
+						uMap = urMap = centerMap = rMap = localMap;
+						dlMap = createMapIfNonExistent(getLowerLeftMap(origin));
+						dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
+						centerTile = new Point(0, maxIndexY);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
+					} else {
+						// 4
+						ulMap = createMapIfNonExistent(getLeftMap(origin));
+						uMap = urMap = localMap;
+						lMap = dlMap = createMapIfNonExistent(getLowerLeftMap(origin));
+						centerMap = rMap = dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
+						centerTile = new Point(0, 0);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
+					}
+				} else {
+					// 5
+					ulMap = lMap = dlMap = createMapIfNonExistent(getLeftMap(origin));
+					uMap = urMap = centerMap = rMap = dMap = drMap = localMap;
+					ulTile = new Point(maxIndexX, localY-1);
+					uTile = new Point(0, localY-1);
+					urTile = new Point(1, localY-1);
+					lTile = new Point(maxIndexX, localY);
+					centerTile = new Point(0, localY);
+					rTile = new Point(1, localY);
+					dlTile = new Point(maxIndexX, localY+1);
+					dTile = new Point(0, localY+1);
+					drTile = new Point(1, localY+1);
+				}
+			} else {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 6
+						ulMap = uMap = createMapIfNonExistent(getUpperLeftMap(origin));
+						urMap = createMapIfNonExistent(getUpperMap(origin));
+						lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLeftMap(origin));
+						rMap = drMap = localMap;
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
+						centerTile = new Point(maxIndexX, 0);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
+					} else {
+						// 7
+						ulMap = uMap = lMap = centerMap = createMapIfNonExistent(getUpperLeftMap(origin));
+						urMap = rMap = createMapIfNonExistent(getUpperMap(origin));
+						dlMap = dMap = createMapIfNonExistent(getLeftMap(origin));
+						drMap = localMap;
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
+						centerTile = new Point(maxIndexX, maxIndexY);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 8
+						ulMap = uMap = lMap = centerMap = createMapIfNonExistent(getLeftMap(origin));
+						urMap = rMap = localMap;
+						dlMap = dMap = createMapIfNonExistent(getLowerLeftMap(origin));
+						drMap = createMapIfNonExistent(getLowerMap(origin));
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
+						centerTile = new Point(maxIndexX, maxIndexY);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
+					} else {
+						// 9
+						ulMap = uMap = createMapIfNonExistent(getLeftMap(origin));
+						urMap = localMap;
+						lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLowerLeftMap(origin));
+						rMap = drMap = createMapIfNonExistent(getLowerMap(origin));
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
+						centerTile = new Point(maxIndexX, 0);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
+					}
+				} else {
+					// 10
+					ulMap = uMap = lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLeftMap(origin));
+					urMap = rMap = drMap = localMap;
+					ulTile = new Point(maxIndexX-1, localY-1);
+					uTile = new Point(maxIndexX, localY-1);
+					urTile = new Point(0, localY-1);
+					lTile = new Point(maxIndexX-1, localY);
+					centerTile = new Point(maxIndexX, localY);
+					rTile = new Point(0, localY);
+					dlTile = new Point(maxIndexX-1, localY+1);
+					dTile = new Point(maxIndexX, localY+1);
+					drTile = new Point(0, localY+1);
+				}
+			}
+		} else if (localX >= GameStates.mapWidth-1) {
+			if (localX == GameStates.mapWidth-1) {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 11
+						ulMap = uMap = createMapIfNonExistent(getUpperMap(origin));
+						urMap = createMapIfNonExistent(getUpperRightMap(origin));
+						lMap = centerMap = dlMap = dMap = localMap;
+						rMap = drMap = createMapIfNonExistent(getRightMap(origin));
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
+						centerTile = new Point(maxIndexX, 0);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
+					} else {
+						// 12
+						ulMap = uMap = lMap = centerMap = createMapIfNonExistent(getUpperMap(origin));
+						urMap = rMap = createMapIfNonExistent(getUpperRightMap(origin));
+						dlMap = dMap = localMap;
+						drMap = createMapIfNonExistent(getLeftMap(origin));
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
+						centerTile = new Point(maxIndexX, maxIndexY);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 13
+						ulMap = uMap = lMap = centerMap = localMap;
+						urMap = rMap = createMapIfNonExistent(getRightMap(origin));
+						dlMap = dMap = createMapIfNonExistent(getLowerMap(origin));
+						drMap = createMapIfNonExistent(getLowerRightMap(origin));
+						ulTile = new Point(maxIndexX-1, maxIndexY-1);
+						uTile = new Point(maxIndexX, maxIndexY-1);
+						urTile = new Point(0, maxIndexY-1);
+						lTile = new Point(maxIndexX-1, maxIndexY);
+						centerTile = new Point(maxIndexX, maxIndexY);
+						rTile = new Point(0, maxIndexY);
+						dlTile = new Point(maxIndexX-1, 0);
+						dTile = new Point(maxIndexX, 0);
+						drTile = new Point(0, 0);
+					} else {
+						// 14
+						ulMap = uMap = localMap;
+						urMap = createMapIfNonExistent(getRightMap(origin));
+						lMap = centerMap = dlMap = dMap = createMapIfNonExistent(getLowerMap(origin));
+						rMap = drMap = createMapIfNonExistent(getLowerRightMap(origin));
+						ulTile = new Point(maxIndexX-1, maxIndexY);
+						uTile = new Point(maxIndexX, maxIndexY);
+						urTile = new Point(0, maxIndexY);
+						lTile = new Point(maxIndexX-1, 0);
+						centerTile = new Point(maxIndexX, 0);
+						rTile = new Point(0, 0);
+						dlTile = new Point(maxIndexX-1, 1);
+						dTile = new Point(maxIndexX, 1);
+						drTile = new Point(0, 1);
+					}
+				} else {
+					// 15
+					ulMap = uMap = lMap = centerMap = dlMap = dMap = localMap;
+					urMap = rMap = drMap = createMapIfNonExistent(getRightMap(origin));
+					ulTile = new Point(maxIndexX-1, localY-1);
+					uTile = new Point(maxIndexX, localY-1);
+					urTile = new Point(0, localY-1);
+					lTile = new Point(maxIndexX-1, localY);
+					centerTile = new Point(maxIndexX, localY);
+					rTile = new Point(0, localY);
+					dlTile = new Point(maxIndexX-1, localY+1);
+					dTile = new Point(maxIndexX, localY+1);
+					drTile = new Point(0, localY+1);
+				}
+			} else {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 16
+						ulMap = createMapIfNonExistent(getUpperMap(origin));
+						uMap = urMap = createMapIfNonExistent(getUpperRightMap(origin));
+						lMap = dlMap = localMap;
+						centerMap = rMap = dMap = drMap = createMapIfNonExistent(getRightMap(origin));
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
+						centerTile = new Point(0, 0);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
+					} else {
+						// 17
+						ulMap = lMap = createMapIfNonExistent(getUpperMap(origin));
+						uMap = urMap = centerMap = rMap = createMapIfNonExistent(getUpperRightMap(origin));
+						dlMap = localMap;
+						dMap = drMap = createMapIfNonExistent(getRightMap(origin));
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
+						centerTile = new Point(0, maxIndexY);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 18
+						ulMap = lMap = localMap;
+						uMap = urMap = centerMap = rMap = createMapIfNonExistent(getRightMap(origin));
+						dlMap = createMapIfNonExistent(getLowerMap(origin));
+						dMap = drMap = createMapIfNonExistent(getLowerRightMap(origin));
+						ulTile = new Point(maxIndexX, maxIndexY-1);
+						uTile = new Point(0, maxIndexY-1);
+						urTile = new Point(1, maxIndexY-1);
+						lTile = new Point(maxIndexX, maxIndexY);
+						centerTile = new Point(0, maxIndexY);
+						rTile = new Point(1, maxIndexY);
+						dlTile = new Point(maxIndexX, 0);
+						dTile = new Point(0, 0);
+						drTile = new Point(1, 0);
+					} else {
+						// 19
+						ulMap = localMap;
+						uMap = urMap = createMapIfNonExistent(getRightMap(origin));
+						lMap = dlMap = createMapIfNonExistent(getLowerMap(origin));
+						centerMap = rMap = dMap = drMap = createMapIfNonExistent(getLowerRightMap(origin));
+						ulTile = new Point(maxIndexX, maxIndexY);
+						uTile = new Point(0, maxIndexY);
+						urTile = new Point(1, maxIndexY);
+						lTile = new Point(maxIndexX, 0);
+						centerTile = new Point(0, 0);
+						rTile = new Point(1, 0);
+						dlTile = new Point(maxIndexX, 1);
+						dTile = new Point(0, 1);
+						drTile = new Point(1, 1);
+					}
+				} else {
+					// 20
+					ulMap = lMap = dlMap = localMap;
+					uMap = urMap = centerMap = rMap = dMap = drMap = createMapIfNonExistent(getRightMap(origin)); 
+					ulTile = new Point(maxIndexX, localY-1);
+					uTile = new Point(0, localY-1);
+					urTile = new Point(1, localY-1);
+					lTile = new Point(maxIndexX, localY);
+					centerTile = new Point(0, localY);
+					rTile = new Point(1, localY);
+					dlTile = new Point(maxIndexX, localY+1);
+					dTile = new Point(0, localY+1);
+					drTile = new Point(1, localY+1);
+				}
+			}
+		} else {
+			if (localY <= 0) {
+				if (localY == 0) {
+					// 21
+					ulMap = uMap = urMap = createMapIfNonExistent(getUpperMap(origin));
+					lMap = centerMap = rMap = dlMap = dMap = drMap = localMap;
+					ulTile = new Point(localX-1, maxIndexY);
+					uTile = new Point(localX, maxIndexY);
+					urTile = new Point(localX+1, maxIndexY);
+					lTile = new Point(localX-1, 0);
+					centerTile = new Point(localX, 0);
+					rTile = new Point(localX+1, 0);
+					dlTile = new Point(localX-1, 1);
+					dTile = new Point(localX, 1);
+					drTile = new Point(localX+1, 1);
+				} else {
+					// 22
+					ulMap = uMap = urMap = lMap = centerMap = rMap = createMapIfNonExistent(getUpperMap(origin));
+					dlMap = dMap = drMap = localMap;
+					ulTile = new Point(localX-1, maxIndexY-1);
+					uTile = new Point(localX, maxIndexY-1);
+					urTile = new Point(localX+1, maxIndexY-1);
+					lTile = new Point(localX-1, maxIndexY);
+					centerTile = new Point(localX, maxIndexY);
+					rTile = new Point(localX+1, maxIndexY);
+					dlTile = new Point(localX-1, 0);
+					dTile = new Point(localX, 0);
+					drTile = new Point(localX+1, 0);
+				}
+			} else if (localY >= GameStates.mapHeight-1) {
+				if (localY == GameStates.mapHeight-1) {
+					// 23
+					ulMap = uMap = urMap = lMap = centerMap = rMap = localMap;
+					dlMap = dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
+					ulTile = new Point(localX-1, maxIndexY-1);
+					uTile = new Point(localX, maxIndexY-1);
+					urTile = new Point(localX+1, maxIndexY-1);
+					lTile = new Point(localX-1, maxIndexY);
+					centerTile = new Point(localX, maxIndexY);
+					rTile = new Point(localX+1, maxIndexY);
+					dlTile = new Point(localX-1, 0);
+					dTile = new Point(localX, 0);
+					drTile = new Point(localX+1, 0);
+				} else {
+					// 24
+					ulMap = uMap = urMap = localMap;
+					lMap = centerMap = rMap = dlMap = dMap = drMap = createMapIfNonExistent(getLowerMap(origin));
+					ulTile = new Point(localX-1, maxIndexY);
+					uTile = new Point(localX, maxIndexY);
+					urTile = new Point(localX+1, maxIndexY);
+					lTile = new Point(localX-1, 0);
+					centerTile = new Point(localX, 0);
+					rTile = new Point(localX+1, 0);
+					dlTile = new Point(localX-1, 1);
+					dTile = new Point(localX, 1);
+					drTile = new Point(localX+1, 1);
+				}
+			} else {
+				// 25
+				ulMap = uMap = urMap = lMap = centerMap = rMap = dlMap = dMap = drMap = localMap;
+				ulTile = new Point(localX-1,localY-1);
+				uTile = new Point(localX, localY-1);
+				urTile = new Point(localX+1, localY-1);
+				lTile = new Point(localX-1, localY);
+				centerTile = new Point(localX, localY);
+				rTile = new Point(localX+1, localY);
+				dlTile = new Point(localX-1, localY+1);
+				dTile = new Point(localX, localY+1);
+				drTile = new Point(localX+1, localY+1);
+			}
+		}
+	
+		boolean dl = ((dlMap.getUr(dlTile.x, dlTile.y) != 0) || (dMap.getUl(dTile.x, dTile.y) != 0) || (lMap.getDr(lTile.x, lTile.y) != 0) );// && (dlTile.getId()!= 0);
+		boolean dr = ((drMap.getUl(drTile.x, drTile.y) != 0) || (dMap.getUr(dTile.x, dTile.y) != 0) || (rMap.getDl(rTile.x, rTile.y) != 0) );// && (drTile.getId()!= 0);
+		boolean ur = ((urMap.getDl(urTile.x, urTile.y) != 0) || (uMap.getDr(uTile.x, uTile.y) != 0) || (rMap.getUl(rTile.x, rTile.y) != 0) );// && (urTile.getId()!= 0);
+		boolean ul = ((ulMap.getDr(ulTile.x, ulTile.y) != 0) || (uMap.getDl(uTile.x, uTile.y) != 0) || (lMap.getUr(lTile.x, lTile.y) != 0) );// && (ulTile.getId()!= 0);
 		
-		Tile tile = new Tile(0,ul, ur, dl, dr);
-		tile.setIdByCorners();
-		centerMap.setTile(centerTile.x, centerTile.y, tile);
+//		boolean dl = ((dlMap.getUr(dlTile.x, dlTile.y) != -1) || dTile.hasUl() || lTile.hasDr());// && (dlTile.getId()!= 0);
+//		boolean dr = (drTile.hasUl() || dTile.hasUr() || rTile.hasDl());// && (drTile.getId()!= 0);
+//		boolean ur = (urTile.hasDl() || uTile.hasDr() || rTile.hasUl());// && (urTile.getId()!= 0);
+//		boolean ul = (ulTile.hasDr() || uTile.hasDl() || lTile.hasUr());// && (ulTile.getId()!= 0);
+		
+//		Tile tile = new Tile(0,ul, ur, dl, dr);
+//		tile.setIdByCorners();
+		if (dl)	{
+			centerMap.setDl(centerTile.x, centerTile.y, 62);
+//			System.out.println("dl "+centerTile.x+" "+centerTile.y);
+		}
+		else centerMap.setDl(centerTile.x, centerTile.y, 0);
+		if (dr)	{
+			centerMap.setDr(centerTile.x, centerTile.y, 62);
+//			System.out.println("dr "+centerTile.x+" "+centerTile.y);
+		}
+		else centerMap.setDr(centerTile.x, centerTile.y, 0);
+		if (ul)	{
+			centerMap.setUl(centerTile.x, centerTile.y, 62);
+//			System.out.println("ul "+centerTile.x+" "+centerTile.y);
+		}
+		else centerMap.setUl(centerTile.x, centerTile.y, 0);
+		if (ur)	{
+			centerMap.setUr(centerTile.x, centerTile.y, 62);
+//			System.out.println("ur "+centerTile.x+" "+centerTile.y);
+		}
+		else centerMap.setUr(centerTile.x, centerTile.y, 0);
+		
+//		System.out.println("DR: "+centerMap.getDr(centerTile.x, centerTile.y));
+		centerMap.setIdByCorners(centerTile.x, centerTile.y);
+//		if (tile.getId() == 0) tile = null;
+//		centerMap.setTile(centerTile.x, centerTile.y, tile);
 	}
 	
 	
@@ -620,59 +1043,87 @@ public class MapManager {
 	public static Point getLowerRightMap(Point origin) {
 		return new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
 	}
-	
-//	/** compare the idList with a given int[] and return the difference */
-//	public static void createSpacesFromArray(Space[] spaceArray) {
-//		if(spaceArray.length > 0) {
-//			for (int i =0; i< spaceArray.length; i++) {
-//				spaceList.put(spaceArray[i].getId(), spaceArray[i]);
-//				if (!idList.contains(spaceArray[i].getId())) idList.add(spaceArray[i].getId());
-//			}
-//		}
-//	}
+
 	
 	public static void emptyAll() {
 		localMapList = new HashMap<Point, LocalMap>();
-//		sortedSpaceList = new ArrayList<Space>();
 		pointList = new ArrayList<Point>();
 	}
 
+	public static void save(LocalMap localMap, String fileName) {
+		try {
+			FileOutputStream datei=new FileOutputStream(fileName);
+			BufferedOutputStream buf=new BufferedOutputStream(datei);
+			ObjectOutputStream writeStream = new ObjectOutputStream(buf);
+			writeStream.writeObject(localMap.getLocalMap());
+			writeStream.writeObject(localMap.getUlArray());
+			writeStream.writeObject(localMap.getUrArray());
+			writeStream.writeObject(localMap.getDlArray());
+			writeStream.writeObject(localMap.getDrArray());
+			writeStream.writeObject(localMap.getOrigin());
+			writeStream.writeObject(localMap.getTileSetFileName());
+			writeStream.close();
+//			System.out.println("wrote "+localMap.getOrigin().x +" "+localMap.getOrigin().y);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
-//	/** get Maximum of ids */
-//	public static BigInteger getMax(){
-//		BigInteger tempMax = BigInteger.valueOf(-1);
-//		for(BigInteger bId : idList) {
-//			/** if we found a new maximum replace the old one **/
-//			if (bId.compareTo(tempMax) > 0) {
-//				tempMax = bId;
-//			}
-//		}
-//		return tempMax;
-//	}
 	
-//	/**
-//     * Edits the addon parameters of a space
-//     * 
-//     * @param id: entity to edit
-//     * @return {@code true} if the entity was edited with success
-//     */
-//    public static boolean editSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {
-//       if ( spaceList.containsKey(id)) {
-//    	   Space space = spaceList.get(id);
-////    	   space.setX(state[0]);
-////    	   space.setY(state[1]);
-//    	   space.setTexture(textureName);
-//    	   System.out.println("Space "+id +" gets the texture "+textureName);
-//    	   space.setRGB(rgb);
-//    	   space.setTrans(trans);
-//    	   if (filled == 0) space.setFilled(false); else space.setFilled(true);
-//    	   space.scale(scale);
-//    	   space.setArea(area);
-//    	   //entities.put(id, entity);
-//    	   return true;
-//       } else {
-//    	   return false;
-//       }
-//    	   
-//    }
+	public static LocalMap loadMap(String fileName) {
+		try {
+			FileInputStream datei=new FileInputStream(fileName);
+			BufferedInputStream buf=new BufferedInputStream(datei);
+			ObjectInputStream readStream = new ObjectInputStream(buf);
+			int[][] localMap = (int[][]) readStream.readObject();
+			int[][] ulArray = (int[][]) readStream.readObject();
+			int[][] urArray = (int[][]) readStream.readObject();
+			int[][] dlArray = (int[][]) readStream.readObject();
+			int[][] drArray = (int[][]) readStream.readObject();
+			Point origin =(Point) readStream.readObject();
+			String tileSetFileName = (String) readStream.readObject();
+			readStream.close();
+			
+//			System.out.println(origin.x +" "+origin.y);
+			return new LocalMap(localMap, ulArray, urArray, dlArray, drArray, tileSetFileName, origin);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}	
+			
+	}
+	
+	public static void loadLocalMaps(String playerName) {
+		/** loop through mapfolder and get every map that ends on ".map" and begins with username */
+		ArrayList<String> listOfFiles = new ArrayList<String>();
+		File folder = new File(GameStates.standardMapFolder+playerName);
+		listOfFiles = MyUtil.listFilesForFolder(folder);
+		for (String mapFile: listOfFiles) {
+			/** get origins and save the maps under the corresponding origin */
+//			System.out.println(mapFile);
+//			String originXString = "0";
+//			String originYString = "0";
+//			int originX = Integer.parseInt(originXString);
+//			int originY = Integer.parseInt(originYString);
+			
+			LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
+			localMapList.put(lMap.getOrigin(), lMap);
+			pointList.add(lMap.getOrigin());
+		}
+		
+//		LocalMap nullnull = loadMap(GameStates.standardMapFolder+playerName+"/"+playerName+"_"+"0"+"_"+"0"+".map");
+//		localMapList.put(nullnull.getOrigin(), nullnull);
+//		pointList.add(nullnull.getOrigin());
+		
+	}
+	
+	/** first init of external images */
+	public void initMaps(String folderPath) {
+		
+	}
+	
 }

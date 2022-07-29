@@ -193,13 +193,29 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		int localY = (int) Math.floor( (float) (correctedPoint.y - latticePointY )/ GameStates.mapTileSetHeight);
 		
 		Point p = new Point(latticePointX, latticePointY);
-		
-		if (MapManager.contains(p)) {
-			Tile tile = new Tile(62, true, true, true, true);
-			MapManager.get(p).setTile(localX, localY, tile);
+		/** create Map if not yet created */
+		if (!MapManager.contains(p)) {
+			MapManager.createMap(p);
+		}
+		/** check if deleteModus or paintModus */
+		if (!GamePanel.gp.isDeleteModus()) {
+			//Tile tile = new Tile(62, true, true, true, true);
+//			MapManager.get(p).setTile(localX, localY, 62);
+			MapManager.get(p).setUl(localX, localY, 62);
+			MapManager.get(p).setUr(localX, localY, 62);
+			MapManager.get(p).setDl(localX, localY, 62);
+			MapManager.get(p).setDr(localX, localY, 62);
+			MapManager.get(p).setIdByCorners(localX, localY);
 			MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
 		} else {
-			MapManager.createMap(p);
+			//MapManager.get(p).setTile(localX, localY, null);
+			MapManager.get(p).setUl(localX, localY, 0);
+			MapManager.get(p).setUr(localX, localY, 0);
+			MapManager.get(p).setDl(localX, localY, 0);
+			MapManager.get(p).setDr(localX, localY, 0);
+			MapManager.get(p).setIdByCorners(localX, localY);
+			MapManager.deleteSurrounding(MapManager.get(p), localX, localY);
+			//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
 		}
 	}
 	

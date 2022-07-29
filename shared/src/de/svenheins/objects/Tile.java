@@ -72,6 +72,7 @@ public class Tile {
 		else if (ul && ur && dr && !dl) setId(75);
 		else if (!ul && ur && !dr && dl) setId(156);
 		else if (ul && !ur && dr && !dl) setId(155);
+		else setId(0);
 	}
 	
 }

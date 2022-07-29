@@ -274,7 +274,7 @@ public class ClientMessageHandler {
     			animationDelay = packet.getLong();
     			
     			/** only add if its not me myself */
-    			if (!name_player.equals(GameWindow.gw.getPlayer())) {
+    			if (!name_player.equals(GameWindow.gw.getPlayerName())) {
 //    				System.out.println(name_player +" VS "+ GameWindow.gw.getPlayer());
     				tile = new TileSet(name_player_TileSet_FileName, name_player_TileSet, (int) spriteWidth, (int) spriteHeight);
     				PlayerEntity playerEntity = new PlayerEntity(tile,name_player, id_player, 0,0, animationDelay);
@@ -407,7 +407,7 @@ public class ClientMessageHandler {
 					/** send OK, if we still need packets */
 					if (packetIndex < countPackets-1) {
 		    			/** send the "received!!"-message if there are textures remaining */
-		    			GameWindow.gw.send(ClientMessages.sendReadyForNextTexturePacket(GameWindow.gw.getPlayer(), packetIndex));
+		    			GameWindow.gw.send(ClientMessages.sendReadyForNextTexturePacket(GameWindow.gw.getPlayerName(), packetIndex));
 		    		} else {
 		    			/** send "this one is complete, send next! */
 //		    			System.out.println("next texture, please!");
@@ -466,7 +466,7 @@ public class ClientMessageHandler {
     		byte[] imagePacket = ClientTextureManager.manager.getTexturePacket(oldPacket+1);
     		String textureName_ready = ClientTextureManager.manager.getUploadTextureName();
     		/** send the next packet */
-    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName_ready, oldPacket+1, ClientTextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayer()));
+    		GameWindow.gw.send(ClientMessages.uploadTexture(textureName_ready, oldPacket+1, ClientTextureManager.manager.getNumberOfPacketsUploadTexture() , imagePacket.length, imagePacket, GameWindow.gw.getPlayerName()));
     		
     		break;
     		

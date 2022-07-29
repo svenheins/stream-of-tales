@@ -8,6 +8,7 @@ import java.math.BigInteger;
 
 
 import de.svenheins.objects.Space;
+import de.svenheins.objects.Tile;
 
 import de.svenheins.animation.SpaceDisappear;
 
@@ -19,6 +20,7 @@ import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.MapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
@@ -54,7 +56,10 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 
 	@Override
 	public void mousePressed(MouseEvent mouseEvent) {
-		
+		Point point = mouseEvent.getPoint();
+		if (GameModus.modus == GameModus.GAME && GameWindow.gw.getShowConsole() == false){
+			gameMousePressed(point);
+		}
 	}
 
 	@Override
@@ -129,15 +134,14 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 //			
 //		}
 		
-		for( BigInteger i : SpaceManager.idList) {
-			for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
-				if (SpaceManager.get(i).getPolygon().get(j).contains(point)) {
-					// open edit-windows
-//					GamePanel.gp.setPause(true);
-					new EditWindow(SpaceManager.get(i));
-				}
-			}
-		}
+//		for( BigInteger i : SpaceManager.idList) {
+//			for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
+//				if (SpaceManager.get(i).getPolygon().get(j).contains(point)) {
+//					// open edit-windows
+//					new EditWindow(SpaceManager.get(i));
+//				}
+//			}
+//		}
 		
 //		for( int i =0; i < PlayerManager.size(); i++){
 //			if (PlayerManager.get(i).contains(point)) {
@@ -166,6 +170,37 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		 * */
 //		GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+p_save.x-(GameStates.width/2) ,GamePanel.gp.getViewPointY()+ p_save.y-(GameStates.height/2));
 
+	}
+	
+	
+	/**
+	 * @ModusImplementation: GAME
+	 * @Method: mouseClicked
+	 * @param point
+	 */
+	public void gameMousePressed(Point point) {
+//		Point p_save = new Point(point);
+//		System.out.println("ViewPoint: x = "+GamePanel.gp.getViewPointX()+ " y = "+ GamePanel.gp.getViewPointY());
+
+		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
+		point = correctedPoint;
+		
+		int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
+		int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
+		int latticePointX = (int) Math.floor( (float) correctedPoint.x / (localWidth)) * localWidth;
+		int latticePointY = (int) Math.floor( (float) correctedPoint.y / (localHeight)) * localHeight;
+		int localX = (int) Math.floor( (float) (correctedPoint.x - latticePointX )/ GameStates.mapTileSetWidth);
+		int localY = (int) Math.floor( (float) (correctedPoint.y - latticePointY )/ GameStates.mapTileSetHeight);
+		
+		Point p = new Point(latticePointX, latticePointY);
+		
+		if (MapManager.contains(p)) {
+			Tile tile = new Tile(62, true, true, true, true);
+			MapManager.get(p).setTile(localX, localY, tile);
+			MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
+		} else {
+			MapManager.createMap(p);
+		}
 	}
 	
 	
@@ -218,50 +253,31 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	 * @param point
 	 */
 	public void gameMouseDragged(Point point) {
-		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
-		point = correctedPoint;
-//		point.x = point.x - GamePanel.gp.getViewPointX();
-//		point.y = point.y - GamePanel.gp.getViewPointY();
-		if(dragging == true && dragSpace != null) {
-			float newX = (float) (point.getX()-localX);
-			float newY = (float) (point.getY()-localY);
-			dragSpace.setAllXY(newX, newY);
-			dragSpace.setUpdateByServer(false);
-			GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.SPACE, dragSpace.getId(),  new float[]{newX, newY, dragSpace.getMX(), dragSpace.getMY(), dragSpace.getHeight(), dragSpace.getWidth()}));
-//			System.out.println("ID: "+dragSpace.getId() +"  x: "+newX+" y: "+newY);
-		} else {
-//			SpaceManager.sortZIndex();
-//			for( int i =0; i < SpaceManager.sizeSorted(); i++){
-//				for (int j = 0; j< SpaceManager.getSorted(i).getPolygon().size(); j++) {
-//					if (SpaceManager.getSorted(i).getPolygon().get(j).contains(point)) {
-//						SpaceDisappear spaceDis = new SpaceDisappear(SpaceManager.getSorted(i));
-//						spaceDis.setRGBBefore(SpaceManager.getSorted(i).getRGB());
-//						SpaceManager.getSorted(i).setSpaceAnimation(spaceDis);
-//						SpaceManager.getSorted(i).setMovement(0, 0);
-//						dragSpace = SpaceManager.getSorted(i);
-//						localX = (int) (point.getX()- (int) dragSpace.getX());
-//						localY = (int) (point.getY()- (int) dragSpace.getY());
+		gameMousePressed(point);
+//		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
+//		point = correctedPoint;
+//		if(dragging == true && dragSpace != null) {
+//			float newX = (float) (point.getX()-localX);
+//			float newY = (float) (point.getY()-localY);
+//			dragSpace.setAllXY(newX, newY);
+//			dragSpace.setUpdateByServer(false);
+//			GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.SPACE, dragSpace.getId(),  new float[]{newX, newY, dragSpace.getMX(), dragSpace.getMY(), dragSpace.getHeight(), dragSpace.getWidth()}));
+//		} else {
+//			for (BigInteger i: SpaceManager.idList) {
+//				for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
+//					if (SpaceManager.get(i).getPolygon().get(j).contains(point)) {
+//						SpaceDisappear spaceDis = new SpaceDisappear(SpaceManager.get(i));
+//						spaceDis.setRGBBefore(SpaceManager.get(i).getRGB());
+//						SpaceManager.get(i).setSpaceAnimation(spaceDis);
+//						SpaceManager.get(i).setMovement(0, 0);
+//						dragSpace = SpaceManager.get(i);
+//						localX = (int) (point.getX()- (int) dragSpace.getPolyX());
+//						localY = (int) (point.getY()- (int) dragSpace.getPolyY());
 //						dragging = true;
 //					}
 //				}
 //			}
-//			SpaceManager.sortZIndex();
-//			for( int i =0; i < SpaceManager.size(); i++){
-			for (BigInteger i: SpaceManager.idList) {
-				for (int j = 0; j< SpaceManager.get(i).getPolygon().size(); j++) {
-					if (SpaceManager.get(i).getPolygon().get(j).contains(point)) {
-						SpaceDisappear spaceDis = new SpaceDisappear(SpaceManager.get(i));
-						spaceDis.setRGBBefore(SpaceManager.get(i).getRGB());
-						SpaceManager.get(i).setSpaceAnimation(spaceDis);
-						SpaceManager.get(i).setMovement(0, 0);
-						dragSpace = SpaceManager.get(i);
-						localX = (int) (point.getX()- (int) dragSpace.getPolyX());
-						localY = (int) (point.getY()- (int) dragSpace.getPolyY());
-						dragging = true;
-					}
-				}
-			}
-		}
+//		}
 	}
 	
 }

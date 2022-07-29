@@ -22,6 +22,7 @@
 package de.svenheins;
 
 import java.awt.GraphicsEnvironment;
+import java.awt.Polygon;
 import java.io.File;
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -240,15 +241,16 @@ public class World
         	it_my = (float) (-10+Math.random()*30);//Math.random()*50+0;
         	entityIDIndex = entityIDIndex.add(BigInteger.valueOf(1));
         	it_s_entityAgent = new ServerAgentEntrepreneur(it_s_spriteAgent, entityIDIndex, it_x, it_y, it_mx, it_my);
+        	//it_s_entityAgent.setName("Gegner");
         	it_s_entityAgent.setTileSetName("standardShip_green");
         	it_s_entityAgent.setTileSetPathName("tilesets/entities/"+iterativSpriteStringAgent);
         	room.addEntity(it_s_entityAgent);
         	/** Add Entity to the EntityManager, which allows to communicate fastly*/
-        	realAgent = new Entity(it_s_entityAgent.getName(), it_s_entityAgent.getId(), 0, 0, 0, 0);
-        	if ( EntityManager.add(realAgent)) {
-        		logger.log(Level.INFO, "EntityManager added successfully ID: " +realAgent.getId());
-        	}
-        	logger.log(Level.INFO, "EntityManager intitialized: count = " + EntityManager.size());
+//        	realAgent = new Entity(it_s_entityAgent.getName(), it_s_entityAgent.getId(), 0, 0, 0, 0);
+//        	if ( EntityManager.add(realAgent)) {
+//        		logger.log(Level.INFO, "EntityManager added successfully ID: " +realAgent.getId());
+//        	}
+//        	logger.log(Level.INFO, "EntityManager intitialized: count = " + EntityManager.size());
         }
         /** Create ServerEmployees (extend Entities) */
         Entity realAgentEmployee;
@@ -278,47 +280,54 @@ public class World
         	logger.log(Level.INFO, "EntityManager intitialized: count = " + EntityManager.size());
         }
         
-        /** 
-         * ADD: Spaces
-         */
-        BigInteger spaceIds = BigInteger.valueOf(0);
-        /** Create World-Plates */
-        String hexaString = "Sechseck.svg";
-        Space hexaSpace;
-        int rowsHexagons = 4;
-        int colsHexagons = 3;
-        float hexX, hexY, hexMX, hexMY;
-        float setOffX = 0;
-        float setOffY = 0;
-        float climateHexagon;
-        int capacityHexagon;
-        for (int i = 0; i<rowsHexagons*colsHexagons; i++) {
-        	spaceIds = spaceIds.add(BigInteger.valueOf(1));
-        	int[] rgb = MyUtil.niceColorGenerator();
-
-            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 60.0f);
-            setOffX = - (hexaSpace.getWidth()*colsHexagons/(2.5f));
-            setOffY = - (hexaSpace.getHeight()*rowsHexagons/(2*2.0f));
-            hexX = (float) (i % colsHexagons)*hexaSpace.getWidth()*(0.75f) + setOffX;
-            hexY = (float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.5f)) + setOffY;
-
-            if ((i/colsHexagons) % 2 == 0) hexX += hexaSpace.getWidth()/2;
-            hexMX = 0;//Math.random()*50+0;
-            hexMY = 0;//Math.random()*50+0;
-	      	hexaSpace.setAllXY(hexX, hexY);
-	      	hexaSpace.setMovement(0, 0);
-	      	climateHexagon = 0.0f;
-	        capacityHexagon = 10;
-	        ServerRegion s_hexaSpace = new ServerRegion(hexaSpace, climateHexagon, capacityHexagon);
-	        room.addSpace(s_hexaSpace);
-	        // DONT add to the SpaceManager, because we manage this in the room.addSpace already
-//	        hexaSpace.setId(s_hexaSpace.getId());
-//	        SpaceManager.add(hexaSpace);
-	        /** for each region-space add one cannel */
-	        channelMgr.createChannel("SpaceChannel_"+s_hexaSpace.getId(), 
-	                new WorldChannelListener(), 
-	                Delivery.RELIABLE);
-	        logger.log(Level.INFO, "SpacePlates intitialized: count = " + SpaceManager.size());
+        
+        if (GameStates.useChannels == true) {
+	        /** 
+	         * ADD: Spaces
+	         */
+	        BigInteger spaceIds = BigInteger.valueOf(0);
+	        /** Create World-Plates */
+	        String hexaString = "Sechseck.svg";
+	        Space hexaSpace;
+	        int rowsHexagons = 1;
+	        int colsHexagons = 1;
+	        float hexX, hexY, hexMX, hexMY;
+	        float setOffX = 0;
+	        float setOffY = 0;
+	        float climateHexagon;
+	        int capacityHexagon;
+	        for (int i = 0; i<rowsHexagons*colsHexagons; i++) {
+	        	spaceIds = spaceIds.add(BigInteger.valueOf(1));
+	        	int[] rgb = MyUtil.niceColorGenerator();
+	
+//	            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 6000.0f);
+	        	hexaSpace = new Space( "Rechteck.svg", BigInteger.valueOf(0),GameStates.standardBackgroundTexture , 1.0f);
+//	        	hexaSpace.setTexture("/ressources/images/admin_DUENE.JPG");
+	        	hexaSpace.scale(10000.0f);
+	            setOffX = -hexaSpace.getWidth()/2; //- (hexaSpace.getWidth()*colsHexagons/(2.5f));
+	            setOffY = -hexaSpace.getHeight()/2; //- (hexaSpace.getHeight()*rowsHexagons/(2*2.0f));
+	            hexX = setOffX; //(float) (i % colsHexagons)*hexaSpace.getWidth()*(0.75f) + setOffX;
+	            hexY = setOffY; //(float) ((int) (i / colsHexagons))*((float) hexaSpace.getHeight()*(0.5f)) + setOffY;
+	
+	            //if ((i/colsHexagons) % 2 == 0) hexX += hexaSpace.getWidth()/2;
+	            hexMX = 0;//Math.random()*50+0;
+	            hexMY = 0;//Math.random()*50+0;
+		      	hexaSpace.setAllXY(hexX, hexY);
+		      	hexaSpace.setMovement(0, 0);
+		      	climateHexagon = 0.0f;
+		        capacityHexagon = 10;
+		        ServerRegion s_hexaSpace = new ServerRegion(hexaSpace, climateHexagon, capacityHexagon);
+		        room.addSpace(s_hexaSpace);
+		        //room.editSpaceAddons(s_hexaSpace.getId(), nameTexture, rgb, trans, filled, scale, area);
+		        // DONT add to the SpaceManager, because we manage this in the room.addSpace already
+	//	        hexaSpace.setId(s_hexaSpace.getId());
+	//	        SpaceManager.add(hexaSpace);
+		        /** for each region-space add one cannel */
+		        channelMgr.createChannel("SpaceChannel_"+s_hexaSpace.getId(), 
+		                new WorldChannelListener(), 
+		                Delivery.RELIABLE);
+		        logger.log(Level.INFO, "SpacePlates intitialized: count = " + SpaceManager.size());
+	        }
         }
 
         /** Keep a reference to the Room */

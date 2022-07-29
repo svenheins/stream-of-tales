@@ -27,8 +27,8 @@ public class Entity extends LocalObject {
 	
 	//protected AnimationManager animationManager;
 	
-	public final static int DEFAULT_MOVEMENT_ON_X = 300;
-	public final static int DEFAULT_MOVEMENT_ON_Y = 300;
+	public final static int DEFAULT_MOVEMENT_ON_X = 150;
+	public final static int DEFAULT_MOVEMENT_ON_Y = 150;
 	
 	public Entity(String src, BigInteger id, float x, float y, float mx, float my) {
 		standardAnimation = new String[1];

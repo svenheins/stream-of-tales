@@ -39,6 +39,7 @@ public class TileSet
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			System.out.println(GameStates.resourcePath+"images/"+fileName);
 		}
 	}
  

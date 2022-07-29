@@ -31,7 +31,7 @@ public class ChannelUpdateMapsThread implements Runnable {
 	private PlayerEntity playerEntity;
 	private float playerOldMX = 0;
 	private float playerOldMY = 0;
-	private final int sleepingTime = 200;
+	private final int sleepingTime = 20;
 	
 	@Override
 	public void run() {
@@ -66,7 +66,7 @@ public class ChannelUpdateMapsThread implements Runnable {
 			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 				ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 				try {
-					GameWindow.gw.gameInfoConsole.appendInfo("Sending File "+mapFileName+" with bytes: "+sizeOfSendFileByte +" bytes");
+//					GameWindow.gw.gameInfoConsole.appendInfo("Sending File "+mapFileName+" with bytes: "+sizeOfSendFileByte +" bytes");
 					channel.send(ClientMessages.sendMap(GameWindow.gw.getPlayerName(), sizeOfSendFileByte, sendMapFileByte, mapFileName, GameWindow.gw.getSendMapList().size()) );
 				} catch (IOException e) {
 					e.printStackTrace();

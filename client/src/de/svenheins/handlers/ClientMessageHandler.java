@@ -549,24 +549,31 @@ public class ClientMessageHandler {
 				if (fileName_player_sendMap.startsWith("cobble")) {
 					paintLayer = "cobble";
 					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+					GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 				} else if (fileName_player_sendMap.startsWith("grass")) {
 					paintLayer = "grass";
 					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+					GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 				} else if (fileName_player_sendMap.startsWith("snow")) {
 					paintLayer = "snow";
 					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+					GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 				} else if (fileName_player_sendMap.startsWith("tree1")) {
 					paintLayer = "tree1";
 					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 				} else if (fileName_player_sendMap.startsWith("tree2")) {
 					paintLayer = "tree2";
 					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 				} else if (fileName_player_sendMap.startsWith("overlayTree1")) {
 					paintLayer = "overlayTree1";
 					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 				} else if (fileName_player_sendMap.startsWith("overlayTree2")) {
 					paintLayer = "overlayTree2";
 					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 				} else {
 					GameWindow.gw.gameInfoConsole.appendInfo("Didn't find map: "+fileName_player_sendMap);
 				}

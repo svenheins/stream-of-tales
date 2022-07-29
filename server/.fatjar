@@ -1,0 +1,14 @@
+#Fat Jar Configuration File
+#Wed Jan 08 17:38:45 CET 2014
+onejar.license.required=true
+manifest.classpath=
+manifest.removesigners=true
+onejar.checkbox=false
+jarname=rd36_server_fat.jar
+manifest.mergeall=true
+manifest.mainclass=com.sun.sgs.impl.kernel.Kernel
+manifest.file=<createnew>
+jarname.isextern=false
+onejar.expand=
+excludes=
+includes=

@@ -1,6 +1,7 @@
 package de.svenheins.handlers;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -194,184 +195,192 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			
 			Point p = new Point(latticePointX, latticePointY);
 			
-			if (GamePanel.gp.getPaintLayer().equals("tree")) {
-				/** allways paint trees */
-//				if ( (localX % 4 != 0) && (localX % 4 != 2)) localX++;
-				if ( localX % 2 != 0) localX++;
-				if (localY % 2 != 0) localY++;
-//				if ((localY % 2 == 0) && ( (localX % 4 == 0) || (localX % 4 == 2))) {
-					ObjectMapManager objectMapManager = null;
-					ObjectMapManager overlayMapManager = null;
-					
-					if (localX % 4 == 0) {
-						objectMapManager = GameWindow.gw.getObjectMapManagers().get("tree1");
-						overlayMapManager = GameWindow.gw.getObjectMapManagers().get("overlayTree1");
-					}
-					if (localX % 4 == 2) {
-						objectMapManager = GameWindow.gw.getObjectMapManagers().get("tree2");
-						overlayMapManager = GameWindow.gw.getObjectMapManagers().get("overlayTree2");
-					}
-					
+			int minX = ((int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getX() / (localWidth)) * localWidth) - GameStates.factorOfViewDeleteDistance*localWidth + GameStates.mapTileSetWidth;
+			int maxX = ((int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getX() / (localWidth)) * localWidth) + GameStates.factorOfViewDeleteDistance*localWidth - GameStates.mapTileSetWidth;
+			int minY = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getY() / (localHeight)) * localHeight - GameStates.factorOfViewDeleteDistance*localHeight + GameStates.mapTileSetHeight;
+			int maxY = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getY() / (localHeight)) * localHeight + GameStates.factorOfViewDeleteDistance*localHeight - GameStates.mapTileSetHeight;
+			Rectangle rect = new Rectangle(minX, minY, maxX-minX, maxY-minY);
+			
+			if ( rect.contains(correctedPoint) ) {				
+				if (GamePanel.gp.getPaintLayer().equals("tree")) {
+					/** allways paint trees */
+	//				if ( (localX % 4 != 0) && (localX % 4 != 2)) localX++;
+					if ( localX % 2 != 0) localX++;
+					if (localY % 2 != 0) localY++;
+	//				if ((localY % 2 == 0) && ( (localX % 4 == 0) || (localX % 4 == 2))) {
+						ObjectMapManager objectMapManager = null;
+						ObjectMapManager overlayMapManager = null;
+						
+						if (localX % 4 == 0) {
+							objectMapManager = GameWindow.gw.getObjectMapManagers().get("tree1");
+							overlayMapManager = GameWindow.gw.getObjectMapManagers().get("overlayTree1");
+						}
+						if (localX % 4 == 2) {
+							objectMapManager = GameWindow.gw.getObjectMapManagers().get("tree2");
+							overlayMapManager = GameWindow.gw.getObjectMapManagers().get("overlayTree2");
+						}
+						
+						/** create Map if not yet created */
+						if (!objectMapManager.contains(p)) {
+							objectMapManager.createMap(p);
+							overlayMapManager.createMap(p);
+						}
+						
+						/** check if deleteModus or paintModus */
+						if (!GamePanel.gp.isDeleteModus()) {
+							objectMapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType());
+							objectMapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType());
+							objectMapManager.get(p).setDl(localX, localY, 0);
+							objectMapManager.get(p).setDr(localX, localY, 0);
+							objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
+							objectMapManager.adjustSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+							
+							overlayMapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+							overlayMapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+							overlayMapManager.get(p).setDl(localX, localY, 0);
+							overlayMapManager.get(p).setDr(localX, localY, 0);
+							overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+							overlayMapManager.adjustSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+						} else {
+							//MapManager.get(p).setTile(localX, localY, null);
+							objectMapManager.get(p).setUl(localX, localY, 0);
+							objectMapManager.get(p).setUr(localX, localY, 0);
+							objectMapManager.get(p).setDl(localX, localY, 0);
+							objectMapManager.get(p).setDr(localX, localY, 0);
+							objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
+							objectMapManager.deleteSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+							
+							overlayMapManager.get(p).setUl(localX, localY, 0);
+							overlayMapManager.get(p).setUr(localX, localY, 0);
+							overlayMapManager.get(p).setDl(localX, localY, 0);
+							overlayMapManager.get(p).setDr(localX, localY, 0);
+							overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+							overlayMapManager.deleteSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+							//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
+						}
+						/** register lattice Point for save - and send procedure */
+						objectMapManager.addChangedList(p);
+						overlayMapManager.addChangedList(p);
+						/** now check the corners */
+						if ((localX == 0) && (localY == 0)) {
+							// ul
+							Point p2 = new Point(p.x-localWidth, p.y-localHeight);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						} 
+						if ( (localX == GameStates.mapWidth-1) && (localY == 0)) {
+							// ur
+							Point p2 = new Point(p.x+localWidth, p.y-localHeight);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						}
+						if (localY == 0) {
+							// u
+							Point p2 = new Point(p.x, p.y-localHeight);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						} 
+						if ( (localX == 0) && (localY == GameStates.mapHeight-1)) {
+							// dl
+							// no need to create because trees dont have a dl tile
+						}
+						if ( (localX == 0)) {
+							// l
+							Point p2 = new Point(p.x-localWidth, p.y);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+	
+						}
+						if ( (localX == GameStates.mapWidth-1) && (localY == GameStates.mapHeight-1) ) {
+							// dr
+							// no need to create because trees dont have a dr tile
+						}
+						if ( (localX == GameStates.mapWidth-1) ) {
+							// r
+							Point p2 = new Point(p.x+localWidth, p.y);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+	
+						}
+						if (localY == GameStates.mapHeight-1) {
+							// d
+							// no need to create because trees dont have a d tile
+						}
+	//				}
+				} else {
+					MapManager mapManager = GameWindow.gw.getMapManagers().get(GamePanel.gp.getPaintLayer());
+			//		System.out.println("writing on "+GamePanel.gp.getPaintLayer());
 					/** create Map if not yet created */
-					if (!objectMapManager.contains(p)) {
-						objectMapManager.createMap(p);
-						overlayMapManager.createMap(p);
+					if (!mapManager.contains(p)) {
+						mapManager.createMap(p);
 					}
 					
 					/** check if deleteModus or paintModus */
 					if (!GamePanel.gp.isDeleteModus()) {
-						objectMapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType());
-						objectMapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType());
-						objectMapManager.get(p).setDl(localX, localY, 0);
-						objectMapManager.get(p).setDr(localX, localY, 0);
-						objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
-						objectMapManager.adjustSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
-						
-						overlayMapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
-						overlayMapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
-						overlayMapManager.get(p).setDl(localX, localY, 0);
-						overlayMapManager.get(p).setDr(localX, localY, 0);
-						overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
-						overlayMapManager.adjustSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+						//Tile tile = new Tile(62, true, true, true, true);
+			//			MapManager.get(p).setTile(localX, localY, 62);
+						mapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType());
+						mapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType());
+						mapManager.get(p).setDl(localX, localY, GamePanel.gp.getPaintType());
+						mapManager.get(p).setDr(localX, localY, GamePanel.gp.getPaintType());
+						mapManager.get(p).setIdByCorners(localX, localY, GamePanel.gp.getPaintType());
+						mapManager.adjustSurrounding(mapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
 					} else {
 						//MapManager.get(p).setTile(localX, localY, null);
-						objectMapManager.get(p).setUl(localX, localY, 0);
-						objectMapManager.get(p).setUr(localX, localY, 0);
-						objectMapManager.get(p).setDl(localX, localY, 0);
-						objectMapManager.get(p).setDr(localX, localY, 0);
-						objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
-						objectMapManager.deleteSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
-						
-						overlayMapManager.get(p).setUl(localX, localY, 0);
-						overlayMapManager.get(p).setUr(localX, localY, 0);
-						overlayMapManager.get(p).setDl(localX, localY, 0);
-						overlayMapManager.get(p).setDr(localX, localY, 0);
-						overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
-						overlayMapManager.deleteSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+						mapManager.get(p).setUl(localX, localY, 0);
+						mapManager.get(p).setUr(localX, localY, 0);
+						mapManager.get(p).setDl(localX, localY, 0);
+						mapManager.get(p).setDr(localX, localY, 0);
+						mapManager.get(p).setIdByCorners(localX, localY, GamePanel.gp.getPaintType());
+						mapManager.deleteSurrounding(mapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
 						//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
 					}
 					/** register lattice Point for save - and send procedure */
-					objectMapManager.addChangedList(p);
-					overlayMapManager.addChangedList(p);
-					/** now check the corners */
+					mapManager.addChangedList(p);
+					/** add corners to saveList and send-procedure if needed */
 					if ((localX == 0) && (localY == 0)) {
 						// ul
 						Point p2 = new Point(p.x-localWidth, p.y-localHeight);
-						objectMapManager.addChangedList(p2);
-						overlayMapManager.addChangedList(p2);
+						mapManager.addChangedList(p2);
 					} 
-					if ( (localX == GameStates.mapWidth) && (localY == 0)) {
+					if ( (localX == GameStates.mapWidth-1) && (localY == 0)) {
 						// ur
 						Point p2 = new Point(p.x+localWidth, p.y-localHeight);
-						objectMapManager.addChangedList(p2);
-						overlayMapManager.addChangedList(p2);
+						mapManager.addChangedList(p2);
 					}
 					if (localY == 0) {
 						// u
 						Point p2 = new Point(p.x, p.y-localHeight);
-						objectMapManager.addChangedList(p2);
-						overlayMapManager.addChangedList(p2);
+						mapManager.addChangedList(p2);
 					} 
-					if ( (localX == 0) && (localY == GameStates.mapHeight)) {
+					if ( (localX == 0) && (localY == GameStates.mapHeight-1)) {
 						// dl
-						// no need to create because trees dont have a dl tile
+						Point p2 = new Point(p.x-localWidth, p.y+localHeight);
+						mapManager.addChangedList(p2);
 					}
 					if ( (localX == 0)) {
 						// l
 						Point p2 = new Point(p.x-localWidth, p.y);
-						objectMapManager.addChangedList(p2);
-						overlayMapManager.addChangedList(p2);
-
+						mapManager.addChangedList(p2);
 					}
-					if ( (localX == GameStates.mapWidth) && (localY == GameStates.mapHeight) ) {
+					if ( (localX == GameStates.mapWidth-1) && (localY == GameStates.mapHeight-1) ) {
 						// dr
-						// no need to create because trees dont have a dr tile
+						Point p2 = new Point(p.x+localWidth, p.y+localHeight);
+						mapManager.addChangedList(p2);
 					}
-					if ( (localX == GameStates.mapWidth) ) {
+					if ( (localX == GameStates.mapWidth-1) ) {
 						// r
 						Point p2 = new Point(p.x+localWidth, p.y);
-						objectMapManager.addChangedList(p2);
-						overlayMapManager.addChangedList(p2);
-
+						mapManager.addChangedList(p2);
 					}
-					if (localY == GameStates.mapHeight) {
+					if (localY == GameStates.mapHeight-1) {
 						// d
-						// no need to create because trees dont have a d tile
+						Point p2 = new Point(p.x, p.y+localHeight);
+						mapManager.addChangedList(p2);
 					}
-//				}
+				}
 			} else {
-				MapManager mapManager = GameWindow.gw.getMapManagers().get(GamePanel.gp.getPaintLayer());
-		//		System.out.println("writing on "+GamePanel.gp.getPaintLayer());
-				/** create Map if not yet created */
-				if (!mapManager.contains(p)) {
-					mapManager.createMap(p);
-				}
-				
-				/** check if deleteModus or paintModus */
-				if (!GamePanel.gp.isDeleteModus()) {
-					//Tile tile = new Tile(62, true, true, true, true);
-		//			MapManager.get(p).setTile(localX, localY, 62);
-					mapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType());
-					mapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType());
-					mapManager.get(p).setDl(localX, localY, GamePanel.gp.getPaintType());
-					mapManager.get(p).setDr(localX, localY, GamePanel.gp.getPaintType());
-					mapManager.get(p).setIdByCorners(localX, localY, GamePanel.gp.getPaintType());
-					mapManager.adjustSurrounding(mapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
-				} else {
-					//MapManager.get(p).setTile(localX, localY, null);
-					mapManager.get(p).setUl(localX, localY, 0);
-					mapManager.get(p).setUr(localX, localY, 0);
-					mapManager.get(p).setDl(localX, localY, 0);
-					mapManager.get(p).setDr(localX, localY, 0);
-					mapManager.get(p).setIdByCorners(localX, localY, GamePanel.gp.getPaintType());
-					mapManager.deleteSurrounding(mapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
-					//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
-				}
-				/** register lattice Point for save - and send procedure */
-				mapManager.addChangedList(p);
-				/** add corners to saveList and send-procedure if needed */
-				if ((localX == 0) && (localY == 0)) {
-					// ul
-					Point p2 = new Point(p.x-localWidth, p.y-localHeight);
-					mapManager.addChangedList(p2);
-				} 
-				if ( (localX == GameStates.mapWidth) && (localY == 0)) {
-					// ur
-					Point p2 = new Point(p.x+localWidth, p.y-localHeight);
-					mapManager.addChangedList(p2);
-				}
-				if (localY == 0) {
-					// u
-					Point p2 = new Point(p.x, p.y-localHeight);
-					if (!mapManager.contains(p2)) {
-						mapManager.createMap(p2);
-					}
-				} 
-				if ( (localX == 0) && (localY == GameStates.mapHeight)) {
-					// dl
-					Point p2 = new Point(p.x-localWidth, p.y+localHeight);
-					mapManager.addChangedList(p2);
-				}
-				if ( (localX == 0)) {
-					// l
-					Point p2 = new Point(p.x-localWidth, p.y);
-					mapManager.addChangedList(p2);
-				}
-				if ( (localX == GameStates.mapWidth) && (localY == GameStates.mapHeight) ) {
-					// dr
-					Point p2 = new Point(p.x+localWidth, p.y+localHeight);
-					mapManager.addChangedList(p2);
-				}
-				if ( (localX == GameStates.mapWidth) ) {
-					// r
-					Point p2 = new Point(p.x+localWidth, p.y);
-					mapManager.addChangedList(p2);
-				}
-				if (localY == GameStates.mapHeight) {
-					// d
-					Point p2 = new Point(p.x, p.y+localHeight);
-					mapManager.addChangedList(p2);
-				}
+				GameWindow.gw.gameInfoConsole.appendInfo("outside of paint area");
 			}
 		}
 	}
@@ -417,7 +426,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 //				}
 		}
 		
-		GameWindow.gw.gameInfoConsole.appendInfo("x = "+correctedPoint.x+", y = "+correctedPoint.y);
+		
 		
 		
 		

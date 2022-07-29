@@ -160,7 +160,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		panel.setBackground(new Color(0,0,0));
 		panel.setDoubleBuffered(true);
 		
-		/** add the menuPanel, that lies above the GamePanel */
+		/** add the menuPanel, that lies above the GamePanel 
+		 * it is used for menus, infoboxes and consoles
+		 * */
 		menuPanel = new StatPanel();
 		setGlassPane(menuPanel);
 		menuPanel.setVisible(true);
@@ -505,9 +507,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	    
 	    mapManagers.clear();
 	    this.initMapManagers();
-	    for (MapManager mapManager : mapManagers.values()) {
-	    	mapManager.loadLocalMaps(gw.getGameMasterName());
-	    }
+//	    for (MapManager mapManager : mapManagers.values()) {
+//	    	mapManager.loadLocalMaps(gw.getGameMasterName());
+//	    }
     }
 
     /**
@@ -911,6 +913,17 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		objectMapManagers.put(overlayTreeLayer1.getPaintLayer(), overlayTreeLayer1);
 		ObjectMapManager overlayTreeLayer2 = new ObjectMapManager("overlayTree2");
 		objectMapManagers.put(overlayTreeLayer2.getPaintLayer(), overlayTreeLayer2);
+	}
+	
+	public void initLocalMapFileList(String playerName) {
+		for (ObjectMapManager oManager : objectMapManagers.values()) {
+			oManager.initLocalMapFileList(playerName);
+			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+oManager.paintLayer);
+		}
+		for (MapManager mManager : mapManagers.values()) {
+			mManager.initLocalMapFileList(playerName);
+			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+mManager.paintLayer);
+		}
 	}
 	
 	public void deleteOnlyMapsOfMapManagers() {

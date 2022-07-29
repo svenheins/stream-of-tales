@@ -45,7 +45,7 @@ public class GameStates {
 	public static int mapTotalHeight = mapHeight*mapTileSetHeight;
 	public static String standardMapFolder = "./ressources/maps/";
 	public static int overlayOffsetY = -2*mapTileSetWidth;
-	public static int factorOfViewDeleteDistance = 2;
+	public static int factorOfViewDeleteDistance = 3;
 	public static int distanceOfSecondTreeLayer = 6;
 	
 	public static int getWidth() {

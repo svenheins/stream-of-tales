@@ -27,9 +27,6 @@ import de.svenheins.objects.Space;
 public class MapUpdateThread implements Runnable {
 	private long duration = 0;
 	private long oldTime = System.currentTimeMillis();
-	private PlayerEntity playerEntity;
-	private float playerOldMX = 0;
-	private float playerOldMY = 0;
 	private final int sleepingTime = 200;
 	
 	@Override
@@ -41,77 +38,37 @@ public class MapUpdateThread implements Runnable {
 			duration = System.currentTimeMillis() - oldTime;
 			
 			if (GameModus.modus == GameModus.GAME) {
+				
+				/** save all maps that need to be saved */
+				if (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getGameMasterName())) {
+					for (MapManager mapManager: GameWindow.gw.getMapManagers().values()) {
+						mapSaveUpdateRun(mapManager);
+					}
+					for (ObjectMapManager objectMapManager: GameWindow.gw.getObjectMapManagers().values()) {
+						mapSaveUpdateRun(objectMapManager);
+					}
+				}
+				
 				int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
 				int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
 				int latticePointX = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getX() / (localWidth)) * localWidth;
 				int latticePointY = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getY() / (localHeight)) * localHeight;
-//				int localX = (int) Math.floor( (float) (correctedPoint.x - latticePointX )/ GameStates.mapTileSetWidth);
-//				int localY = (int) Math.floor( (float) (correctedPoint.y - latticePointY )/ GameStates.mapTileSetHeight);
 				for (MapManager mapManager: GameWindow.gw.getMapManagers().values()) {
-					mapLoad(mapManager, latticePointX, latticePointY-localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY-localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY-localHeight);
-					mapLoad(mapManager, latticePointX, latticePointY);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY);
-					mapLoad(mapManager, latticePointX, latticePointY+localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY+localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY+localHeight);
+					for (int runX = -GameStates.factorOfViewDeleteDistance; runX <= GameStates.factorOfViewDeleteDistance; runX++) {
+						for (int runY = -GameStates.factorOfViewDeleteDistance; runY <= GameStates.factorOfViewDeleteDistance; runY++) {
+							mapLoad(mapManager, latticePointX + runX*localWidth, latticePointY + runY*localHeight);
+						}
+					}
 					
-					/** additionally loaded files */
-					mapLoad(mapManager, latticePointX, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX-2*localWidth, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX+2*localWidth, latticePointY-2*localHeight);
-					
-					mapLoad(mapManager, latticePointX-2*localWidth, latticePointY);
-					mapLoad(mapManager, latticePointX+2*localWidth, latticePointY);
-					
-					mapLoad(mapManager, latticePointX, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX-2*localWidth, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX+2*localWidth, latticePointY+2*localHeight);
 				}
 				for (ObjectMapManager mapManager: GameWindow.gw.getObjectMapManagers().values()) {
-					mapLoad(mapManager, latticePointX, latticePointY-localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY-localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY-localHeight);
-					mapLoad(mapManager, latticePointX, latticePointY);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY);
-					mapLoad(mapManager, latticePointX, latticePointY+localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY+localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY+localHeight);
-					/** additionally loaded files */
-					mapLoad(mapManager, latticePointX, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX-2*localWidth, latticePointY-2*localHeight);
-					mapLoad(mapManager, latticePointX+2*localWidth, latticePointY-2*localHeight);
-					
-					mapLoad(mapManager, latticePointX-2*localWidth, latticePointY);
-					mapLoad(mapManager, latticePointX+2*localWidth, latticePointY);
-					
-					mapLoad(mapManager, latticePointX, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX-localWidth, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX+localWidth, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX-2*localWidth, latticePointY+2*localHeight);
-					mapLoad(mapManager, latticePointX+2*localWidth, latticePointY+2*localHeight);
+					for (int runX = -GameStates.factorOfViewDeleteDistance; runX <= GameStates.factorOfViewDeleteDistance; runX++) {
+						for (int runY = -GameStates.factorOfViewDeleteDistance; runY <= GameStates.factorOfViewDeleteDistance; runY++) {
+							mapLoad(mapManager, latticePointX + runX*localWidth, latticePointY + runY*localHeight);
+						}
+					}
 				}
 			}
-			
-//			System.out.println("input-thread runs");
-			if((GameModus.modus == GameModus.GAME) && (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getGameMasterName()))) {
-				for (MapManager mapManager: GameWindow.gw.getMapManagers().values()) {
-					mapSaveUpdateRun(mapManager);
-				}
-				for (ObjectMapManager objectMapManager: GameWindow.gw.getObjectMapManagers().values()) {
-					mapSaveUpdateRun(objectMapManager);
-				}
-			}
-			
 			try {
 				Thread.sleep(sleepingTime);
 			}
@@ -134,7 +91,6 @@ public class MapUpdateThread implements Runnable {
 					
 					/** do not instantly send maps but create the sendQueue */
 					GameWindow.gw.addSendMapListEntry(mapFileName);
-//					channelSendUpdateMapsRun(mapFileName);
 				}
 				else
 					GameWindow.gw.gameInfoConsole.appendInfo("Couldn't write Map");
@@ -152,8 +108,6 @@ public class MapUpdateThread implements Runnable {
 					String mapFileName = mapManager.getPaintLayer()+"_"+p.x+"_"+p.y+".map";
 					mapManager.save(localMap, GameStates.standardMapFolder+GameWindow.gw.getPlayerName()+"/"+mapFileName);
 					GameWindow.gw.addSendMapListEntry(mapFileName);
-					/** first save, then send in separate thread */
-//					channelSendUpdateMapsRun(mapFileName);
 				}
 				else
 					GameWindow.gw.gameInfoConsole.appendInfo("Couldn't write Map");
@@ -166,15 +120,13 @@ public class MapUpdateThread implements Runnable {
 		if (!mapManager.contains(new Point(x, y))) {
 			/** search in folder */
 			mapManager.loadFromFileSystem(GameWindow.gw.getGameMasterName(), x, y);
-//			System.out.println("Loaded x="+x+" and y="+y);
 		}
 	}
 	
-	public void mapLoad(ObjectMapManager mapManager, int x, int y) {
-		if (!mapManager.contains(new Point(x, y))) {
+	public void mapLoad(ObjectMapManager objectMapManager, int x, int y) {
+		if (!objectMapManager.contains(new Point(x, y))) {
 			/** search in folder */
-			mapManager.loadFromFileSystem(GameWindow.gw.getGameMasterName(), x, y);
-//			System.out.println("Loaded x="+x+" and y="+y);
+			objectMapManager.loadFromFileSystem(GameWindow.gw.getGameMasterName(), x, y);
 		}
 	}
 	

@@ -56,6 +56,14 @@ public class PlayerManager{
 		}
 	}
 	
+	public static PlayerEntity get(String playerName){
+		PlayerEntity retEntity = null;
+		for (BigInteger pId: playerList.keySet()) {
+			if (playerList.get(pId).getName().equals(playerName)) retEntity = playerList.get(pId);
+		}
+		return retEntity;
+	}
+	
 	/** update the Entity with the ID objectId */
 	public static void updatePlayer(BigInteger objectId, float objectX,
 			float objectY, float objectMX, float objectMY) {
@@ -88,13 +96,14 @@ public class PlayerManager{
 	}
 	
 	/** update the Entity with the ID objectId */
-	public static void updatePlayerAddons(BigInteger objectId, String playerName, String tileName, int width, int height, String country, String groupName, int experience) {
+	public static void updatePlayerAddons(BigInteger objectId, String playerName, String tileName, String tilePathName, int width, int height, String country, String groupName, int experience) {
 		if (PlayerManager.playerList.containsKey(objectId)) {
 			PlayerEntity entity = PlayerManager.playerList.get(objectId);
 			entity.setLastSeen(System.currentTimeMillis());
 			if (entity != null) {
-				TileSet tileSet = TileSetManager.manager.getTileSet(tileName);
-		    	System.out.println("got tileset: "+tileName + " from player "+ playerName);
+				System.out.println("got tileset: "+tilePathName + " from player "+ playerName);
+				TileSet tileSet = TileSetManager.manager.getTileSet(tilePathName);
+		    	
 		    	PlayerEntity playerEntity = new PlayerEntity(tileSet, playerName, objectId, 0, 0, GameStates.animationDelay);
 //		    	playerEntity.setTileSetName(tileName_add);
 //		    	playerEntity.setTileSetPathName(tilePathName);

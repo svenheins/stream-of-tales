@@ -2,6 +2,7 @@ package de.svenheins.main.menu;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +23,7 @@ import de.svenheins.handlers.FileAddAction;
 import de.svenheins.handlers.FileAddTextureAction;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
+import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.MapManager;
 import de.svenheins.managers.PlayerManager;
@@ -156,27 +158,29 @@ public class MainMenu extends JMenuBar {
 		JPanel panel3 = new JPanel();
 		JPanel panel4 = new JPanel();
 		
-		JComboBox comboMapPLayer = new JComboBox();
+		JComboBox comboMapPlayer = new JComboBox();
 		List<BigInteger> sortedPlayerList = PlayerManager.idList;
 //		Arrays.sort(sortedPlayerList);
 		for (int i =0; i < sortedPlayerList.size(); i++) {
-			comboMapPLayer.addItem(PlayerManager.get(sortedPlayerList.get(i)).getName());
+			comboMapPlayer.addItem(PlayerManager.get(sortedPlayerList.get(i)).getName());
 		}
-		comboMapPLayer.addActionListener(new ActionListener() {
+		comboMapPlayer.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-	//				System.out.println((String) ((JComboBox) e.getSource()).getSelectedItem());
+//					System.out.println((String) ((JComboBox) e.getSource()).getSelectedItem());
 //					entity.setTileSet( TileSetManager.manager.getTileSet((String) ((JComboBox) e.getSource()).getSelectedItem()));
 	//				GameWindow.gw.send(ClientMessages.editPlayerAddons(space.getId(), space.getTextureName(), space.getRGB(), space.getTrans(), isFilled, space.getScale(), space.getArea()));
 					if (GameWindow.gw.isLoggedIn()) {
-						/** create map folder for the chosen player 
-						 * and download all relevant maps */
-						
+						/** create map folder for the chosen player */
+					    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+(String) ((JComboBox) e.getSource()).getSelectedItem())).mkdirs();
+					    if (!createMapFolderSccess) {
+					         // Directory creation failed
+					    }
 						
 //						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayerName(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));
 					}
 				}
 		});
-		panel1.add(comboMapPLayer);
+		panel1.add(comboMapPlayer);
 	
 		final JTextField textFieldPaintType = new JTextField(""+(int)GamePanel.gp.getPaintType(), 6);
 		final JTextField textFieldPaintLayer = new JTextField(""+GamePanel.gp.getPaintLayer(), 6);

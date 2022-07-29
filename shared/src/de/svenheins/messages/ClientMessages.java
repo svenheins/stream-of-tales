@@ -406,6 +406,29 @@ public class ClientMessages extends Messages{
         return buffer;
     }
     
+    /** 
+     * prepare map byteBuffer
+     * @param name, packageId, image: we need image-bytes!
+     * @return ByteBuffer
+     */
+    public static ByteBuffer sendMap(String playerName, int sizeOfMap, byte[] map) {
+    	/** define byte array */
+    	byte[] bytes = new byte[1 + 4 + playerName.length() + 4 + map.length];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.SEND_MAP.ordinal()); // 1 Byte
+        /** playerName */
+        buffer.putInt(playerName.length()); // 4
+    	buffer.put(playerName.getBytes()); // playerName.length
+    	/** store the size of the map */
+    	buffer.putInt(sizeOfMap); // 4
+    	/** image data */
+    	buffer.put(map); // image.length
+    	
+    	/** buffer is ready */
+        buffer.flip();
+        return buffer;
+    }
+    
     
 //    public static ByteBuffer getIds(OBJECTCODE objCode, int id) {
 //        byte[] bytes = new byte[1 + 4 + 4];

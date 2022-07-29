@@ -124,7 +124,7 @@ public class MapUpdateThread implements Runnable {
 	}
 	
 	public void mapSaveUpdateRun(MapManager mapManager) {
-		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
+		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer() && (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getGameMasterName())) ) {
 			List<Point> idListTempMaps = new ArrayList<Point>(mapManager.pointList);
 			for (Point p: idListTempMaps){
 				LocalMap localMap = mapManager.get(p);
@@ -139,7 +139,7 @@ public class MapUpdateThread implements Runnable {
 	}
 	
 	public void mapSaveUpdateRun(ObjectMapManager mapManager) {
-		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
+		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer() && (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getGameMasterName()))) {
 			List<Point> idListTempMaps = new ArrayList<Point>(mapManager.pointList);
 			for (Point p: idListTempMaps){
 				LocalMap localMap = mapManager.get(p);

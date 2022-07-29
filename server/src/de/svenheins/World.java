@@ -227,7 +227,7 @@ public class World
         
         /** Create ServerAgents (extend Entities) */
         Entity realAgent;
-        String iterativSpriteStringAgent = "standardShip_green.png";
+        String iterativSpriteStringAgent = GameStates.standardTilePathPlayers+"standardShip_green.png";
         Sprite it_spriteAgent = SpriteManager.manager.getSprite(iterativSpriteStringAgent);
 //        TileSet tileSetEnemy = new TileSet("eye12.png", "enemy", 10, 6);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
@@ -244,7 +244,7 @@ public class World
         	it_s_entityAgent = new ServerAgentEntrepreneur(it_s_spriteAgent, entityIDIndex, it_x, it_y, it_mx, it_my);
         	//it_s_entityAgent.setName("Gegner");
         	it_s_entityAgent.setTileSetName("standardShip_green");
-        	it_s_entityAgent.setTileSetPathName("tilesets/entities/"+iterativSpriteStringAgent);
+        	it_s_entityAgent.setTileSetPathName(iterativSpriteStringAgent);
         	room.addEntity(it_s_entityAgent);
         	/** Add Entity to the EntityManager, which allows to communicate fastly*/
 //        	realAgent = new Entity(it_s_entityAgent.getName(), it_s_entityAgent.getId(), 0, 0, 0, 0);
@@ -255,7 +255,7 @@ public class World
         }
         /** Create ServerEmployees (extend Entities) */
         Entity realAgentEmployee;
-        String iterativSpriteStringAgentEmployee = "enemy.png";
+        String iterativSpriteStringAgentEmployee = GameStates.standardTilePathPlayers+"enemy.png";
         Sprite it_spriteAgentEmployee = SpriteManager.manager.getSprite(iterativSpriteStringAgentEmployee);
         ServerSprite it_s_spriteAgentEmployee = new ServerSprite(iterativSpriteStringAgentEmployee, it_spriteAgentEmployee.getHeight(), it_spriteAgentEmployee.getWidth());
         ServerEntity it_s_entityAgentEmployee;
@@ -793,11 +793,13 @@ public void initFirstStart() {
 			TileSet tileSet_green = new TileSet("tilesets/entities/standardShip_green.png", "shipTileName_green", 50, 50);
 			TileSet tileSet_yellow = new TileSet("tilesets/entities/standardShip_yellow.png", "shipTileName_yellow", 50, 50);
 			TileSet tileSet_blue = new TileSet("tilesets/entities/standardShip_blue.png", "shipTileName_blue", 50, 50);
+//			TileSet tileSet_player = new TileSet("tilesets/entities/player.png", "playerEntity", 32, 64);
 			PlayerEntity playerEntity2 = new PlayerEntity(tileSet2, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 			playerEntity2 = new PlayerEntity(tileSet, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 			playerEntity2 = new PlayerEntity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 			playerEntity2 = new PlayerEntity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 			playerEntity2 = new PlayerEntity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+//			playerEntity2 = new PlayerEntity(tileSet_player, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		}
 		
 	 

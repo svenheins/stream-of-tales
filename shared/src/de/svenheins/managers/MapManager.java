@@ -1147,7 +1147,27 @@ public class MapManager {
 		return this.paintLayer;
 	}
 	
-	
+	public byte[] LocalMap2ByteArray(String playerName, String paintLayer, Point p) {
+		FileInputStream fileInputStream=null;
+        File file = new File(GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map");
+        byte[] mapBytes = new byte[(int) file.length()];
+
+        try {
+            //convert file into array of bytes
+	    fileInputStream = new FileInputStream(file);
+	    fileInputStream.read(mapBytes);
+	    fileInputStream.close();
+ 
+	    for (int i = 0; i < mapBytes.length; i++) {
+	       	System.out.print((char)mapBytes[i]);
+            }
+ 
+	    System.out.println("Done");
+        } catch(Exception e){
+        	e.printStackTrace();
+        }
+        return mapBytes;
+	}
 	
 	
 }

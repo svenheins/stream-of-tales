@@ -403,7 +403,7 @@ public class WorldPlayer
     			String groupName = new String(groupNameBytes); // name
 		    	int experience = message.getInt(); // 4
 		    	
-		    	PlayerManager.updatePlayerAddons(objectId_player, thisPlayerName, tileName, tileWidth, tileHeight, country, groupName, experience);
+		    	PlayerManager.updatePlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
 		    	this.getRoom().editPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
 		    	this.getRoom().sendEditPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
 		    	

@@ -15,6 +15,11 @@ public enum OPCODE {
     INITME,
     LOGOUT,
     
+    /**
+     * Client to client messages
+     */
+    SEND_MAP,
+    
     //ATTACK, GETFLAG, SCORE,
     /**
      * Server to client opcodes.

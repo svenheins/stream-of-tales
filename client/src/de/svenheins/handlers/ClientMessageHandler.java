@@ -373,7 +373,7 @@ public class ClientMessageHandler {
 	    	playerEntity_overwrite.setGroupName(groupName_add);
 	    	playerEntity_overwrite.setExperience(experience_add);
 //	    	PlayerManager.overwrite(playerEntity_overwrite);
-	    	PlayerManager.updatePlayerAddons(objectId_player, name_player_add, tileName_add, tileWidth, tileHeight, country_add, groupName_add, experience_add);
+	    	PlayerManager.updatePlayerAddons(objectId_player, name_player_add, tileName_add, tilePathName_add, tileWidth, tileHeight, country_add, groupName_add, experience_add);
 //	    	this.getRoom().editPlayerAddons(thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
 	    	
     		break;

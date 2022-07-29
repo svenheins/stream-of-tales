@@ -21,6 +21,7 @@ import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.MapManager;
+import de.svenheins.managers.ObjectMapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
@@ -193,29 +194,89 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		int localY = (int) Math.floor( (float) (correctedPoint.y - latticePointY )/ GameStates.mapTileSetHeight);
 		
 		Point p = new Point(latticePointX, latticePointY);
-		/** create Map if not yet created */
-		if (!MapManager.contains(p)) {
-			MapManager.createMap(p);
-		}
-		/** check if deleteModus or paintModus */
-		if (!GamePanel.gp.isDeleteModus()) {
-			//Tile tile = new Tile(62, true, true, true, true);
-//			MapManager.get(p).setTile(localX, localY, 62);
-			MapManager.get(p).setUl(localX, localY, 62);
-			MapManager.get(p).setUr(localX, localY, 62);
-			MapManager.get(p).setDl(localX, localY, 62);
-			MapManager.get(p).setDr(localX, localY, 62);
-			MapManager.get(p).setIdByCorners(localX, localY);
-			MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
+		
+		if (GamePanel.gp.getPaintLayer().equals("tree")) {
+			/** allways paint trees */
+			if ( (localX % 4 != 0) && (localX % 4 != 2)) localX ++;
+			if (localY % 2 != 0) localY ++;
+//			if ((localY % 2 == 0) && ( (localX % 4 == 0) || (localX % 4 == 2))) {
+				ObjectMapManager objectMapManager = null;
+				ObjectMapManager overlayMapManager = null;
+				if (localX % 4 == 0) {
+					objectMapManager = GameWindow.gw.getObjectMapManagers().get("tree1");
+					overlayMapManager = GameWindow.gw.getObjectMapManagers().get("overlayTree1");
+				}
+				if (localX % 4 == 2) {
+					objectMapManager = GameWindow.gw.getObjectMapManagers().get("tree2");
+					overlayMapManager = GameWindow.gw.getObjectMapManagers().get("overlayTree2");
+				}
+				/** create Map if not yet created */
+				if (!objectMapManager.contains(p)) {
+					objectMapManager.createMap(p);
+					overlayMapManager.createMap(p);
+				}
+				/** check if deleteModus or paintModus */
+				if (!GamePanel.gp.isDeleteModus()) {
+					//Tile tile = new Tile(62, true, true, true, true);
+		//			MapManager.get(p).setTile(localX, localY, 62);
+					objectMapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType());
+					objectMapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType());
+					objectMapManager.get(p).setDl(localX, localY, 0);
+					objectMapManager.get(p).setDr(localX, localY, 0);
+					objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
+					objectMapManager.adjustSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+					
+					overlayMapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+					overlayMapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+					overlayMapManager.get(p).setDl(localX, localY, 0);
+					overlayMapManager.get(p).setDr(localX, localY, 0);
+					overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+					overlayMapManager.adjustSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+				} else {
+					//MapManager.get(p).setTile(localX, localY, null);
+					objectMapManager.get(p).setUl(localX, localY, 0);
+					objectMapManager.get(p).setUr(localX, localY, 0);
+					objectMapManager.get(p).setDl(localX, localY, 0);
+					objectMapManager.get(p).setDr(localX, localY, 0);
+					objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
+					objectMapManager.deleteSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+					
+					overlayMapManager.get(p).setUl(localX, localY, 0);
+					overlayMapManager.get(p).setUr(localX, localY, 0);
+					overlayMapManager.get(p).setDl(localX, localY, 0);
+					overlayMapManager.get(p).setDr(localX, localY, 0);
+					overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+					overlayMapManager.deleteSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+					//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
+				}
+//			}
 		} else {
-			//MapManager.get(p).setTile(localX, localY, null);
-			MapManager.get(p).setUl(localX, localY, 0);
-			MapManager.get(p).setUr(localX, localY, 0);
-			MapManager.get(p).setDl(localX, localY, 0);
-			MapManager.get(p).setDr(localX, localY, 0);
-			MapManager.get(p).setIdByCorners(localX, localY);
-			MapManager.deleteSurrounding(MapManager.get(p), localX, localY);
-			//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
+			MapManager mapManager = GameWindow.gw.getMapManagers().get(GamePanel.gp.getPaintLayer());
+	//		System.out.println("writing on "+GamePanel.gp.getPaintLayer());
+			/** create Map if not yet created */
+			if (!mapManager.contains(p)) {
+				mapManager.createMap(p);
+			}
+			/** check if deleteModus or paintModus */
+			if (!GamePanel.gp.isDeleteModus()) {
+				//Tile tile = new Tile(62, true, true, true, true);
+	//			MapManager.get(p).setTile(localX, localY, 62);
+				mapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType());
+				mapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType());
+				mapManager.get(p).setDl(localX, localY, GamePanel.gp.getPaintType());
+				mapManager.get(p).setDr(localX, localY, GamePanel.gp.getPaintType());
+				mapManager.get(p).setIdByCorners(localX, localY, GamePanel.gp.getPaintType());
+				mapManager.adjustSurrounding(mapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+			} else {
+				//MapManager.get(p).setTile(localX, localY, null);
+				mapManager.get(p).setUl(localX, localY, 0);
+				mapManager.get(p).setUr(localX, localY, 0);
+				mapManager.get(p).setDl(localX, localY, 0);
+				mapManager.get(p).setDr(localX, localY, 0);
+				mapManager.get(p).setIdByCorners(localX, localY, GamePanel.gp.getPaintType());
+				mapManager.deleteSurrounding(mapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+				//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
+			}
 		}
 	}
 	

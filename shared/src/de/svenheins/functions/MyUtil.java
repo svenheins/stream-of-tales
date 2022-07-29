@@ -1,5 +1,6 @@
 package de.svenheins.functions;
 
+import java.awt.Point;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -115,4 +116,12 @@ public class MyUtil {
 //        System.out.println(file);
         return file;
     } 
+	
+	public static ArrayList<Point> unionListNoDuplicates(ArrayList<Point> aList, ArrayList<Point> bList) {
+		ArrayList<Point> retList = aList;
+		for (Point p : bList) {
+			if (!retList.contains(p)) retList.add(p);
+		}
+		return retList;
+	}
 }

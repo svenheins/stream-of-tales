@@ -1,36 +1,44 @@
 package de.svenheins.managers;
 
 import java.awt.Point;
+import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.objects.LocalMap;
-import de.svenheins.objects.Tile;
 
 public class MapManager {
-	public static HashMap<Point, LocalMap> localMapList = new HashMap<Point, LocalMap>();
+	public HashMap<Point, LocalMap> localMapList = new HashMap<Point, LocalMap>();
 	
-	public static List<Point> pointList = new ArrayList<Point>();
+	public List<Point> pointList = new ArrayList<Point>();
+	public String paintLayer;
 	
-	public static void remove(Point point) {
+	public MapManager(String paintLayer) {
+		this.paintLayer = paintLayer;
+	}
+	
+	public void remove(Point point) {
 		pointList.remove(point);
 		localMapList.remove(point);
 	}
 	
 	
-	public static boolean add(LocalMap localMap){
+	public boolean add(LocalMap localMap){
 		if (localMapList.containsKey(localMap.getOrigin())) {
 			return false;
 		} else {
@@ -41,7 +49,7 @@ public class MapManager {
 		}
 	}
 	
-	public static LocalMap get(Point point){
+	public LocalMap get(Point point){
 		try {
 			return (LocalMap) localMapList.get(point);
 //			return (Space) spaceList.values().toArray()[index];
@@ -52,7 +60,7 @@ public class MapManager {
 		}
 	}
 	
-	public static boolean overwrite(LocalMap localMap){
+	public  boolean overwrite(LocalMap localMap){
 		if (!localMapList.containsKey(localMap.getOrigin())) {
 			/** do nothing if key is not yet set*/
 			return false;
@@ -64,28 +72,28 @@ public class MapManager {
 	}
 	
 	
-	public static int size(){
+	public  int size(){
 		return localMapList.size();
 	}
 
 	
-	public static boolean contains(LocalMap localMap) {
+	public  boolean contains(LocalMap localMap) {
 		return localMapList.containsValue(localMap);
 	}
 	
-	public static boolean contains(Point point) {
+	public boolean contains(Point point) {
 		return pointList.contains(point);
 	}
 	
 
-	public static void createMap(Point point) {
+	public void createMap(Point point) {
 		int mapArray[][] = new int[GameStates.mapWidth][GameStates.mapHeight];
-		LocalMap map = new LocalMap(mapArray,GameStates.tileSetFile, point);
+		LocalMap map = new LocalMap(mapArray,point);
 		localMapList.put(map.getOrigin(), map);
 		pointList.add(map.getOrigin());
 	}
 	
-	public static LocalMap createMapIfNonExistent(Point point) {
+	public LocalMap createMapIfNonExistent(Point point) {
 		if ( !pointList.contains(point)) {
 			createMap(point);
 		}
@@ -93,20 +101,20 @@ public class MapManager {
 	}
 	
 	
-	public static void adjustSurrounding(LocalMap localMap, int localX, int localY) {
-		setTileCorners(localMap, localX-1, localY-1);
-		setTileCorners(localMap, localX, localY-1);
-		setTileCorners(localMap, localX+1, localY-1);
-		setTileCorners(localMap, localX-1, localY);
+	public void adjustSurrounding(LocalMap localMap, int localX, int localY, int paintType) {
+		setTileCorners(localMap, localX-1, localY-1, paintType);
+		setTileCorners(localMap, localX, localY-1, paintType);
+		setTileCorners(localMap, localX+1, localY-1, paintType);
+		setTileCorners(localMap, localX-1, localY, paintType);
 		//setTileCorners(localMap, localX, localY);
-		setTileCorners(localMap, localX+1, localY);
-		setTileCorners(localMap, localX-1, localY+1);
-		setTileCorners(localMap, localX, localY+1);
-		setTileCorners(localMap, localX+1, localY+1);
+		setTileCorners(localMap, localX+1, localY, paintType);
+		setTileCorners(localMap, localX-1, localY+1, paintType);
+		setTileCorners(localMap, localX, localY+1, paintType);
+		setTileCorners(localMap, localX+1, localY+1, paintType);
 	}
 	
 	
-	public static void deleteSurrounding(LocalMap localMap, int localX, int localY) {
+	public void deleteSurrounding(LocalMap localMap, int localX, int localY, int paintType) {
 		Point origin = localMap.getOrigin();
 		LocalMap ulMap;
 		LocalMap uMap;
@@ -545,18 +553,18 @@ public class MapManager {
 		drMap.setTile(drTile.x, drTile.y, 0 ); // new Tile(0, false, false, false, false));
 		drMap.setUl(drTile.x, drTile.y, 0 );
 		/** and adjust the surrounding */
-		adjustSurrounding(ulMap, ulTile.x, ulTile.y);
-		adjustSurrounding(uMap, uTile.x, uTile.y);
-		adjustSurrounding(urMap, urTile.x, urTile.y);
-		adjustSurrounding(lMap, lTile.x, lTile.y);
-		adjustSurrounding(rMap, rTile.x, rTile.y);
-		adjustSurrounding(dlMap, dlTile.x, dlTile.y);
-		adjustSurrounding(dMap, dTile.x, dTile.y);
-		adjustSurrounding(drMap, drTile.x, drTile.y);
+		adjustSurrounding(ulMap, ulTile.x, ulTile.y, paintType);
+		adjustSurrounding(uMap, uTile.x, uTile.y, paintType);
+		adjustSurrounding(urMap, urTile.x, urTile.y, paintType);
+		adjustSurrounding(lMap, lTile.x, lTile.y, paintType);
+		adjustSurrounding(rMap, rTile.x, rTile.y, paintType);
+		adjustSurrounding(dlMap, dlTile.x, dlTile.y, paintType);
+		adjustSurrounding(dMap, dTile.x, dTile.y, paintType);
+		adjustSurrounding(drMap, drTile.x, drTile.y, paintType);
 	}
 	
 	
-	public static void setTileCorners(LocalMap localMap, int localX, int localY) {
+	public void setTileCorners(LocalMap localMap, int localX, int localY, int paintType) {
 		Point origin = localMap.getOrigin();
 		LocalMap ulMap;
 		LocalMap uMap;
@@ -985,50 +993,50 @@ public class MapManager {
 //		Tile tile = new Tile(0,ul, ur, dl, dr);
 //		tile.setIdByCorners();
 		if (dl)	{
-			centerMap.setDl(centerTile.x, centerTile.y, 62);
+			centerMap.setDl(centerTile.x, centerTile.y, paintType);
 //			System.out.println("dl "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setDl(centerTile.x, centerTile.y, 0);
 		if (dr)	{
-			centerMap.setDr(centerTile.x, centerTile.y, 62);
+			centerMap.setDr(centerTile.x, centerTile.y, paintType);
 //			System.out.println("dr "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setDr(centerTile.x, centerTile.y, 0);
 		if (ul)	{
-			centerMap.setUl(centerTile.x, centerTile.y, 62);
+			centerMap.setUl(centerTile.x, centerTile.y, paintType);
 //			System.out.println("ul "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setUl(centerTile.x, centerTile.y, 0);
 		if (ur)	{
-			centerMap.setUr(centerTile.x, centerTile.y, 62);
+			centerMap.setUr(centerTile.x, centerTile.y, paintType);
 //			System.out.println("ur "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setUr(centerTile.x, centerTile.y, 0);
 		
 //		System.out.println("DR: "+centerMap.getDr(centerTile.x, centerTile.y));
-		centerMap.setIdByCorners(centerTile.x, centerTile.y);
+		centerMap.setIdByCorners(centerTile.x, centerTile.y, paintType);
 //		if (tile.getId() == 0) tile = null;
 //		centerMap.setTile(centerTile.x, centerTile.y, tile);
 	}
 	
 	
-	public static Point getUpperLeftMap(Point origin) {
+	public Point getUpperLeftMap(Point origin) {
 		return new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
 	}
 	
-	public static Point getUpperMap(Point origin) {
+	public Point getUpperMap(Point origin) {
 		return new Point(origin.x, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
 	}
 	
-	public static Point getUpperRightMap(Point origin) {
+	public Point getUpperRightMap(Point origin) {
 		return new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
 	}
 	
-	public static Point getLeftMap(Point origin) {
+	public Point getLeftMap(Point origin) {
 		return new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
 	}
 	
-	public static Point getRightMap(Point origin) {
+	public Point getRightMap(Point origin) {
 		return new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
 	}
 	
@@ -1040,17 +1048,17 @@ public class MapManager {
 		return new Point(origin.x, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
 	}
 	
-	public static Point getLowerRightMap(Point origin) {
+	public Point getLowerRightMap(Point origin) {
 		return new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
 	}
 
 	
-	public static void emptyAll() {
+	public void emptyAll() {
 		localMapList = new HashMap<Point, LocalMap>();
 		pointList = new ArrayList<Point>();
 	}
 
-	public static void save(LocalMap localMap, String fileName) {
+	public void save(LocalMap localMap, String fileName) {
 		try {
 			FileOutputStream datei=new FileOutputStream(fileName);
 			BufferedOutputStream buf=new BufferedOutputStream(datei);
@@ -1061,7 +1069,8 @@ public class MapManager {
 			writeStream.writeObject(localMap.getDlArray());
 			writeStream.writeObject(localMap.getDrArray());
 			writeStream.writeObject(localMap.getOrigin());
-			writeStream.writeObject(localMap.getTileSetFileName());
+//			writeStream.writeObject(localMap.getTileSetFileName());
+			writeStream.writeObject(localMap.getPaintLayer());
 			writeStream.close();
 //			System.out.println("wrote "+localMap.getOrigin().x +" "+localMap.getOrigin().y);
 		} catch (IOException e) {
@@ -1070,7 +1079,7 @@ public class MapManager {
 	}
 	
 	
-	public static LocalMap loadMap(String fileName) {
+	public LocalMap loadMap(String fileName) {
 		try {
 			FileInputStream datei=new FileInputStream(fileName);
 			BufferedInputStream buf=new BufferedInputStream(datei);
@@ -1080,12 +1089,13 @@ public class MapManager {
 			int[][] urArray = (int[][]) readStream.readObject();
 			int[][] dlArray = (int[][]) readStream.readObject();
 			int[][] drArray = (int[][]) readStream.readObject();
-			Point origin =(Point) readStream.readObject();
-			String tileSetFileName = (String) readStream.readObject();
+			Point origin = (Point) readStream.readObject();
+//			String tileSetFileName = (String) readStream.readObject();
+			String paintLayer = (String) readStream.readObject();
 			readStream.close();
 			
 //			System.out.println(origin.x +" "+origin.y);
-			return new LocalMap(localMap, ulArray, urArray, dlArray, drArray, tileSetFileName, origin);
+			return new LocalMap(localMap, ulArray, urArray, dlArray, drArray, origin, paintLayer);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -1097,33 +1107,47 @@ public class MapManager {
 			
 	}
 	
-	public static void loadLocalMaps(String playerName) {
+	public void loadLocalMaps(String playerName) {
 		/** loop through mapfolder and get every map that ends on ".map" and begins with username */
 		ArrayList<String> listOfFiles = new ArrayList<String>();
 		File folder = new File(GameStates.standardMapFolder+playerName);
 		listOfFiles = MyUtil.listFilesForFolder(folder);
 		for (String mapFile: listOfFiles) {
 			/** get origins and save the maps under the corresponding origin */
-//			System.out.println(mapFile);
-//			String originXString = "0";
-//			String originYString = "0";
-//			int originX = Integer.parseInt(originXString);
-//			int originY = Integer.parseInt(originYString);
-			
-			LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
-			localMapList.put(lMap.getOrigin(), lMap);
-			pointList.add(lMap.getOrigin());
+			/** only load if its the right paintLayer */
+			if (mapFile.startsWith(this.getPaintLayer())) {
+				LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
+				localMapList.put(lMap.getOrigin(), lMap);
+				pointList.add(lMap.getOrigin());
+			}
 		}
-		
-//		LocalMap nullnull = loadMap(GameStates.standardMapFolder+playerName+"/"+playerName+"_"+"0"+"_"+"0"+".map");
-//		localMapList.put(nullnull.getOrigin(), nullnull);
-//		pointList.add(nullnull.getOrigin());
 		
 	}
 	
-	/** first init of external images */
-	public void initMaps(String folderPath) {
-		
+	public void loadFromFileSystem(String playerName , int x, int y) {
+		ArrayList<String> listOfFiles = new ArrayList<String>();
+		File folder = new File(GameStates.standardMapFolder+playerName);
+		listOfFiles = MyUtil.listFilesForFolder(folder);
+		for (String mapFile: listOfFiles) {
+			/** get origins and save the maps under the corresponding origin */
+			/** only load if its the right paintLayer */
+			if (mapFile.startsWith(getPaintLayer()) && mapFile.contains("_"+x+"_") && mapFile.contains("_"+y+".")) {
+				LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
+				localMapList.put(lMap.getOrigin(), lMap);
+				pointList.add(lMap.getOrigin());
+			}
+		}
 	}
+	
+	public void setPaintLayer(String paintLayer) {
+		this.paintLayer = paintLayer;
+	}
+	
+	public String getPaintLayer() {
+		return this.paintLayer;
+	}
+	
+	
+	
 	
 }

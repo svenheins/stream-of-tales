@@ -36,6 +36,7 @@ import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
 
 import de.svenheins.threads.AnimationThread;
+import de.svenheins.threads.ChannelUpdateMapsThread;
 import de.svenheins.threads.ChannelUpdateThread;
 import de.svenheins.threads.CollisionThread;
 import de.svenheins.threads.GraphicThread;
@@ -74,6 +75,7 @@ public class GamePanel extends JPanel {
 	private CollisionThread collisionThread;
 	private AnimationThread animationThread;
 	private ChannelUpdateThread channelUpdateThread;
+	private ChannelUpdateMapsThread channelUpdateMapsThread;
 	private MapUpdateThread mapUpdateThread;
 	public static GamePanel gp;
 	public static String resourcePath = "/resources/";
@@ -122,6 +124,7 @@ public class GamePanel extends JPanel {
 		new Thread(animationThread).start();
 		new Thread(channelUpdateThread).start();
 		new Thread(mapUpdateThread).start();
+		new Thread(channelUpdateMapsThread).start();
 	}
 	
 	/**
@@ -198,7 +201,7 @@ public class GamePanel extends JPanel {
 		serverUpdateThread = new ServerUpdateThread(System.currentTimeMillis());
 		channelUpdateThread = new ChannelUpdateThread();
 		mapUpdateThread = new MapUpdateThread();
-		
+		channelUpdateMapsThread = new ChannelUpdateMapsThread();
 	}
 	
 	public void config() {

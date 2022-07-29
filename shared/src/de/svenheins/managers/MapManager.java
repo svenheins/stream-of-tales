@@ -11,10 +11,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -27,6 +31,7 @@ public class MapManager {
 	
 	public List<Point> pointList = new ArrayList<Point>();
 	public String paintLayer;
+	public ArrayList<Point> changedList = new ArrayList<Point>();
 	
 	public MapManager(String paintLayer) {
 		this.paintLayer = paintLayer;
@@ -102,14 +107,16 @@ public class MapManager {
 	
 	
 	public void adjustSurrounding(LocalMap localMap, int localX, int localY, int paintType) {
-		setTileCorners(localMap, localX-1, localY-1, paintType);
+		
 		setTileCorners(localMap, localX, localY-1, paintType);
-		setTileCorners(localMap, localX+1, localY-1, paintType);
 		setTileCorners(localMap, localX-1, localY, paintType);
 		//setTileCorners(localMap, localX, localY);
 		setTileCorners(localMap, localX+1, localY, paintType);
-		setTileCorners(localMap, localX-1, localY+1, paintType);
 		setTileCorners(localMap, localX, localY+1, paintType);
+		
+		setTileCorners(localMap, localX-1, localY-1, paintType);
+		setTileCorners(localMap, localX+1, localY-1, paintType);	
+		setTileCorners(localMap, localX-1, localY+1, paintType);
 		setTileCorners(localMap, localX+1, localY+1, paintType);
 	}
 	
@@ -553,13 +560,14 @@ public class MapManager {
 		drMap.setTile(drTile.x, drTile.y, 0 ); // new Tile(0, false, false, false, false));
 		drMap.setUl(drTile.x, drTile.y, 0 );
 		/** and adjust the surrounding */
-		adjustSurrounding(ulMap, ulTile.x, ulTile.y, paintType);
 		adjustSurrounding(uMap, uTile.x, uTile.y, paintType);
-		adjustSurrounding(urMap, urTile.x, urTile.y, paintType);
 		adjustSurrounding(lMap, lTile.x, lTile.y, paintType);
 		adjustSurrounding(rMap, rTile.x, rTile.y, paintType);
-		adjustSurrounding(dlMap, dlTile.x, dlTile.y, paintType);
 		adjustSurrounding(dMap, dTile.x, dTile.y, paintType);
+		
+		adjustSurrounding(ulMap, ulTile.x, ulTile.y, paintType);
+		adjustSurrounding(urMap, urTile.x, urTile.y, paintType);
+		adjustSurrounding(dlMap, dlTile.x, dlTile.y, paintType);
 		adjustSurrounding(drMap, drTile.x, drTile.y, paintType);
 	}
 	
@@ -1158,16 +1166,32 @@ public class MapManager {
 	    fileInputStream.read(mapBytes);
 	    fileInputStream.close();
  
-	    for (int i = 0; i < mapBytes.length; i++) {
-	       	System.out.print((char)mapBytes[i]);
-            }
+//	    for (int i = 0; i < mapBytes.length; i++) {
+//	       	System.out.print((char)mapBytes[i]);
+//            }
  
-	    System.out.println("Done");
+	    System.out.println("prepared File "+ GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map"+" with "+mapBytes.length+" bytes");
+        
         } catch(Exception e){
         	e.printStackTrace();
         }
         return mapBytes;
 	}
 	
+	public void addChangedList(Point p) {
+		if (!changedList.contains(p)) this.changedList.add(p);
+	}
+	
+	public void setChangedList(  ArrayList<Point> list) {
+		this.changedList = list;
+	}
+	
+	public ArrayList<Point> getChangedList() {
+		return changedList;
+	}
+	
+	public void emptyChangedList() {
+		changedList = new ArrayList<Point>();
+	}
 	
 }

@@ -30,7 +30,7 @@ public class MapUpdateThread implements Runnable {
 	private PlayerEntity playerEntity;
 	private float playerOldMX = 0;
 	private float playerOldMY = 0;
-	private final int sleepingTime = 500;
+	private final int sleepingTime = 200;
 	
 	@Override
 	public void run() {
@@ -125,38 +125,47 @@ public class MapUpdateThread implements Runnable {
 	
 	public void mapSaveUpdateRun(MapManager mapManager) {
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer() && (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getGameMasterName())) ) {
-			List<Point> idListTempMaps = new ArrayList<Point>(mapManager.pointList);
+			List<Point> idListTempMaps = new ArrayList<Point>(mapManager.getChangedList());
 			for (Point p: idListTempMaps){
 				LocalMap localMap = mapManager.get(p);
 				if(localMap != null) {
-					mapManager.save(localMap, GameStates.standardMapFolder+GameWindow.gw.getPlayerName()+"/"+mapManager.getPaintLayer()+"_"+p.x+"_"+p.y+".map");
+					String mapFileName = mapManager.getPaintLayer()+"_"+p.x+"_"+p.y+".map";
+					mapManager.save(localMap, GameStates.standardMapFolder+GameWindow.gw.getPlayerName()+"/"+ mapFileName);
+					
+					/** do not instantly send maps but create the sendQueue */
+					GameWindow.gw.addSendMapListEntry(mapFileName);
+//					channelSendUpdateMapsRun(mapFileName);
 				}
 				else
 					GameWindow.gw.gameInfoConsole.appendInfo("Couldn't write Map");
 			}
-			
+			mapManager.emptyChangedList();
 		}
 	}
 	
 	public void mapSaveUpdateRun(ObjectMapManager mapManager) {
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer() && (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getGameMasterName()))) {
-			List<Point> idListTempMaps = new ArrayList<Point>(mapManager.pointList);
+			List<Point> idListTempMaps = new ArrayList<Point>(mapManager.getChangedList());
 			for (Point p: idListTempMaps){
 				LocalMap localMap = mapManager.get(p);
 				if(localMap != null) {
-					mapManager.save(localMap, GameStates.standardMapFolder+GameWindow.gw.getPlayerName()+"/"+mapManager.getPaintLayer()+"_"+p.x+"_"+p.y+".map");
+					String mapFileName = mapManager.getPaintLayer()+"_"+p.x+"_"+p.y+".map";
+					mapManager.save(localMap, GameStates.standardMapFolder+GameWindow.gw.getPlayerName()+"/"+mapFileName);
+					GameWindow.gw.addSendMapListEntry(mapFileName);
+					/** first save, then send in separate thread */
+//					channelSendUpdateMapsRun(mapFileName);
 				}
 				else
 					GameWindow.gw.gameInfoConsole.appendInfo("Couldn't write Map");
 			}
-			
+			mapManager.emptyChangedList();
 		}
 	}
 	
 	public void mapLoad(MapManager mapManager, int x, int y) {
 		if (!mapManager.contains(new Point(x, y))) {
 			/** search in folder */
-			mapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(), x, y);
+			mapManager.loadFromFileSystem(GameWindow.gw.getGameMasterName(), x, y);
 //			System.out.println("Loaded x="+x+" and y="+y);
 		}
 	}
@@ -164,9 +173,10 @@ public class MapUpdateThread implements Runnable {
 	public void mapLoad(ObjectMapManager mapManager, int x, int y) {
 		if (!mapManager.contains(new Point(x, y))) {
 			/** search in folder */
-			mapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(), x, y);
+			mapManager.loadFromFileSystem(GameWindow.gw.getGameMasterName(), x, y);
 //			System.out.println("Loaded x="+x+" and y="+y);
 		}
 	}
-
+	
+	
 }

@@ -411,9 +411,9 @@ public class ClientMessages extends Messages{
      * @param name, packageId, image: we need image-bytes!
      * @return ByteBuffer
      */
-    public static ByteBuffer sendMap(String playerName, int sizeOfMap, byte[] map) {
+    public static ByteBuffer sendMap(String playerName, int sizeOfMap, byte[] map, String fileNameMap, int sendListSize) {
     	/** define byte array */
-    	byte[] bytes = new byte[1 + 4 + playerName.length() + 4 + map.length];
+    	byte[] bytes = new byte[1 + 4 + playerName.length() + 4 + map.length + 4 + fileNameMap.length() + 4];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.SEND_MAP.ordinal()); // 1 Byte
         /** playerName */
@@ -423,6 +423,11 @@ public class ClientMessages extends Messages{
     	buffer.putInt(sizeOfMap); // 4
     	/** image data */
     	buffer.put(map); // image.length
+    	/** fileName */
+    	buffer.putInt(fileNameMap.length()); // 4
+    	buffer.put(fileNameMap.getBytes()); // fileNameMap.length()
+    	/** store the remaining size of the sendList */
+    	buffer.putInt(sendListSize); // 4
     	
     	/** buffer is ready */
         buffer.flip();

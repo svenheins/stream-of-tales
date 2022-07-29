@@ -55,20 +55,21 @@ public class MainMenu extends JMenuBar {
 		});
 		menu.add(mainMenuItem);
 		
-		final JMenuItem setGameMaster = new JMenuItem("Set Game-Master");
-		setGameMaster.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-            	if (!GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
-            		GameWindow.gw.setGameMasterName(GameWindow.gw.getPlayerName());
-            		setGameMaster.setText("Set Player");
-            	} else {
-            		GameWindow.gw.setGameMasterName("standard");
-            		setGameMaster.setText("Set Game-Master");
-            	}
-            	
-            }
-		});
-		menu.add(setGameMaster);
+//		final JMenuItem setGameMaster = new JMenuItem("Set Game-Master");
+//		setGameMaster.addActionListener(new ActionListener() {
+//            public void actionPerformed(ActionEvent e) {
+//            	if (!GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
+//            		GameWindow.gw.setGameMasterName(GameWindow.gw.getPlayerName());
+//            		GameWindow.gw.initSendMapList();
+//            		setGameMaster.setText("Set Player");
+//            	} else {
+//            		GameWindow.gw.setGameMasterName("standard");
+//            		setGameMaster.setText("Set Game-Master");
+//            	}
+//            	
+//            }
+//		});
+//		menu.add(setGameMaster);
 		
 		JMenuItem logoutItem = new JMenuItem("Logout");
 		logoutItem.addActionListener(new ActionListener() {
@@ -161,6 +162,7 @@ public class MainMenu extends JMenuBar {
 		JComboBox comboMapPlayer = new JComboBox();
 		List<BigInteger> sortedPlayerList = PlayerManager.idList;
 //		Arrays.sort(sortedPlayerList);
+		comboMapPlayer.addItem(GameWindow.gw.getPlayerName());
 		for (int i =0; i < sortedPlayerList.size(); i++) {
 			comboMapPlayer.addItem(PlayerManager.get(sortedPlayerList.get(i)).getName());
 		}
@@ -175,13 +177,19 @@ public class MainMenu extends JMenuBar {
 					    if (!createMapFolderSccess) {
 					         // Directory creation failed
 					    }
-						
+//					    GameWindow.gw.initMapManagers();
+					    /** delete only the Maps, not the changedPoints */
+//					    GameWindow.gw.deleteOnlyMapsOfMapManagers();
+					    GameWindow.gw.setGameMasterName((String) ((JComboBox) e.getSource()).getSelectedItem());
+					    if (GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
+//					    	GameWindow.gw.initSendMapList();
+					    }
 //						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayerName(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));
 					}
 				}
 		});
 		panel1.add(comboMapPlayer);
-	
+		
 		final JTextField textFieldPaintType = new JTextField(""+(int)GamePanel.gp.getPaintType(), 6);
 		final JTextField textFieldPaintLayer = new JTextField(""+GamePanel.gp.getPaintLayer(), 6);
 		JButton confirmButton = new JButton("Ok");

@@ -6,21 +6,26 @@ import de.svenheins.handlers.MouseHandler;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
 
+import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.MapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
 import de.svenheins.objects.IngameWindow;
+import de.svenheins.objects.LocalMap;
 import de.svenheins.objects.Player;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
@@ -139,6 +144,9 @@ public class GamePanel extends JPanel {
 		playerEntity2 = new Entity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		playerEntity2 = new Entity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		playerEntity2 = new Entity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+		
+		
+		
 //		playerEntity = new Entity("ship.png", BigInteger.valueOf(0), 500, 200, 0, 0);
 //		ships = new ShipEntity[]{s, s2};
 //		eye = new Entity("eye.png", 1, 150, 100);
@@ -153,6 +161,8 @@ public class GamePanel extends JPanel {
 //		simulationButton.setAllXY(100, 190);
 		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
 		connectButton.setAllXY(100, 50);
+		
+		ClientTextureManager.manager.getTexture(GameStates.standardBackgroundTexture);
 		
 //		gameConsole = new IngameConsole();
 		
@@ -274,6 +284,27 @@ public class GamePanel extends JPanel {
 			}
 			else
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Space");
+		}
+		
+		/** Paint Maps */
+		g.setPaintMode();
+		List<Point> idListTempMaps = new ArrayList<Point>(MapManager.pointList);
+		for (Point p: idListTempMaps){
+			LocalMap localMap = MapManager.get(p);
+			if(localMap != null) {
+				BufferedImage tile = null;
+				for (int k = 0; k < localMap.getLocalMap().length; k++) {
+					for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
+						tile = localMap.getTileImage(k, l);
+						if( tile != null) {
+							g.drawImage(tile, (int) (localMap.getOrigin().x + k*32-viewPointX), (int) (localMap.getOrigin().y + l*32-viewPointY), this);
+						}
+					}
+				}
+				//localMap.paint(g, (int) (-viewPointX),(int) (-viewPointY));
+			}
+			else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
 		}
 
 		/** Paint Server-Entities */

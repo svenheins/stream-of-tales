@@ -134,6 +134,7 @@ public class Space extends LocalObject{
 	
 	public Space( String str, BigInteger id, String textureString, float trans) {
 		setPolygon( new ArrayList<Polygon>());
+		this.setName(str);
 //		addPolygon(GamePanel.svgPath+str);
 		addPolygon((getClass().getResource(GameStates.resourcePath+"svg/"+str)));
 		this.setId(id);
@@ -144,6 +145,7 @@ public class Space extends LocalObject{
 		setRGB(new int[]{0,0,0});
 		setFilled(true);
 		setTrans(trans);
+		setScale(1.0f);
 		this.setUpdateByServer(true);
 	}
 	

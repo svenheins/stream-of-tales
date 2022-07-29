@@ -619,7 +619,7 @@ public class WorldPlayer
 		    	
 		    	/** change the corresponding serverspace and space and send an update to players */
 		    	this.getRoom().editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
-		    	SpaceManager.editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
+		    	//SpaceManager.editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	this.getRoom().sendEditSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	
 				break;

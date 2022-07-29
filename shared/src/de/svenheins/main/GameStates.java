@@ -4,6 +4,7 @@ public class GameStates {
 	public static String resourcePath = "/resources/";
 	public static String svgPath = "/resources/svg/";
 	public static String externalImagesPath = "./ressources/images/";
+	public static String standardBackgroundTexture = "grass1.png";
     /** The message encoding. */
     public static final String MESSAGE_CHARSET = "UTF-8";
 	public static int width = 800;
@@ -31,6 +32,12 @@ public class GameStates {
 	public static int ani_d_end = 23;
 	public static String standardTilePathPlayers = "tilesets/entities/";
 	public static String standardTileNamePlayer = standardTilePathPlayers+"standardShip.png";
+	public static String standardTilePathMaps = "tilesets/maps/";
+	public static boolean useChannels = true;
+	public static int mapWidth = 20;
+	public static int mapHeight = 15;
+	public static int mapTileSetWidth = 32;
+	public static int mapTileSetHeight = 32;
 	
 	public static int getWidth() {
 		return width;

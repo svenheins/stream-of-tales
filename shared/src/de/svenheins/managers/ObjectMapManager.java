@@ -21,6 +21,8 @@ import de.svenheins.objects.LocalMap;
 public class ObjectMapManager {
 	public HashMap<Point, LocalMap> localMapList = new HashMap<Point, LocalMap>();
 	
+	public HashMap<Point, String> localMapFileList = new HashMap<Point, String>();
+	
 	public List<Point> pointList = new ArrayList<Point>();
 	public String paintLayer;
 	public ArrayList<Point> changedList = new ArrayList<Point>();
@@ -1075,6 +1077,8 @@ public class ObjectMapManager {
 //			writeStream.writeObject(localMap.getTileSetFileName());
 			writeStream.writeObject(localMap.getPaintLayer());
 			writeStream.close();
+			
+			localMapFileList.put(localMap.getOrigin(), fileName);
 //			System.out.println("wrote "+localMap.getOrigin().x +" "+localMap.getOrigin().y);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -1127,18 +1131,24 @@ public class ObjectMapManager {
 		
 	}
 	
-	public void loadFromFileSystem(String playerName , int x, int y) {
-		ArrayList<String> listOfFiles = new ArrayList<String>();
-		File folder = new File(GameStates.standardMapFolder+playerName);
-		listOfFiles = MyUtil.listFilesForFolder(folder);
-		for (String mapFile: listOfFiles) {
-			/** get origins and save the maps under the corresponding origin */
-			/** only load if its the right paintLayer */
-			if (mapFile.startsWith(getPaintLayer()) && mapFile.contains("_"+x+"_") && mapFile.contains("_"+y+".")) {
-				LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
-				localMapList.put(lMap.getOrigin(), lMap);
-				pointList.add(lMap.getOrigin());
-			}
+	public void loadFromFileSystem(String playerName, int x,int y) {
+//		ArrayList<String> listOfFiles = new ArrayList<String>();
+//		File folder = new File(GameStates.standardMapFolder+playerName);
+//		listOfFiles = MyUtil.listFilesForFolder(folder);
+//		for (String mapFile: listOfFiles) {
+//			/** get origins and save the maps under the corresponding origin */
+//			/** only load if its the right paintLayer */
+//			if (mapFile.startsWith(getPaintLayer()) && mapFile.contains("_"+x+"_") && mapFile.contains("_"+y+".")) {
+//				LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
+//				localMapList.put(lMap.getOrigin(), lMap);
+//				pointList.add(lMap.getOrigin());
+//			}
+//		}
+		String mapFile = localMapFileList.get(new Point(x, y));
+		if (mapFile != null) {
+			LocalMap lMap = loadMap(mapFile);
+			localMapList.put(lMap.getOrigin(), lMap);
+			pointList.add(lMap.getOrigin());
 		}
 	}
 	
@@ -1194,5 +1204,25 @@ public class ObjectMapManager {
 	
 	public void emptyChangedList() {
 		changedList = new ArrayList<Point>();
+	}
+	
+	public void initLocalMapFileList(String playerName) {
+		ArrayList<String> listOfFiles = new ArrayList<String>();
+		File folder = new File(GameStates.standardMapFolder+playerName);
+		listOfFiles = MyUtil.listFilesForFolder(folder);
+		for (String mapFile: listOfFiles) {
+			/** get origins and save the maps under the corresponding origin */
+			/** only load if its the right paintLayer */
+			if (mapFile.startsWith(getPaintLayer())) { // && mapFile.contains("_"+x+"_") && mapFile.contains("_"+y+".")) {
+				LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
+//				localMapList.put(lMap.getOrigin(), lMap);
+				localMapFileList.put(lMap.getOrigin(),GameStates.standardMapFolder+ playerName+"/"+mapFile);
+//				pointList.add(lMap.getOrigin());
+			}
+		}
+	}
+	
+	public void putMapFileName(Point p, String fileName) {
+		localMapFileList.put(p, fileName);
 	}
 }

@@ -9,6 +9,8 @@ import de.svenheins.handlers.MouseHandler;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
@@ -93,6 +95,10 @@ public class GamePanel extends JPanel {
 	private boolean deleteModus = false;
 	private String paintLayer = "cobble";
 	private int paintType = 110;
+	private boolean paintEditSpaceArea = true;
+	
+	private ArrayList<Polygon> editSpaceAreaPolygon = new ArrayList<Polygon>();
+	private Space editSpaceArea;
 	
 	
 	public IngameWindow mainMenu;
@@ -131,20 +137,7 @@ public class GamePanel extends JPanel {
 	 * init(): Initialize all variables for the first time
 	 */
 	public void init() {
-		
-		// Object Initialization
-//		space = new Space("Zeichnung.svg", new Color(20, 230, 40), true, 0.9f);
-//		space1 = new Space("Zeichnung.svg", new Color(100, 120, 240), true, 0.4f);
-//		space2 = new Space("Quadrat.svg", new Color(230, 20, 40), false, 1.0f);
-//		space3 = new Space("Quadratx1_einrast.svg", new Color(20, 230, 230), true, 0.5f);
-//		space4 = new Space("Quadratx1_shift.svg", new Color(20, 230, 230), true, 0.5f);
-//		// GameObjects (Entities)
-//		shipArray = new String[]{"ship.png", "ship2.png", "ship3.png", "ship2.png"};
-//		s = new ShipEntity(shipArray, 500, 0);
-//		s.getAnimation().setTimeBetweenAnimation(100);
-//		s.setY(GameWindow.gw.hoehe-s.getHeight()-30);
-//		s2 = new ShipEntity("ship.png", 600, 0);
-//		s2.setY(GameWindow.gw.hoehe-s2.getHeight()-30);
+
 		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I, KeyEvent.VK_1, KeyEvent.VK_2));
 //		p2 = new Player("Spieler2", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S,KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_O));
 		players = new Player[]{p}; 
@@ -159,32 +152,18 @@ public class GamePanel extends JPanel {
 		playerEntity2 = new Entity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		playerEntity2 = new Entity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		
-		
-		
-//		playerEntity = new Entity("ship.png", BigInteger.valueOf(0), 500, 200, 0, 0);
-//		ships = new ShipEntity[]{s, s2};
-//		eye = new Entity("eye.png", 1, 150, 100);
-//		space = new Space("Start.svg", 1000000, new Color(150, 30, 40), true, 0.3f);
-		
-//		consoleInput = new ConsoleInputHandler();
-		
-		// Init GUI-Objects
-//		startButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Start.png", 0.5f);
-//		startButton.setAllXY(100, 120);
-//		simulationButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "Simulation.png", 0.5f);
-//		simulationButton.setAllXY(100, 190);
+		/** init GUI elements */
 		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
 		connectButton.setAllXY(100, 50);
 		
 		ClientTextureManager.manager.getTexture(GameStates.standardBackgroundTexture);
 		
-//		gameConsole = new IngameConsole();
+		/** space that describes the paint area */
+		editSpaceAreaPolygon.add((new Polygon(new int[]{0 , 0 , 2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth,2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth}, new int[]{0,2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight, 2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight,0}, 4)));
+		editSpaceArea = new Space(editSpaceAreaPolygon, 0, 0, "editSpaceRegion", BigInteger.valueOf(0), new int[]{0, 60, 20}, true, 0.2f, 1.0f, 1.0f, "empty");
 		
-		// Init the input
-		// Keyboard
-//		GameWindow.gw.addKeyListener(p.getInputHandler());
-//		gp.addKeyListener(p2.getInputHandler());
-//		gp.addKeyListener(consoleInput);
+		/** Init the input */
+		// Keyboard must not be added here
 		// Mouse
 		addMouseListener(new MouseHandler());
 		addMouseMotionListener(new MouseHandler());
@@ -305,6 +284,24 @@ public class GamePanel extends JPanel {
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Space");
 		}
 		
+
+		
+		/** define min and max for view distance */
+		int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
+		int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
+		int minX = ((int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getX() / (localWidth)) * localWidth) - GameStates.factorOfViewDeleteDistance*localWidth;
+		int maxX = ((int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getX() / (localWidth)) * localWidth) + GameStates.factorOfViewDeleteDistance*localWidth;
+		int minY = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getY() / (localHeight)) * localHeight - GameStates.factorOfViewDeleteDistance*localHeight;
+		int maxY = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getY() / (localHeight)) * localHeight + GameStates.factorOfViewDeleteDistance*localHeight;
+		Rectangle rect = new Rectangle(minX, minY, maxX-minX, maxY-minY);
+		
+		if (isPaintEditSpaceArea() == true) {
+			/** paint the editSpaceArea */
+			g.setPaintMode();
+			editSpaceArea.setAllXY(minX, minY);
+			editSpaceArea.paint(g, (int) (-viewPointX),(int) (-viewPointY));
+		}
+		
 		/** Paint Maps */
 		g.setPaintMode();
 		MapManager cobbleManager = GameWindow.gw.mapManagers.get("cobble");
@@ -312,7 +309,8 @@ public class GamePanel extends JPanel {
 		for (Point p: idListcobbleMap){
 			LocalMap localMap = cobbleManager.get(p);
 			if(localMap != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile = null;
 					for (int k = 0; k < localMap.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
@@ -359,7 +357,8 @@ public class GamePanel extends JPanel {
 		for (Point p: idListSnowMap){
 			LocalMap localMap = snowManager.get(p);
 			if(localMap != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile = null;
 					for (int k = 0; k < localMap.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
@@ -390,7 +389,8 @@ public class GamePanel extends JPanel {
 			LocalMap localMap2 = tree2MapManager.get(p);
 			/** paint both tree parts simultaneously */
 			if(localMap1 != null && localMap2 != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile1 = null;
 					BufferedImage tile2 = null;
 					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
@@ -412,7 +412,8 @@ public class GamePanel extends JPanel {
 				}
 			}
 			else if(localMap1 != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile1 = null;
 					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap1.getLocalMap()[0].length; l++) {
@@ -427,7 +428,8 @@ public class GamePanel extends JPanel {
 					tree1MapManager.remove(p);
 				}
 			} else if(localMap2 != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap2.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap2.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap2.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap2.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile2 = null;
 					for (int k = 0; k < localMap2.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap2.getLocalMap()[0].length; l++) {
@@ -501,7 +503,8 @@ public class GamePanel extends JPanel {
 			LocalMap localMap2 = overlayTree2MapManager.get(p);
 			/** paint both tree parts simultaneously */
 			if(localMap1 != null && localMap2 != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile1 = null;
 					BufferedImage tile2 = null;
 					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
@@ -524,7 +527,8 @@ public class GamePanel extends JPanel {
 				}
 			}
 			else if(localMap1 != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap1.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap1.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile1 = null;
 					for (int k = 0; k < localMap1.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap1.getLocalMap()[0].length; l++) {
@@ -539,7 +543,8 @@ public class GamePanel extends JPanel {
 					overlayTree1MapManager.remove(p);
 				}
 			} else if(localMap2 != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap2.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap2.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
+//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap2.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap2.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile2 = null;
 					for (int k = 0; k < localMap2.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap2.getLocalMap()[0].length; l++) {
@@ -847,5 +852,13 @@ public class GamePanel extends JPanel {
 
 	public void setPaintType(int paintType) {
 		this.paintType = paintType;
+	}
+
+	public boolean isPaintEditSpaceArea() {
+		return paintEditSpaceArea;
+	}
+
+	public void setPaintEditSpaceArea(boolean paintEditSpaceArea) {
+		this.paintEditSpaceArea = paintEditSpaceArea;
 	}
 }

@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JMenu;
@@ -127,17 +128,17 @@ public class MainMenu extends JMenuBar {
 		});
 		tileMenu.add(deleteTile);
 		
-		final JMenuItem loadTiles = new JMenuItem("Load Tiles of this player");
-		// Next Menu-Item
-		loadTiles.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-            	MapManager mapManager = GameWindow.gw.getMapManagers().get(GamePanel.gp.getPaintLayer());
-            	mapManager.emptyAll();
-            	mapManager.loadLocalMaps(GameWindow.gw.getPlayerName());
-            	
-            }
-		});
-		tileMenu.add(loadTiles);
+//		final JMenuItem loadTiles = new JMenuItem("Load Tiles of this player");
+//		// Next Menu-Item
+//		loadTiles.addActionListener(new ActionListener() {
+//            public void actionPerformed(ActionEvent e) {
+//            	MapManager mapManager = GameWindow.gw.getMapManagers().get(GamePanel.gp.getPaintLayer());
+//            	mapManager.emptyAll();
+//            	mapManager.loadLocalMaps(GameWindow.gw.getPlayerName());
+//            	
+//            }
+//		});
+//		tileMenu.add(loadTiles);
 
 		this.add(menu);
 		this.add(menu2);
@@ -173,14 +174,16 @@ public class MainMenu extends JMenuBar {
 	//				GameWindow.gw.send(ClientMessages.editPlayerAddons(space.getId(), space.getTextureName(), space.getRGB(), space.getTrans(), isFilled, space.getScale(), space.getArea()));
 					if (GameWindow.gw.isLoggedIn()) {
 						/** create map folder for the chosen player */
-					    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+(String) ((JComboBox) e.getSource()).getSelectedItem())).mkdirs();
+						String playerName = (String) ((JComboBox) e.getSource()).getSelectedItem();
+					    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+playerName)).mkdirs();
 					    if (!createMapFolderSccess) {
 					         // Directory creation failed
 					    }
 //					    GameWindow.gw.initMapManagers();
 					    /** delete only the Maps, not the changedPoints */
 //					    GameWindow.gw.deleteOnlyMapsOfMapManagers();
-					    GameWindow.gw.setGameMasterName((String) ((JComboBox) e.getSource()).getSelectedItem());
+					    GameWindow.gw.setGameMasterName(playerName);
+					    GameWindow.gw.initLocalMapFileList(playerName);
 					    if (GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
 //					    	GameWindow.gw.initSendMapList();
 					    }
@@ -218,6 +221,24 @@ public class MainMenu extends JMenuBar {
 		panel2.add(confirmButton);
 		panel2.add(button2);
 	
+		/** paint settings */
+		final JCheckBox checkPaintEditSpace = new JCheckBox();
+		checkPaintEditSpace.setSelected(GamePanel.gp.isPaintEditSpaceArea());
+		checkPaintEditSpace.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (checkPaintEditSpace.isSelected()){
+					GamePanel.gp.setPaintEditSpaceArea(true);
+				} else {
+					GamePanel.gp.setPaintEditSpaceArea(false);
+				}
+				
+			}
+		});
+		panel3.add(checkPaintEditSpace);
+		
+		
 		/** create jtabbedPane */
 		JTabbedPane tabpane = new JTabbedPane
 		    (JTabbedPane.TOP,JTabbedPane.SCROLL_TAB_LAYOUT );
@@ -225,7 +246,7 @@ public class MainMenu extends JMenuBar {
 		/** add tabs */
 		tabpane.addTab("Map", panel1);
 		tabpane.addTab("TileSet", panel2);
-		tabpane.addTab("Stuff", panel3);
+		tabpane.addTab("Paint-Settings", panel3);
 		tabpane.addTab("More Stuff", panel4);
 	
 		/** add to menu */

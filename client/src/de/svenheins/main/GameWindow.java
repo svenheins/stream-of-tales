@@ -3,6 +3,7 @@ package de.svenheins.main;
 
 import de.svenheins.WorldClient;
 import de.svenheins.functions.MyMath;
+import de.svenheins.functions.MyUtil;
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.handlers.ConsoleInputHandler;
 import de.svenheins.main.menu.MainMenu;
@@ -16,6 +17,7 @@ import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.TileMapManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.IngameConsole;
+import de.svenheins.objects.LocalMap;
 
 
 import java.awt.Color;
@@ -33,6 +35,7 @@ import java.net.PasswordAuthentication;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -120,6 +123,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     protected HashMap<String, MapManager> mapManagers = new HashMap<String, MapManager>();
     /** objectMapManager */
     protected HashMap<String, ObjectMapManager> objectMapManagers = new HashMap<String, ObjectMapManager>();
+    /** ArrayList of filenames that need to be send to other channel players */
+    private ArrayList<String> sendMapList = new ArrayList<String>();
     
     /** TileMapManger */
     protected TileMapManager tileMapManager = new TileMapManager(GameStates.tileSetFile);
@@ -487,13 +492,13 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
         setLoggedIn(true);
         /** create a map-folder */
      	/** all non-existent ancestor directories are automatically created */
-	    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+"/"+this.getGameMasterName())).mkdirs();
-	    if (!createMapFolderSccess) {
+	    boolean createMapFolderSuccess = (new File(GameStates.standardMapFolder+"/"+this.getGameMasterName())).mkdirs();
+	    if (!createMapFolderSuccess) {
 	         // Directory creation failed
 	    	System.out.println("Error at creating game-master map-folder!");
 	    }
-	    createMapFolderSccess = (new File(GameStates.standardMapFolder+"/"+this.getPlayerName())).mkdirs();
-	    if (!createMapFolderSccess) {
+	    createMapFolderSuccess = (new File(GameStates.standardMapFolder+"/"+this.getPlayerName())).mkdirs();
+	    if (!createMapFolderSuccess) {
 	         // Directory creation failed
 	    	System.out.println("Error at creating playerName map-folder!");
 	    }
@@ -501,7 +506,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	    mapManagers.clear();
 	    this.initMapManagers();
 	    for (MapManager mapManager : mapManagers.values()) {
-	    	mapManager.loadLocalMaps(gw.getPlayerName());
+	    	mapManager.loadLocalMaps(gw.getGameMasterName());
 	    }
     }
 
@@ -908,6 +913,19 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		objectMapManagers.put(overlayTreeLayer2.getPaintLayer(), overlayTreeLayer2);
 	}
 	
+	public void deleteOnlyMapsOfMapManagers() {
+		for (MapManager mapManager: mapManagers.values()) {
+			for (Point p : mapManager.pointList) {
+				mapManager.remove(p);
+			}
+		}
+		for (ObjectMapManager objectMapManager: objectMapManagers.values()) {
+			for (Point p : objectMapManager.pointList) {
+				objectMapManager.remove(p);
+			}
+		}
+	}
+	
 	public HashMap<String, MapManager> getMapManagers() {
 		return mapManagers;
 	}
@@ -927,4 +945,33 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	public void setTileMapManager(TileMapManager t) {
 		tileMapManager = t;
 	}
+
+	public ArrayList<String> getSendMapList() {
+		return sendMapList;
+	}
+
+	public void setSendMapList(ArrayList<String> sendMapList) {
+		this.sendMapList = sendMapList;
+	}
+	
+	public void initSendMapList() {
+		File folder = new File(GameStates.standardMapFolder+playerName);
+		setSendMapList(MyUtil.listFilesForFolder(folder));
+	}
+	
+	public String takeFirstSendMap() {
+		String retString =  null;
+		if (sendMapList.size() > 0) {
+			retString = sendMapList.get(0);
+			sendMapList.remove(0);
+		} 
+		return retString;
+		
+	}
+	
+	public void addSendMapListEntry(String mapFile) {
+		if (!this.sendMapList.contains(mapFile)) this.sendMapList.add(mapFile);
+	}
+
+
 }

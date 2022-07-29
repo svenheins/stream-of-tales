@@ -23,6 +23,7 @@ public class ObjectMapManager {
 	
 	public List<Point> pointList = new ArrayList<Point>();
 	public String paintLayer;
+	public ArrayList<Point> changedList = new ArrayList<Point>();
 	
 	public ObjectMapManager(String paintLayer) {
 		this.paintLayer = paintLayer;
@@ -98,12 +99,16 @@ public class ObjectMapManager {
 	
 	
 	public void adjustSurrounding(LocalMap localMap, int localX, int localY, int paintType) {
-		setTileCorners(localMap, localX-1, localY-1, paintType);
+		
 		setTileCorners(localMap, localX, localY-1, paintType);
-		setTileCorners(localMap, localX+1, localY-1, paintType);
 		setTileCorners(localMap, localX-1, localY, paintType);
-		//setTileCorners(localMap, localX, localY);
 		setTileCorners(localMap, localX+1, localY, paintType);
+		
+		setTileCorners(localMap, localX-1, localY-1, paintType);
+		setTileCorners(localMap, localX+1, localY-1, paintType);
+		
+		//setTileCorners(localMap, localX, localY);
+		
 //		setTileCorners(localMap, localX-1, localY+1, paintType);
 //		setTileCorners(localMap, localX, localY+1, paintType);
 //		setTileCorners(localMap, localX+1, localY+1, paintType);
@@ -549,13 +554,15 @@ public class ObjectMapManager {
 		drMap.setTile(drTile.x, drTile.y, 0 ); // new Tile(0, false, false, false, false));
 		drMap.setUl(drTile.x, drTile.y, 0 );
 		/** and adjust the surrounding */
-		adjustSurrounding(ulMap, ulTile.x, ulTile.y, paintType);
+		
 		adjustSurrounding(uMap, uTile.x, uTile.y, paintType);
-		adjustSurrounding(urMap, urTile.x, urTile.y, paintType);
 		adjustSurrounding(lMap, lTile.x, lTile.y, paintType);
 		adjustSurrounding(rMap, rTile.x, rTile.y, paintType);
-		adjustSurrounding(dlMap, dlTile.x, dlTile.y, paintType);
 		adjustSurrounding(dMap, dTile.x, dTile.y, paintType);
+		
+		adjustSurrounding(ulMap, ulTile.x, ulTile.y, paintType);
+		adjustSurrounding(urMap, urTile.x, urTile.y, paintType);		
+		adjustSurrounding(dlMap, dlTile.x, dlTile.y, paintType);
 		adjustSurrounding(drMap, drTile.x, drTile.y, paintType);
 	}
 	
@@ -1150,4 +1157,42 @@ public class ObjectMapManager {
 		} else return false;
 	}
 	
+	public byte[] LocalMap2ByteArray(String playerName, String paintLayer, Point p) {
+		FileInputStream fileInputStream=null;
+        File file = new File(GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map");
+        byte[] mapBytes = new byte[(int) file.length()];
+
+        try {
+            //convert file into array of bytes
+	    fileInputStream = new FileInputStream(file);
+	    fileInputStream.read(mapBytes);
+	    fileInputStream.close();
+ 
+//	    for (int i = 0; i < mapBytes.length; i++) {
+//	       	System.out.print((char)mapBytes[i]);
+//            }
+ 
+	    System.out.println("prepared File "+ GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map"+" with "+mapBytes.length+" bytes");
+        } catch(Exception e){
+        	e.printStackTrace();
+        }
+        return mapBytes;
+	}
+	
+	
+	public void addChangedList(Point p) {
+		if (!changedList.contains(p)) this.changedList.add(p);
+	}
+	
+	public void setChangedList(  ArrayList<Point> list) {
+		this.changedList = list;
+	}
+	
+	public ArrayList<Point> getChangedList() {
+		return changedList;
+	}
+	
+	public void emptyChangedList() {
+		changedList = new ArrayList<Point>();
+	}
 }

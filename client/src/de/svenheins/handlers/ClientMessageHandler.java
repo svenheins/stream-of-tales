@@ -1,12 +1,19 @@
 package de.svenheins.handlers;
 
+import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.TexturePaint;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+
+import javax.swing.JComboBox;
 
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
@@ -62,6 +69,7 @@ public class ClientMessageHandler {
 		    				/** new Player logged in (first update of this player)*/
 		    				GameWindow.gw.gameInfoConsole.appendInfo("Getting new data of Player: ID="+objectId+", requesting data...");
 		    				GameWindow.gw.send(ClientMessages.getPlayerData(objectId));
+		    				GameWindow.gw.initSendMapList();
 	//	    				PlayerManager.updatePlayer(objectId, objectX, objectY, objectMX, objectMY);
 		    			}
 		    		}
@@ -280,6 +288,12 @@ public class ClientMessageHandler {
     				PlayerEntity playerEntity = new PlayerEntity(tile,name_player, id_player, 0,0, animationDelay);
     				playerList.add(playerEntity);
     				GameWindow.gw.gameInfoConsole.appendInfo("got data of player: "+name_player);
+    				boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+name_player).mkdirs());
+				    if (!createMapFolderSccess) {
+				         // Directory creation failed
+				    	GameWindow.gw.gameInfoConsole.appendInfo("couldn't add Map-folder of player: "+name_player);
+				    } else
+    				GameWindow.gw.gameInfoConsole.appendInfo("added Map-folder of player: "+name_player);
     			}
     		}
     		/** transform list into array */
@@ -496,6 +510,70 @@ public class ClientMessageHandler {
 	    		GameWindow.gw.setReadyForNextMessage(true);
     		}
     		
+    		break;
+    	case SEND_MAP:
+    		/** playerName */
+    		byte[] nameBytes_player_sendMap = new byte[packet.getInt()];
+			packet.get(nameBytes_player_sendMap);
+			String name_player_sendMap = new String(nameBytes_player_sendMap); // name
+			int sizeOfMap = packet.getInt(); // 4 
+    		byte[] mapFile = new byte[sizeOfMap];
+    		packet.get(mapFile);
+    		byte[] fileNameBytes_player_sendMap = new byte[packet.getInt()];
+			packet.get(fileNameBytes_player_sendMap);
+			String fileName_player_sendMap = new String(fileNameBytes_player_sendMap); // name
+			int sizeOfSendList = packet.getInt(); // 4 
+			
+			GameWindow.gw.gameInfoConsole.appendInfo("Remaining Map-Objects to download: "+sizeOfSendList);
+			
+			/** only reset Maps if we are not the author of the file */
+			if (!name_player_sendMap.equals(GameWindow.gw.getPlayerName())) {
+				
+				FileOutputStream stream;
+				try {
+					stream = new FileOutputStream(GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					stream.write(mapFile);
+					stream.close();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} 
+				
+				String paintLayer;
+				String strSplit[] = fileName_player_sendMap.split("_");
+				int x_point = Integer.parseInt(strSplit[1]);
+				int y_point = Integer.parseInt((strSplit[2]).replace(".map", ""));
+				Point p_sendMap = new Point(x_point, y_point);
+				
+				if (fileName_player_sendMap.startsWith("cobble")) {
+					paintLayer = "cobble";
+					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+				} else if (fileName_player_sendMap.startsWith("grass")) {
+					paintLayer = "grass";
+					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+				} else if (fileName_player_sendMap.startsWith("snow")) {
+					paintLayer = "snow";
+					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+				} else if (fileName_player_sendMap.startsWith("tree1")) {
+					paintLayer = "tree1";
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+				} else if (fileName_player_sendMap.startsWith("tree2")) {
+					paintLayer = "tree2";
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+				} else if (fileName_player_sendMap.startsWith("overlayTree1")) {
+					paintLayer = "overlayTree1";
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+				} else if (fileName_player_sendMap.startsWith("overlayTree2")) {
+					paintLayer = "overlayTree2";
+					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+				} else {
+					GameWindow.gw.gameInfoConsole.appendInfo("Didn't find map: "+fileName_player_sendMap);
+				}
+			} else {
+				// i got my own mapFile!
+			}
+			
     		break;
     	case CHAT:
     		byte[] chatStringBytes = new byte[packet.getInt()];

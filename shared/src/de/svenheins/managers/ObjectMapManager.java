@@ -29,6 +29,7 @@ public class ObjectMapManager {
 	
 	public ObjectMapManager(String paintLayer) {
 		this.paintLayer = paintLayer;
+		changedList = new ArrayList<Point>();
 	}
 	
 	public void remove(Point point) {

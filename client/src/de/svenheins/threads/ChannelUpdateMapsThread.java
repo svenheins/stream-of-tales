@@ -37,7 +37,8 @@ public class ChannelUpdateMapsThread implements Runnable {
 	public void run() {
 		while (GUI.running) {
 			duration = System.currentTimeMillis() - oldTime;
-			if(GameModus.modus == GameModus.GAME && (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getGameMasterName()))) {
+			if(GameModus.modus == GameModus.GAME && (GameWindow.gw.isGameMaster())) {
+//				System.out.println(GameWindow.gw.getSendMapList().size());
 				if (GameWindow.gw.getSendMapList().size() > 0) {
 					String mapFileName = GameWindow.gw.takeFirstSendMap();
 					GameWindow.gw.gameInfoConsole.appendInfo("got "+mapFileName);
@@ -66,7 +67,7 @@ public class ChannelUpdateMapsThread implements Runnable {
 			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 				ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 				try {
-//					GameWindow.gw.gameInfoConsole.appendInfo("Sending File "+mapFileName+" with bytes: "+sizeOfSendFileByte +" bytes");
+					GameWindow.gw.gameInfoConsole.appendInfo("Sending File "+mapFileName+" with bytes: "+sizeOfSendFileByte +" bytes");
 					channel.send(ClientMessages.sendMap(GameWindow.gw.getPlayerName(), sizeOfSendFileByte, sendMapFileByte, mapFileName, GameWindow.gw.getSendMapList().size()) );
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -94,6 +95,9 @@ public class ChannelUpdateMapsThread implements Runnable {
 		} else if (mapFile.startsWith("snow")) {
 			paintLayer = "snow";
 			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+		} else if (mapFile.startsWith("desert")) {
+			paintLayer = "desert";
+			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
 		} else if (mapFile.startsWith("tree1")) {
 			paintLayer = "tree1";
 			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
@@ -106,6 +110,9 @@ public class ChannelUpdateMapsThread implements Runnable {
 		} else if (mapFile.startsWith("overlayTree2")) {
 			paintLayer = "overlayTree2";
 			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+		} else if (mapFile.startsWith("underground")) {
+			paintLayer = "underground";
+			retMapByte = GameWindow.gw.getUndergroundMapManagers().get(paintLayer).LocalUndergroundMap2ByteArray(playerName, paintLayer, p);
 		} else {
 			GameWindow.gw.gameInfoConsole.appendInfo("Didn't find map: "+mapFile);
 		}

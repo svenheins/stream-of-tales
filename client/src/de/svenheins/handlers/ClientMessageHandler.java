@@ -15,11 +15,15 @@ import java.util.ArrayList;
 
 import javax.swing.JComboBox;
 
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.main.LoadingStates;
+import de.svenheins.main.gui.Button;
+import de.svenheins.main.gui.PlayerListGUI;
+import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
@@ -283,10 +287,17 @@ public class ClientMessageHandler {
     			
     			/** only add if its not me myself */
     			if (!name_player.equals(GameWindow.gw.getPlayerName())) {
-//    				System.out.println(name_player +" VS "+ GameWindow.gw.getPlayer());
+//    				System.out.println(name_player +" VS "+ GameWindow.gw.getPlayerName());
     				tile = new TileSet(name_player_TileSet_FileName, name_player_TileSet, (int) spriteWidth, (int) spriteHeight);
     				PlayerEntity playerEntity = new PlayerEntity(tile,name_player, id_player, 0,0, animationDelay);
     				playerList.add(playerEntity);
+    				
+    				/** add PlayerButton */
+    				TileSet tileSet = new TileSet("tilesets/buttons/undergroundGrassButton.png", "undergroundGrassButton", 32, 32);
+    				PlayerListGUI playerListGUI = PlayerListGUIManager.get("playerList");
+    				Button newPlayerButton = new Button(tileSet, name_player_TileSet, id_player, 0 , playerListGUI.getMaxYValue()+10, animationDelay, name_player, 0, "");
+    				playerListGUI.add(newPlayerButton);
+    				
     				GameWindow.gw.gameInfoConsole.appendInfo("got data of player: "+name_player);
     				boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+name_player).mkdirs());
 				    if (!createMapFolderSccess) {
@@ -333,8 +344,8 @@ public class ClientMessageHandler {
     		float mx = packet.getFloat();
     		float my = packet.getFloat();
     		
-    		TileSet tileSet = new TileSet(tilePathName, tileName, GameStates.tileWidth, GameStates.tileHeight);
-    		PlayerEntity playerEntity = new PlayerEntity(tileSet, groupName, myId, x, y, GameStates.animationDelay);
+    		TileSet tileSet = new TileSet(tilePathName, tileName, GameStates.playerTileWidth, GameStates.playerTileHeight);
+    		PlayerEntity playerEntity = new PlayerEntity(tileSet, GameWindow.gw.getPlayerName(), myId, x, y, GameStates.animationDelay);
     		playerEntity.setGroupName(groupName);
     		playerEntity.setFirstServerLogin(firstServerLogin);
     		playerEntity.setExperience(experience);
@@ -462,6 +473,7 @@ public class ClientMessageHandler {
 	    		if (objCode == OBJECTCODE.PLAYER) {
 	    			deleteText = "Player "+ PlayerManager.get(objectId).getName() + " logged out";
 	    			PlayerManager.remove(objectId);
+	    			PlayerListGUIManager.get("playerList").remove(objectId);
 	    		}
 	    		GameWindow.gw.gameInfoConsole.appendInfo(deleteText);
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
@@ -528,8 +540,8 @@ public class ClientMessageHandler {
 			
 			/** only reset Maps if we are not the author of the file */
 			if (!name_player_sendMap.equals(GameWindow.gw.getPlayerName())) {
-				
 				FileOutputStream stream;
+				/** save the actualized map */
 				try {
 					stream = new FileOutputStream(GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
 					stream.write(mapFile);
@@ -546,36 +558,45 @@ public class ClientMessageHandler {
 				int y_point = Integer.parseInt((strSplit[2]).replace(".map", ""));
 				Point p_sendMap = new Point(x_point, y_point);
 				
-				if (fileName_player_sendMap.startsWith("cobble")) {
-					paintLayer = "cobble";
-					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
-					GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
-				} else if (fileName_player_sendMap.startsWith("grass")) {
-					paintLayer = "grass";
-					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
-					GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
-				} else if (fileName_player_sendMap.startsWith("snow")) {
-					paintLayer = "snow";
-					GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
-					GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
-				} else if (fileName_player_sendMap.startsWith("tree1")) {
-					paintLayer = "tree1";
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
-				} else if (fileName_player_sendMap.startsWith("tree2")) {
-					paintLayer = "tree2";
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
-				} else if (fileName_player_sendMap.startsWith("overlayTree1")) {
-					paintLayer = "overlayTree1";
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
-				} else if (fileName_player_sendMap.startsWith("overlayTree2")) {
-					paintLayer = "overlayTree2";
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
-					GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+				/** if the sending player is an active gameMaster */
+				if (GameWindow.gw.getGameMasterName().equals(name_player_sendMap)) {
+					if (fileName_player_sendMap.startsWith("cobble")) {
+						paintLayer = "cobble";
+						GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else if (fileName_player_sendMap.startsWith("grass")) {
+						paintLayer = "grass";
+						GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else if (fileName_player_sendMap.startsWith("snow")) {
+						paintLayer = "snow";
+						GameWindow.gw.getMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else if (fileName_player_sendMap.startsWith("tree1")) {
+						paintLayer = "tree1";
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else if (fileName_player_sendMap.startsWith("tree2")) {
+						paintLayer = "tree2";
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else if (fileName_player_sendMap.startsWith("overlayTree1")) {
+						paintLayer = "overlayTree1";
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else if (fileName_player_sendMap.startsWith("overlayTree2")) {
+						paintLayer = "overlayTree2";
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getObjectMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else if (fileName_player_sendMap.startsWith("underground")) {
+						paintLayer = "underground";
+						GameWindow.gw.getUndergroundMapManagers().get(paintLayer).remove(p_sendMap);
+						GameWindow.gw.getUndergroundMapManagers().get(paintLayer).putMapFileName(p_sendMap, GameStates.standardMapFolder+name_player_sendMap+"/"+fileName_player_sendMap);
+					} else {
+						GameWindow.gw.gameInfoConsole.appendInfo("Didn't find map: "+fileName_player_sendMap);
+					}
 				} else {
-					GameWindow.gw.gameInfoConsole.appendInfo("Didn't find map: "+fileName_player_sendMap);
+					// this is not an authorized GameMaster!
 				}
 			} else {
 				// i got my own mapFile!
@@ -627,5 +648,19 @@ public class ClientMessageHandler {
         OPCODE code = OPCODE.values()[opbyte];
         
         return code;
+    }
+    
+    private static EntityStates getEntityStates(ByteBuffer packet) 
+    {
+        byte esbyte = packet.get();
+        if ((esbyte < 0) || (esbyte > EntityStates.values().length - 1)) {
+        	//TODO: exception is better
+        	System.out.println("Unknown es value: " + esbyte);
+//            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        EntityStates entityStates = EntityStates.values()[esbyte];
+        
+        return entityStates;
     }
 }

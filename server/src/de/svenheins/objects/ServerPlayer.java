@@ -15,9 +15,9 @@ public class ServerPlayer extends ServerEntity {
 	private int experience;
 	private String country;
 	
-	public ServerPlayer(ServerSprite sprite, BigInteger id, float x, float y,
+	public ServerPlayer(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x, float y,
 			float mx, float my) {
-		super(sprite, id, x, y, mx, my);
+		super(sprite, id, tileSetName, tileSetPathName, x, y, mx, my);
 		this.groupName = "";
 		this.country = "";
 		this.firstServerLogin = System.currentTimeMillis();

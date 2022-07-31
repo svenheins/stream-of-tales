@@ -28,9 +28,9 @@ public class ServerAgent extends ServerEntity {
 	protected float range;
 	protected BigInteger regionID = null;
 
-	public ServerAgent(ServerSprite sprite, BigInteger id, float x, float y,
+	public ServerAgent(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x, float y,
 			float mx, float my) {
-		super(sprite, id, x, y, mx, my);
+		super(sprite, id, tileSetName, tileSetPathName, x, y, mx, my);
 		satisfaction = 0;
 		this.range = 10000;
 		goal = false;

@@ -4,8 +4,16 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.math.BigInteger;
 
 import javax.swing.JPanel;
+
+import de.svenheins.main.gui.Button;
+import de.svenheins.main.gui.ContextMenuGUI;
+import de.svenheins.main.gui.EditorGUI;
+import de.svenheins.main.gui.EditorGUIManager;
+import de.svenheins.main.gui.PlayerListGUI;
+import de.svenheins.main.gui.PlayerListGUIManager;
 
 public class StatPanel  extends JPanel{
 
@@ -15,6 +23,7 @@ public class StatPanel  extends JPanel{
 	private static final long serialVersionUID = 1L;
 	
 	public static StatPanel sp;
+	public ContextMenuGUI contextMenu;
 	
 	
 	public StatPanel() { 
@@ -27,15 +36,13 @@ public class StatPanel  extends JPanel{
 
 
 	private void config() {
-		// TODO Auto-generated method stub
 		setOpaque(false);
 		setBackground(new Color(0,0,0,64));
 	}
 
 
 	private void init() {
-		// TODO Auto-generated method stub
-		
+		contextMenu = new ContextMenuGUI();
 	}
 	
 	
@@ -70,5 +77,29 @@ public class StatPanel  extends JPanel{
 		if (GameWindow.gw.getShowConsole()) {
 			GameWindow.gw.gameConsole.paint(g, 0, 0);
 		}
+		
+		/** only paint the painting tiles if we are the gameMaster */
+		if (GameWindow.gw.isGameMaster()) {
+			for (String str : EditorGUIManager.idList) {
+				EditorGUI editorGUI = EditorGUIManager.get(str);
+				editorGUI.paint(g, 0, 22, this);
+			}
+		}
+		for (String str : PlayerListGUIManager.idList) {
+			PlayerListGUI playerListGUI = PlayerListGUIManager.get(str);
+			playerListGUI.paint(g, 5, 30, this);
+		}
+		/** paint the context menu */
+		contextMenu.paint(g, 0, 22,  this);
+	}
+
+
+	public ContextMenuGUI getContextMenu() {
+		return contextMenu;
+	}
+
+
+	public void setContextMenu(ContextMenuGUI contextMenu) {
+		this.contextMenu = contextMenu;
 	}
 }

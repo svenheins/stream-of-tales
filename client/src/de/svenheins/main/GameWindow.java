@@ -6,6 +6,7 @@ import de.svenheins.functions.MyMath;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.handlers.ConsoleInputHandler;
+import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.main.menu.MainMenu;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
@@ -15,9 +16,11 @@ import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.TileMapManager;
+import de.svenheins.managers.UndergroundMapManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.IngameConsole;
 import de.svenheins.objects.LocalMap;
+import de.svenheins.objects.LocalUndergroundMap;
 
 
 import java.awt.Color;
@@ -67,7 +70,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	public static GameWindow gw;
 	private GraphicsDevice device;
     private boolean isFullScreen = false;
-    private boolean loggedIn, superUser;
+    private boolean loggedIn; //, superUser;
     private boolean showConsole, showInfoConsole;
     
     private boolean readyForNextMessage;
@@ -111,6 +114,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     /** gameMasterName */
     protected String gameMasterName;
     
+    protected boolean night;
+    private boolean light;
+    
     /** Map that associates a channel name with a {@link ClientChannel}. */
     protected final Map<String, ClientChannel> channelsByName =
         new HashMap<String, ClientChannel>();
@@ -123,11 +129,16 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     protected HashMap<String, MapManager> mapManagers = new HashMap<String, MapManager>();
     /** objectMapManager */
     protected HashMap<String, ObjectMapManager> objectMapManagers = new HashMap<String, ObjectMapManager>();
+    /** undergroundMapManagers */
+    protected HashMap<String, UndergroundMapManager> undergroundMapManagers = new HashMap<String, UndergroundMapManager>();
+    
     /** ArrayList of filenames that need to be send to other channel players */
     private ArrayList<String> sendMapList = new ArrayList<String>();
     
     /** TileMapManger */
-    protected TileMapManager tileMapManager = new TileMapManager(GameStates.tileSetFile);
+   protected TileMapManager tileMapManager = new TileMapManager(GameStates.tileSetFile, GameStates.mapTileSetWidth, GameStates.mapTileSetHeight);
+   /** TileUndergroundMapManger */
+   protected TileMapManager tileUndergroundMapManager = new TileMapManager(GameStates.tileSetFileUnderground, GameStates.ugrMapTileSetWidth, GameStates.ugrMapTileSetHeight);
     
     /** Sequence generator for counting channels. */
     protected final AtomicInteger channelNumberSequence =
@@ -139,26 +150,13 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	
 	public GameWindow(String title, int breite, int hoehe){
 		super(title);
-
-//		System.out.println("Ergebnis= "+9%4);
-		
 		gw = this;
 		
 		this.breite = breite;
 		this.hoehe = hoehe;
-		//this.title = title;
 		dim = new Dimension(this.breite, this.hoehe);
 		
 		simpleClient = new SimpleClient(this);
-		setLoggedIn(false);
-		setSuperUser(true);
-		setGameMasterName("standard");
-
-		/** Main-GamePanel
-		 * this panel will be scaled or rotated*/
-		panel = new GamePanel();
-		panel.setBackground(new Color(0,0,0));
-		panel.setDoubleBuffered(true);
 		
 		/** add the menuPanel, that lies above the GamePanel 
 		 * it is used for menus, infoboxes and consoles
@@ -166,6 +164,15 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		menuPanel = new StatPanel();
 		setGlassPane(menuPanel);
 		menuPanel.setVisible(true);
+		
+		/** Main-GamePanel
+		 * this panel will be scaled or rotated*/
+		panel = new GamePanel();
+		panel.setBackground(new Color(0,0,0));
+		panel.setDoubleBuffered(true);
+		
+		/** configuration */
+		this.config();
 		
 		JInternalFrame frame1;
 		frame1 = new JInternalFrame("Frame1", true, true, true, true);
@@ -177,7 +184,6 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		setPreferredSize(dim);
 		
 		setLocationRelativeTo(null);
-		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -205,13 +211,6 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	    if (!createMapFolderSccess) {
 	         // Directory creation failed
 	    }
-	    
-	    /** prepare the loading states */
-	    loadingStates = new int[]{0,0,0,0};
-	    
-	    
-	    this.setReadyForNextMessage(true);
- 
 		consoleInput = new ConsoleInputHandler();
 		gameConsole = new IngameConsole(new Point(20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 220}, 0.5f, true, true, 14);
 		gw.addKeyListener(consoleInput);
@@ -221,120 +220,34 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		
 		/** InfoConsole */
 		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2 + 20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 120}, 0.5f, false, false, 14);
-        this.showInfoConsole = true;
+        
 		
 		setResizable(false);
 		
 		add(panel);
 		
+		/** create MainMenu */
 		MainMenu menuBar = new MainMenu(panel);
-		
-		// Add main-menu
-//		JMenuBar mbar = new JMenuBar();
-//		JMenu menu = new JMenu("File");
-//		// Add "open" to import a *.svg-file
-////		JMenuItem item = new JMenuItem("Open");
-////		item.addActionListener(new FileOpenAction(panel.getSpace()));
-////		menu.add(item);
-//		JMenuItem item2 = new JMenuItem("Add Space");
-//		item2.addActionListener(new FileAddAction(panel.getSpaceAdd()));
-//		menu.add(item2);
-//		
-//		JMenuItem itemAddTexture = new JMenuItem("Add Texture");
-//		itemAddTexture.addActionListener(new FileAddTextureAction());
-//		menu.add(itemAddTexture);
-//		
-//		JMenuItem mainMenuItem = new JMenuItem("Menu");
-//		mainMenuItem.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//				 GameModus.modus = GameModus.MAINMENU;
-//			}
-//		});
-//		menu.add(mainMenuItem);
-//		
-//		final JMenuItem setGameMaster = new JMenuItem("Set Game-Master");
-//		setGameMaster.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//            	if (!GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
-//            		GameWindow.gw.setGameMasterName(GameWindow.gw.getPlayerName());
-//            		setGameMaster.setText("Set Player");
-//            	} else {
-//            		GameWindow.gw.setGameMasterName("standard");
-//            		setGameMaster.setText("Set Game-Master");
-//            	}
-//            	
-//            }
-//		});
-//		menu.add(setGameMaster);
-//		
-//		JMenuItem logoutItem = new JMenuItem("Logout");
-//		logoutItem.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//				GameModus.modus = GameModus.MAINMENU;
-//				gw.logout();
-//				
-//			}
-//
-//			
-//		});
-//		menu.add(logoutItem);
-//		
-//		JMenuItem exitItem = new JMenuItem("Exit");
-//		exitItem.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//				 dispose();
-//		         System.exit(0); //calling the method is a must				
-//			}
-//		});
-//		menu.add(exitItem);
-//		
-//		// Next Menu-Item
-//		JMenu menu2 = new JMenu("View");
-//		item21.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//            		GamePanel.gp.setZoomFactor(1.0f);
-//            }
-//		});
-//		menu2.add(item21);
-//		
-//		final JMenuItem deleteTile = new JMenuItem("Delete - Off");
-//		// Next Menu-Item
-//		JMenu tileMenu = new JMenu("Tile");
-//		deleteTile.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//            	if (GamePanel.gp.isDeleteModus()) {
-//            		GamePanel.gp.setDeleteModus(false);
-//            		deleteTile.setText("Delete - Off");
-//            	} else {
-//            		GamePanel.gp.setDeleteModus(true);
-//            		deleteTile.setText("Delete - On");
-//            	}
-//            	
-//            }
-//		});
-//		tileMenu.add(deleteTile);
-//		
-//		final JMenuItem loadTiles = new JMenuItem("Load Tiles of this player");
-//		// Next Menu-Item
-//		loadTiles.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//            	MapManager.emptyAll();
-//            	MapManager.loadLocalMaps(gw.getPlayerName());
-//            	
-//            }
-//		});
-//		tileMenu.add(loadTiles);
-//
-//		mbar.add(menu);
-//		mbar.add(menu2);
-//		mbar.add(tileMenu);
 		// Comment to unsupport Menu
 		this.setJMenuBar(menuBar);
+
 //		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		
 		setVisible(true);
 		gw.setFocusable(true);
 		gw.requestFocus();	
+	}
+	
+	public void config() {
+		setLoggedIn(false);
+		setGameMasterName("standard");
+	    this.setReadyForNextMessage(true);
+	    /** prepare the loading states */
+	    loadingStates = new int[]{0,0,0,0};
+	    this.showInfoConsole = true;
+	    
+	    /** config the GamePanel */
+	    this.panel.config();
 	}
 	
 	public void logout() {
@@ -343,16 +256,16 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		GamePanel.gp.setInitializedPlayer(false);
 		GamePanel.gp.setServerInitialized(false);
 		clearAllManagers();
-		this.setLoggedIn(false);
+		this.config();
 	}
 	
 	public void clearAllManagers() {
 		PlayerManager.emptyAll();
 		EntityManager.emptyAll();
 		SpaceManager.emptyAll();
-//		MapManager.emptyAll();
-		/** prepare the loading states */
-	    loadingStates = new int[]{0,0,0,0};
+		resetMapManagers();
+//		/** prepare the loading states */
+//	    loadingStates = new int[]{0,0,0,0};
 	}
 	
 	
@@ -504,12 +417,12 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	         // Directory creation failed
 	    	System.out.println("Error at creating playerName map-folder!");
 	    }
+	    System.out.println("Playername: "+ this.getPlayerName());
+	    GamePanel.gp.setPlayerEntityName(this.getPlayerName());
+	    PlayerListGUIManager.get("playerList").get(BigInteger.valueOf(0)).setStrValue(this.getPlayerName());
 	    
-	    mapManagers.clear();
-	    this.initMapManagers();
-//	    for (MapManager mapManager : mapManagers.values()) {
-//	    	mapManager.loadLocalMaps(gw.getGameMasterName());
-//	    }
+	    /** reset the maps */
+	    this.resetMapManagers();
     }
 
     /**
@@ -749,14 +662,14 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	}
 
 
-	public boolean isSuperUser() {
-		return superUser;
-	}
-
-
-	public void setSuperUser(boolean superUser) {
-		this.superUser = superUser;
-	}
+//	public boolean isSuperUser() {
+//		return superUser;
+//	}
+//
+//
+//	public void setSuperUser(boolean superUser) {
+//		this.superUser = superUser;
+//	}
 
 
 	public String getLoginName() {
@@ -898,6 +811,23 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		this.gameMasterName = name;
 	}
 	
+	public void setGameMaster(String playerName) {
+		if (this.isLoggedIn()) {
+			/** create map folder for the chosen player */
+		    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+playerName)).mkdirs();
+		    if (!createMapFolderSccess) {
+		         // Directory creation failed
+		    }
+		    /** delete only the Maps, not the changedPoints */
+		    GameWindow.gw.setGameMasterName(playerName);
+		    GameWindow.gw.initLocalMapFileList(playerName);
+		}
+	}
+	
+	public boolean isGameMaster() {
+		return (this.getPlayerName().equals(this.getGameMasterName()));
+	}
+	
 	public void initMapManagers() {
 		MapManager cobbleStoneLayer = new MapManager("cobble");
 		mapManagers.put(cobbleStoneLayer.getPaintLayer(), cobbleStoneLayer);
@@ -905,6 +835,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		mapManagers.put(grassLayer.getPaintLayer(), grassLayer);
 		MapManager snowLayer = new MapManager("snow");
 		mapManagers.put(snowLayer.getPaintLayer(), snowLayer);
+		MapManager desertLayer = new MapManager("desert");
+		mapManagers.put(desertLayer.getPaintLayer(), desertLayer);
 		ObjectMapManager treeLayer1 = new ObjectMapManager("tree1");
 		objectMapManagers.put(treeLayer1.getPaintLayer(), treeLayer1);
 		ObjectMapManager treeLayer2 = new ObjectMapManager("tree2");
@@ -913,9 +845,12 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		objectMapManagers.put(overlayTreeLayer1.getPaintLayer(), overlayTreeLayer1);
 		ObjectMapManager overlayTreeLayer2 = new ObjectMapManager("overlayTree2");
 		objectMapManagers.put(overlayTreeLayer2.getPaintLayer(), overlayTreeLayer2);
+		UndergroundMapManager undergroundMapManager = new UndergroundMapManager("underground");
+		undergroundMapManagers.put(undergroundMapManager.getPaintLayer(), undergroundMapManager);
 	}
 	
 	public void initLocalMapFileList(String playerName) {
+		this.resetMapManagers();
 		for (ObjectMapManager oManager : objectMapManagers.values()) {
 			oManager.initLocalMapFileList(playerName);
 			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+oManager.paintLayer);
@@ -924,19 +859,38 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 			mManager.initLocalMapFileList(playerName);
 			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+mManager.paintLayer);
 		}
+		for (UndergroundMapManager ugrmManager : undergroundMapManagers.values()) {
+			ugrmManager.initLocalUndergroundMapFileList(playerName);
+			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+ugrmManager.paintLayer);
+		}
 	}
 	
-	public void deleteOnlyMapsOfMapManagers() {
-		for (MapManager mapManager: mapManagers.values()) {
-			for (Point p : mapManager.pointList) {
-				mapManager.remove(p);
-			}
-		}
-		for (ObjectMapManager objectMapManager: objectMapManagers.values()) {
-			for (Point p : objectMapManager.pointList) {
-				objectMapManager.remove(p);
-			}
-		}
+//	public void deleteOnlyMapsOfMapManagers() {
+//		for (MapManager mapManager: mapManagers.values()) {
+//			mapManager.pointList = new ArrayList<Point>();
+//			mapManager.localMapList = new HashMap<Point, LocalMap>();
+//		}
+//		for (ObjectMapManager objectMapManager: objectMapManagers.values()) {
+////			for (Point p : objectMapManager.pointList) {
+////				objectMapManager.remove(p);
+////			}
+//			objectMapManager.pointList = new ArrayList<Point>();
+//			objectMapManager.localMapList = new HashMap<Point, LocalMap>();
+//		}
+//		for (UndergroundMapManager undergroundMapManager: undergroundMapManagers.values()) {
+////			for (Point p : undergroundMapManager.pointList) {
+////				undergroundMapManager.remove(p);
+////			}
+//			undergroundMapManager.pointList = new ArrayList<Point>();
+//			undergroundMapManager.localMapList = new HashMap<Point, LocalUndergroundMap>();
+//		}
+//	}
+	
+	public void resetMapManagers() {
+		mapManagers.clear();
+	    objectMapManagers.clear();
+	    undergroundMapManagers.clear();
+	    this.initMapManagers();
 	}
 	
 	public HashMap<String, MapManager> getMapManagers() {
@@ -951,12 +905,26 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		return objectMapManagers;
 	}
 	
+	public HashMap<String, UndergroundMapManager> getUndergroundMapManagers() {
+		return undergroundMapManagers;
+	}
+
+	
 	public TileMapManager getTileMapManager() {
 		return tileMapManager;
 	}
 	
+		
 	public void setTileMapManager(TileMapManager t) {
 		tileMapManager = t;
+	}
+	
+	public TileMapManager getTileUndergroundMapManager() {
+		return tileUndergroundMapManager;
+	}
+	
+	public void setTileUndergroundMapManager(TileMapManager t) {
+		tileUndergroundMapManager = t;
 	}
 
 	public ArrayList<String> getSendMapList() {
@@ -983,7 +951,24 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	}
 	
 	public void addSendMapListEntry(String mapFile) {
+//		System.out.println(mapFile);
 		if (!this.sendMapList.contains(mapFile)) this.sendMapList.add(mapFile);
+	}
+	
+	public void setNight(boolean b) {
+		this.night = b;
+	}
+	
+	public boolean isNight() {
+		return this.night;
+	}
+
+	public boolean hasLight() {
+		return light;
+	}
+
+	public void setLight(boolean light) {
+		this.light = light;
 	}
 
 

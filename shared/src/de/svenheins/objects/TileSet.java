@@ -42,6 +42,25 @@ public class TileSet
 			System.out.println(GameStates.resourcePath+"images/"+fileName);
 		}
 	}
+	
+	/** 2014.01.16 added this constructor for variable sprites */
+	public TileSet(String fileName, String name, int[] x, int[] y, int[] width, int[] height)
+	{
+		this.tileSetName=name;
+		this.tileSetFileName=fileName;
+		try {
+			BufferedImage picTileSet=ImageIO.read(this.getClass().getResource(GameStates.resourcePath+"images/"+fileName));
+			for(int i = 0; i < x.length; i++) {
+				for(int j = 0; j < y.length; j++) {
+					BufferedImage tileImage=picTileSet.getSubimage(x[i], y[j], width[i], height[j]);
+					this.tileSet.add(tileImage);
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println(GameStates.resourcePath+"images/"+fileName);
+		}
+	}
  
  
 	public BufferedImage getTileImage(int index)

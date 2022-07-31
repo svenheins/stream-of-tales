@@ -23,7 +23,7 @@ import de.svenheins.main.GameStates;
 
 public class ClientTextureManager {
 	public static ClientTextureManager manager = new ClientTextureManager();
-	private HashMap<String, BufferedImage> map = new HashMap<String, BufferedImage>();
+	public static HashMap<String, BufferedImage> map = new HashMap<String, BufferedImage>();
 	
 //	private HashMap<String, DownloadTexture> downloadTextures = new HashMap<String, DownloadTexture>();
 	private ArrayList<String> downloadTextureList = new ArrayList<String>();
@@ -401,5 +401,10 @@ public class ClientTextureManager {
 		} else {
 			return 0;
 		}
+	}
+	
+	public static void clear() {
+		manager = new ClientTextureManager();
+		map.clear();
 	}
 }

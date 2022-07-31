@@ -6,6 +6,9 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GamePanel;
+import de.svenheins.main.StatPanel;
+import de.svenheins.main.gui.EditorGUIManager;
+import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
@@ -59,6 +62,15 @@ public class AnimationThread implements Runnable {
 					if(space != null) space.updateSpace();
 				}
 				
+				for (BigInteger buttonID : EditorGUIManager.get("floor").idList) {
+					EditorGUIManager.get("floor").get(buttonID).updateSprite();
+				}
+				for (BigInteger buttonID : PlayerListGUIManager.get("playerList").idList) {
+					PlayerListGUIManager.get("playerList").get(buttonID).updateSprite();
+				}
+				for (BigInteger buttonID : StatPanel.sp.contextMenu.idList) {
+					StatPanel.sp.contextMenu.get(buttonID).updateSprite();
+				}
 				
 			}
 			// OUTPUT

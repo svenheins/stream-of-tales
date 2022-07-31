@@ -35,11 +35,11 @@ public class LocalObject {
 		this.y = y;
 	}
 	
-	public void setHorizontalMovement(float hm) {
+	public void setMX(float hm) {
 		mx = hm;
 	}
 	
-	public void setVerticalMovement(float vm) {
+	public void setMY(float vm) {
 		my = vm;
 	}
 	

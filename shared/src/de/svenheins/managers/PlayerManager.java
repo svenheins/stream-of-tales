@@ -12,7 +12,6 @@ import de.svenheins.objects.TileSet;
 
 public class PlayerManager{
 	public static HashMap<BigInteger, PlayerEntity> playerList = new HashMap<BigInteger, PlayerEntity>();
-	
 	public static List<BigInteger> idList = new ArrayList<BigInteger>();
 //	public static HashMap<BigInteger, long > playerLastSeen = new HashMap<BigInteger, long>();
 	

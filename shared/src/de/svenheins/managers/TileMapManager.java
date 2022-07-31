@@ -13,19 +13,19 @@ public class TileMapManager {
 	public HashMap<String, BufferedImage> tileSet = new HashMap<String, BufferedImage>();
 	public String tileSetFileName;
 	
-	public TileMapManager(String fileName) {
+	public TileMapManager(String fileName, int mapTileSetWidth, int mapTileSetHeight) {
 		setTileSetFileName(fileName);
 		try {
 			BufferedImage readTileset=ImageIO.read(getClass().getResource(GameStates.resourcePath+"images/"+fileName));
-			int width=readTileset.getWidth()/GameStates.mapTileSetWidth;
-			int height=readTileset.getHeight()/GameStates.mapTileSetHeight;
+			int width=readTileset.getWidth()/mapTileSetWidth;
+			int height=readTileset.getHeight()/mapTileSetHeight;
 			int index = 0;
 			for(int y=0;y<height;y++)
 			{
 				for(int x=0;x<width;x++)
 				{
 					String tileIndexName = ""+index;
-					BufferedImage tile=readTileset.getSubimage(x*GameStates.mapTileSetWidth, y*GameStates.mapTileSetWidth, GameStates.mapTileSetWidth, GameStates.mapTileSetWidth);
+					BufferedImage tile=readTileset.getSubimage(x*mapTileSetWidth, y*mapTileSetWidth, mapTileSetWidth, mapTileSetWidth);
 					tileSet.put(tileIndexName, tile);
 					index++;
 				}				

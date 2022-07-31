@@ -66,25 +66,25 @@ public class InputThread implements Runnable{
 //				s.setVerticalMovement(0);
 //				if ( PlayerManager.contains(s)){
 					if (input.down && !input.up){
-						playerEntity.setVerticalMovement(Entity.DEFAULT_MOVEMENT_ON_Y);
+						playerEntity.setMY(GameStates.DEFAULT_MOVEMENT_ON_Y);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()+20);
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //						System.out.println("down");
 					}
 					if (input.up && !input.down){
-						playerEntity.setVerticalMovement(-Entity.DEFAULT_MOVEMENT_ON_Y);
+						playerEntity.setMY(-GameStates.DEFAULT_MOVEMENT_ON_Y);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()-20);
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
-//						System.out.println("up");
+//						System.out.println("up with "+GameStates.DEFAULT_MOVEMENT_ON_Y);
 					}
 					if (input.left && !input.right){
-						playerEntity.setHorizontalMovement(-Entity.DEFAULT_MOVEMENT_ON_X);
+						playerEntity.setMX(-GameStates.DEFAULT_MOVEMENT_ON_X);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()-20, GamePanel.gp.getViewPointY());
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 					}
 					if (input.right && !input.left){
-						playerEntity.setHorizontalMovement(Entity.DEFAULT_MOVEMENT_ON_X);
-//						System.out.println("right with " +Entity.DEFAULT_MOVEMENT_ON_X);
+						playerEntity.setMX(GameStates.DEFAULT_MOVEMENT_ON_X);
+//						System.out.println("right with " +-GameStates.DEFAULT_MOVEMENT_ON_X);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+20, GamePanel.gp.getViewPointY());
 						
 					}
@@ -103,10 +103,10 @@ public class InputThread implements Runnable{
 						GamePanel.gp.setPause(!GamePanel.gp.isPaused());
 						input.pause = false;
 					}
-					if (input.zoomIn && GamePanel.gp.getZoomFactor()<5.0f) {
+					if (input.zoomIn && GamePanel.gp.getZoomFactor()<GameStates.maxZoomFactor) {
 						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()*1.1f);
 					}
-					if (input.zoomOut && GamePanel.gp.getZoomFactor()>0.01f) {
+					if (input.zoomOut && GamePanel.gp.getZoomFactor()>GameStates.minZoomFactor) {
 						GamePanel.gp.setZoomFactor(GamePanel.gp.getZoomFactor()/1.1f);
 					}
 					if (input.options ){

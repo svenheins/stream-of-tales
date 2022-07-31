@@ -19,7 +19,7 @@ public class TileSetManager {
 //			BufferedImage img;
 //			try {
 //				img = ImageIO.read(this.getClass().getResource(GameStates.resourcePath+"images/"+src));
-			TileSet s = new TileSet(src, src, GameStates.tileWidth, GameStates.tileHeight);
+			TileSet s = new TileSet(src, src, GameStates.playerTileWidth, GameStates.playerTileHeight);
 			map.put(src, s);
 			return s;
 //			} catch (IOException e) {
@@ -36,7 +36,7 @@ public class TileSetManager {
 //			BufferedImage img;
 //			try {
 //				img = ImageIO.read(this.getClass().getResource(GameStates.resourcePath+"images/"+src));
-			TileSet s = new TileSet(path, src, GameStates.tileWidth, GameStates.tileHeight);
+			TileSet s = new TileSet(path, src, GameStates.playerTileWidth, GameStates.playerTileHeight);
 			map.put(src, s);
 			return s;
 //			} catch (IOException e) {

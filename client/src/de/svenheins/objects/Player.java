@@ -13,7 +13,6 @@ public class Player {
 	public Player(String name, InputHandler input){
 		this.setName(name);
 		this.input = input;
-		
 	}
 	
 	public InputHandler getInputHandler(){

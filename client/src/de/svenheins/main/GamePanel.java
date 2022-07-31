@@ -14,6 +14,8 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,17 +23,28 @@ import java.util.Set;
 
 import javax.swing.JPanel;
 
+import de.svenheins.main.gui.Button;
+import de.svenheins.main.gui.EditorGUI;
+import de.svenheins.main.gui.EditorGUIManager;
+import de.svenheins.main.gui.PlayerListGUI;
+import de.svenheins.main.gui.PlayerListGUIManager;
+import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.LightManager;
 import de.svenheins.managers.MapManager;
 import de.svenheins.managers.ObjectMapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TileSetManager;
+import de.svenheins.managers.UndergroundMapManager;
 
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
 import de.svenheins.objects.IngameWindow;
+import de.svenheins.objects.Light;
 import de.svenheins.objects.LocalMap;
+import de.svenheins.objects.LocalUndergroundMap;
 import de.svenheins.objects.Player;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
@@ -43,6 +56,7 @@ import de.svenheins.threads.ChannelUpdateThread;
 import de.svenheins.threads.CollisionThread;
 import de.svenheins.threads.GraphicThread;
 import de.svenheins.threads.InputThread;
+import de.svenheins.threads.LightThread;
 import de.svenheins.threads.MapUpdateThread;
 import de.svenheins.threads.MoveThread;
 import de.svenheins.threads.ServerUpdateThread;
@@ -61,7 +75,7 @@ public class GamePanel extends JPanel {
 	private Player p;
 //	private Player p2;
 	private Player[] players;
-	public PlayerEntity playerEntity;
+	private PlayerEntity playerEntity;
 //	public Entity eye;
 //	public Space space;
 	private Space spaceAdd;
@@ -79,9 +93,10 @@ public class GamePanel extends JPanel {
 	private ChannelUpdateThread channelUpdateThread;
 	private ChannelUpdateMapsThread channelUpdateMapsThread;
 	private MapUpdateThread mapUpdateThread;
+	private LightThread lightThread;
 	public static GamePanel gp;
-	public static String resourcePath = "/resources/";
-	public static String svgPath = "/resources/svg/";
+//	public static String resourcePath = "/resources/";
+//	public static String svgPath = "/resources/svg/";
 	public long last;
 	public boolean showStats;
 	private boolean serverInitialized;
@@ -93,12 +108,22 @@ public class GamePanel extends JPanel {
 	private double rotationDegree;
 	private int maxViewPointX, maxViewPointY, minViewPointX, minViewPointY;
 	private boolean deleteModus = false;
-	private String paintLayer = "cobble";
-	private int paintType = 110;
+	private String paintLayer;
+	private int paintType;
 	private boolean paintEditSpaceArea = true;
 	
-	private ArrayList<Polygon> editSpaceAreaPolygon = new ArrayList<Polygon>();
-	private Space editSpaceArea;
+//	private ArrayList<Polygon> editSpaceAreaPolygon = new ArrayList<Polygon>();
+//	private Space editSpaceArea;
+	private Light light3;
+	private TileSet lightTileDay;
+	private TileSet lightTileNight;
+	private int[][] lightMap;
+	
+	
+	private int countFrames = 0;
+	private long duration = 0;
+	private long wholeDuration = 0;
+	private long oldTime = System.currentTimeMillis();
 	
 	
 	public IngameWindow mainMenu;
@@ -131,6 +156,8 @@ public class GamePanel extends JPanel {
 		new Thread(channelUpdateThread).start();
 		new Thread(mapUpdateThread).start();
 		new Thread(channelUpdateMapsThread).start();
+		new Thread(lightThread).start();
+		
 	}
 	
 	/**
@@ -138,7 +165,7 @@ public class GamePanel extends JPanel {
 	 */
 	public void init() {
 
-		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I, KeyEvent.VK_1, KeyEvent.VK_2));
+		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I, KeyEvent.VK_1, KeyEvent.VK_2));
 //		p2 = new Player("Spieler2", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S,KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_O));
 		players = new Player[]{p}; 
 		TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
@@ -152,15 +179,13 @@ public class GamePanel extends JPanel {
 		playerEntity2 = new Entity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		playerEntity2 = new Entity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		
-		/** init GUI elements */
-		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
-		connectButton.setAllXY(100, 50);
+//		/** space that describes the paint area */
+//		editSpaceAreaPolygon.add((new Polygon(new int[]{0 , 0 , 2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth,2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth}, new int[]{0,2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight, 2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight,0}, 4)));
+//		editSpaceArea = new Space(editSpaceAreaPolygon, 0, 0, "editSpaceRegion", BigInteger.valueOf(0), new int[]{0, 60, 20}, true, 0.2f, 1.0f, 1.0f, "empty");
 		
-		ClientTextureManager.manager.getTexture(GameStates.standardBackgroundTexture);
-		
-		/** space that describes the paint area */
-		editSpaceAreaPolygon.add((new Polygon(new int[]{0 , 0 , 2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth,2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth}, new int[]{0,2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight, 2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight,0}, 4)));
-		editSpaceArea = new Space(editSpaceAreaPolygon, 0, 0, "editSpaceRegion", BigInteger.valueOf(0), new int[]{0, 60, 20}, true, 0.2f, 1.0f, 1.0f, "empty");
+		/** init Managers and GUIs */
+		this.initGUI();
+		this.initManagers();
 		
 		/** Init the input */
 		// Keyboard must not be added here
@@ -181,9 +206,10 @@ public class GamePanel extends JPanel {
 		channelUpdateThread = new ChannelUpdateThread();
 		mapUpdateThread = new MapUpdateThread();
 		channelUpdateMapsThread = new ChannelUpdateMapsThread();
+		lightThread = new LightThread();
 	}
 	
-	public void config() {
+	public void config() {		
 		gp.setFocusable(true);
 		GameModus.modus = GameModus.MAINMENU;
 		// config the global vars
@@ -194,27 +220,104 @@ public class GamePanel extends JPanel {
 		this.setMenu(false);
 		this.serverInitialized = false;
 		this.setInitializedPlayer(false);
-		this.setViewPoint(362, 181);
-		this.minViewPointX = -30000;//362;
-		this.minViewPointY = -30000;//181;
-		this.maxViewPointX = 34416;
-		this.maxViewPointY = 26169;
+		this.setViewPoint(0, 0);
+		this.minViewPointX = -1000000;//362;
+		this.minViewPointY = -1000000;//181;
+		this.maxViewPointX = 1000000;
+		this.maxViewPointY = 1000000;
 		this.setZoomFactor(1.0f);
 		this.setRotationDegree(0);
 		this.setDeleteModus(false);
 		this.setPaintType(110);
 		this.setPaintLayer("cobble");
 		
+		/** set all Managers and GUI elements to a standard state */
+		configGUI();
+		
+
 		// Modify the Cursor
 		//Cursor cursor = getToolkit().createCustomCursor(new ImageIcon(getClass().getResource(resourcePath+"images/"+"cursor.png")).getImage(), new Point(0,0), "Cursor");
 		//this.setCursor(cursor);
 		
 		mainMenu = new IngameWindow();
-		
-		// Config PlayerManager
-//		PlayerManager.playerList.add(s);
-//		PlayerManager.playerList.add(s2);
 
+	}
+	
+	private void initGUI() {	
+		TileSet tileSetCobbleButton = new TileSet("tilesets/buttons/cobbleButton.png", "cobbleButton", 32, 32);
+		TileSet tileSetGrassButton = new TileSet("tilesets/buttons/grassButton.png", "grassButton", 32, 32);
+		TileSet tileSetSnowButton = new TileSet("tilesets/buttons/snowButton.png", "snowButton", 32, 32);
+		TileSet tileSetTreeButton = new TileSet("tilesets/buttons/treeButton.png", "treeButton", 32, 32);
+		TileSet tileSetSnowTreeButton = new TileSet("tilesets/buttons/snowTreeButton.png", "snowTreeButton", 32, 32);
+		TileSet tileSetUndergroundGrassButton = new TileSet("tilesets/buttons/undergroundGrassButton.png", "undergroundGrassButton", 32, 32);
+		Button cobbleButtonGUI = new Button(tileSetCobbleButton, "cobbleButton", BigInteger.valueOf(0), GameStates.width - 208, 25, GameStates.animationDelay, "cobble", 110, "");
+		Button grassButtonGUI = new Button(tileSetGrassButton, "grassButton", BigInteger.valueOf(1), GameStates.width - 172, 25, GameStates.animationDelay, "grass", 558, "");
+		Button snowButtonGUI = new Button(tileSetSnowButton, "snowButton", BigInteger.valueOf(2), GameStates.width-100 , 25, GameStates.animationDelay, "snow", 654, "");
+		Button treeButtonGUI = new Button(tileSetTreeButton, "treeButton", BigInteger.valueOf(3), GameStates.width- 136, 25, GameStates.animationDelay, "tree", 501, "");
+		Button snowTreeButtonGUI = new Button(tileSetSnowTreeButton, "snowTreeButton", BigInteger.valueOf(4), GameStates.width - 64, 25, GameStates.animationDelay, "tree", 391, "");
+		Button undergroundGrassButtonGUI = new Button(tileSetUndergroundGrassButton, "undergroundGrassButton", BigInteger.valueOf(5), GameStates.width - 244, 25, GameStates.animationDelay, "underground", 10, "");
+				
+		ArrayList<Polygon> editorGUISpacePolygon = new ArrayList<Polygon>();
+		editorGUISpacePolygon.add((new Polygon(new int[]{GameStates.width -250 , GameStates.width -250 ,GameStates.width -25, GameStates.width -25}, new int[]{40 , 85 ,85, 40}, 4) ));
+		Space editorGUISpace = new Space(editorGUISpacePolygon, 0, 0, "editorGUISpace", BigInteger.valueOf(0), new int[]{0, 0, 0}, true, 0.6f, 1.0f, 1.0f, "empty");
+		
+		EditorGUI floorEditor = new EditorGUI("floor", "cobble", 110, editorGUISpace);
+		floorEditor.add(cobbleButtonGUI);
+		floorEditor.add(grassButtonGUI);
+		floorEditor.add(snowButtonGUI);
+		floorEditor.add(treeButtonGUI);
+		floorEditor.add(snowTreeButtonGUI);
+		floorEditor.add(undergroundGrassButtonGUI);
+		EditorGUIManager.add(floorEditor);
+		
+		Button playerMeGUIButton = new Button(tileSetUndergroundGrassButton, "playerMeButton", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay, "Me", 0, "");
+		
+		PlayerListGUI playerEditorGUI = new PlayerListGUI("playerList", "standard", 0);
+		playerEditorGUI.add(playerMeGUIButton);
+		PlayerListGUIManager.add(playerEditorGUI);
+		/** init GUI elements */
+		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
+		connectButton.setAllXY(100, 50);
+	}
+	
+	/** config can be started allways (also for reset) */
+	public void configGUI() {
+		Button cobbleButtonGUI = EditorGUIManager.get("floor").get(BigInteger.valueOf(0));
+//		cobbleButtonGUI.setAnimation(AnimationManager.manager.getAnimation(cobbleButtonGUI.getName()+"active", cobbleButtonGUI.getTileSet(), GameStates.button_active_start, GameStates.button_active_end, cobbleButtonGUI.getAnimation().getTimeBetweenAnimation()));
+		cobbleButtonGUI.setActive();
+		EditorGUIManager.get("floor").deactivateOthers(cobbleButtonGUI);
+		EditorGUIManager.get("floor").setStrValue("cobble");
+		EditorGUIManager.get("floor").setIntValue(110);
+		
+		Button playerMeGUIButton = PlayerListGUIManager.get("playerList").get(BigInteger.valueOf(0));
+//		playerMeGUIButton.setAnimation(AnimationManager.manager.getAnimation(playerMeGUIButton.getName()+"passive", playerMeGUIButton.getTileSet(), GameStates.button_std_start, GameStates.button_std_end, playerMeGUIButton.getAnimation().getTimeBetweenAnimation()));
+		playerMeGUIButton.setInactive();
+		PlayerListGUIManager.get("playerList").deactivateOthers(playerMeGUIButton);
+		PlayerListGUIManager.get("playerList").setStrValue("standard");
+		PlayerListGUIManager.get("playerList").setIntValue(0);
+	}
+	
+	public void initManagers() {
+		/** clear the managers */
+		LightManager.clear();
+		ClientTextureManager.clear();
+		
+		lightTileDay = TileSetManager.manager.getTileSet(GameStates.lightTileSetNameDay, GameStates.lightTileWidth, GameStates.lightTileHeight);
+		lightTileNight = TileSetManager.manager.getTileSet(GameStates.lightTileSetNameNight, GameStates.lightTileWidth, GameStates.lightTileHeight);
+		int standardLight = GameStates.maxLightIntenityCutoff+2;
+		Light light1 = new Light(BigInteger.valueOf(0), standardLight, new Point(0,0));
+		LightManager.add(light1);
+		Light light2 = new Light(BigInteger.valueOf(1), standardLight, new Point(200,300));
+		LightManager.add(light2);
+		light3 = new Light(BigInteger.valueOf(2), standardLight, new Point(800, 200));
+		LightManager.add(light3);
+		Light light4 = new Light(BigInteger.valueOf(3), standardLight, new Point(2000,3000));
+		LightManager.add(light4);
+		Light light3 = new Light(BigInteger.valueOf(4), standardLight, new Point(200,1000));
+		LightManager.add(light3);
+		
+		/** add standard background texture */
+		ClientTextureManager.manager.getTexture(GameStates.standardBackgroundTexture);
 	}
 
 	/* (non-Javadoc)
@@ -264,42 +367,95 @@ public class GamePanel extends JPanel {
 	 * @GAME-Modus
 	 */
 	public void gamePaint(Graphics2D g){
+		duration = System.currentTimeMillis() - oldTime;
+		wholeDuration += duration;
+		oldTime = System.currentTimeMillis();
+		countFrames++;
+		if(wholeDuration >= 1000) {
+			GameWindow.gw.gameInfoConsole.appendInfo("Framerate: "+countFrames);
+			System.out.println("Framerate: "+countFrames);
+			countFrames = 0;
+			wholeDuration = 0;
+		}
+		
 		g.scale(this.getZoomFactor(), this.getZoomFactor());
+		
+//		g.clipRect((int) (2/this.getZoomFactor()), (int) (2/this.getZoomFactor()), (int) (GameStates.width/this.getZoomFactor()) ,(int) (GameStates.height/ this.getZoomFactor()));
+//		g.drawOval((int) (2/this.getZoomFactor()), (int) (2/this.getZoomFactor()), (int) (GameStates.width/this.getZoomFactor()) ,(int) (GameStates.height/ this.getZoomFactor()));
+
+		
+		
 		if (playerEntity != null) {
+//			System.out.println(playerEntity.getName());
 			GamePanel.gp.setViewPoint((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2)-(int)(GameStates.getWidth()/2/zoomFactor), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2)-(int)(GameStates.getHeight()/2/zoomFactor));
 		}
+		Point oldViewPoint = new Point(this.getViewPointX(), this.getViewPointY());
+		float tempZoom = GamePanel.gp.getZoomFactor();
+		
 		/** Paint Spaces */
-//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Spaces: "+SpaceManager.idList.size());
 		g.setPaintMode();
 		List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
 		for (BigInteger i: idListTempSpaces){
 			Space space = SpaceManager.get(i);
 			if(space != null) {
 				if(space.getPolygon() != null) {
-//					GameWindow.gw.gameInfoConsole.appendInfo("Space "+space.getId());
-					space.paint(g, (int) (-viewPointX),(int) (-viewPointY));
+//					space.paint(g, (int) (-viewPointX),(int) (-viewPointY));
 				}
 			}
 			else
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Space");
 		}
 		
+		/** define rect for underground */
+		int localWidthUnderground = GameStates.ugrMapWidth * GameStates.ugrMapTileSetWidth;
+		int localHeightUnderground = GameStates.ugrMapHeight * GameStates.ugrMapTileSetHeight;
+
+		int minXUnderground = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidthUnderground/2) / (localWidthUnderground)) * localWidthUnderground) - GameStates.factorOfViewDeleteDistance*localWidthUnderground;
+		int maxXUnderground = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidthUnderground/2) / (localWidthUnderground)) * localWidthUnderground) + GameStates.factorOfViewDeleteDistance*localWidthUnderground;
+		int minYUnderground = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeightUnderground/2) / (localHeightUnderground)) * localHeightUnderground - GameStates.factorOfViewDeleteDistance*localHeightUnderground;
+		int maxYUnderground = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeightUnderground/2) / (localHeightUnderground)) * localHeightUnderground + GameStates.factorOfViewDeleteDistance*localHeightUnderground;
+		Rectangle rectUnderground = new Rectangle(minXUnderground, minYUnderground, maxXUnderground-minXUnderground, maxYUnderground-minYUnderground);
 
 		
 		/** define min and max for view distance */
 		int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
 		int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
-		int minX = ((int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getX() / (localWidth)) * localWidth) - GameStates.factorOfViewDeleteDistance*localWidth;
-		int maxX = ((int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getX() / (localWidth)) * localWidth) + GameStates.factorOfViewDeleteDistance*localWidth;
-		int minY = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getY() / (localHeight)) * localHeight - GameStates.factorOfViewDeleteDistance*localHeight;
-		int maxY = (int) Math.floor( (float) GamePanel.gp.getPlayerEntity().getY() / (localHeight)) * localHeight + GameStates.factorOfViewDeleteDistance*localHeight;
+		int minX = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidth/2) / (localWidth)) * localWidth) - GameStates.factorOfViewDeleteDistance*localWidth;
+		int maxX = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidth/2) / (localWidth)) * localWidth) + GameStates.factorOfViewDeleteDistance*localWidth;
+		int minY = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeight/2) / (localHeight)) * localHeight - GameStates.factorOfViewDeleteDistance*localHeight;
+		int maxY = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeight/2) / (localHeight)) * localHeight + GameStates.factorOfViewDeleteDistance*localHeight;
 		Rectangle rect = new Rectangle(minX, minY, maxX-minX, maxY-minY);
 		
-		if (isPaintEditSpaceArea() == true) {
-			/** paint the editSpaceArea */
-			g.setPaintMode();
-			editSpaceArea.setAllXY(minX, minY);
-			editSpaceArea.paint(g, (int) (-viewPointX),(int) (-viewPointY));
+//		if (isPaintEditSpaceArea() == true) {
+//			/** paint the editSpaceArea */
+//			g.setPaintMode();
+//			editSpaceArea.setAllXY(minX, minY);
+//			editSpaceArea.paint(g, (int) (-viewPointX),(int) (-viewPointY));
+//		}
+		/** Paint Maps */
+		g.setPaintMode();
+		UndergroundMapManager undergroundManager = GameWindow.gw.undergroundMapManagers.get("underground");
+		List<Point> idListUndergroundMap = new ArrayList<Point>(undergroundManager.pointList);
+		for (Point p: idListUndergroundMap){
+			LocalUndergroundMap localMap = undergroundManager.get(p);
+			if(localMap != null) {
+				if ( rectUnderground.contains(p)) {
+					BufferedImage tile = null;
+					for (int k = 0; k < localMap.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
+							tile = localMap.getTileImage(k, l, GameWindow.gw.getTileUndergroundMapManager());
+							if( tile != null) {
+								g.drawImage(tile, (int) (localMap.getOrigin().x + k*GameStates.ugrMapTileSetWidth-viewPointX), (int) (localMap.getOrigin().y + l*GameStates.ugrMapTileSetHeight-viewPointY), this);
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					undergroundManager.remove(p);
+				}
+			}
+			else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
 		}
 		
 		/** Paint Maps */
@@ -310,7 +466,6 @@ public class GamePanel extends JPanel {
 			LocalMap localMap = cobbleManager.get(p);
 			if(localMap != null) {
 				if ( rect.contains(p)) {
-//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile = null;
 					for (int k = 0; k < localMap.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
@@ -334,7 +489,7 @@ public class GamePanel extends JPanel {
 		for (Point p: idListGrassMap){
 			LocalMap localMap = grassManager.get(p);
 			if(localMap != null) {
-				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
+				if ( rect.contains(p)) {
 					BufferedImage tile = null;
 					for (int k = 0; k < localMap.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
@@ -352,13 +507,35 @@ public class GamePanel extends JPanel {
 			else
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
 		}
+		MapManager desertManager = GameWindow.gw.mapManagers.get("desert");
+		List<Point> idListdesertMap = new ArrayList<Point>(desertManager.pointList);
+		for (Point p: idListdesertMap){
+			LocalMap localMap = desertManager.get(p);
+			if(localMap != null) {
+				if ( rect.contains(p)) {
+					BufferedImage tile = null;
+					for (int k = 0; k < localMap.getLocalMap().length; k++) {
+						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
+							tile = localMap.getTileImage(k, l, GameWindow.gw.getTileMapManager());
+							if( tile != null) {
+								g.drawImage(tile, (int) (localMap.getOrigin().x + k*32-viewPointX), (int) (localMap.getOrigin().y + l*32-viewPointY), this);
+							}
+						}
+					}
+				} else {
+					/** remove if too far away */
+					desertManager.remove(p);
+				}
+			}
+			else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
+		}
 		MapManager snowManager = GameWindow.gw.mapManagers.get("snow");
 		List<Point> idListSnowMap = new ArrayList<Point>(snowManager.pointList);
 		for (Point p: idListSnowMap){
 			LocalMap localMap = snowManager.get(p);
 			if(localMap != null) {
 				if ( rect.contains(p)) {
-//				if ( ((int) Math.abs(playerEntity.getX()-GameStates.mapTotalWidth/2 -localMap.getOrigin().x) < (GameStates.mapTotalWidth*GameStates.factorOfViewDeleteDistance)) && ((int) Math.abs(playerEntity.getY()-GameStates.mapTotalHeight/2 -localMap.getOrigin().y) < (GameStates.mapTotalHeight*GameStates.factorOfViewDeleteDistance))) {
 					BufferedImage tile = null;
 					for (int k = 0; k < localMap.getLocalMap().length; k++) {
 						for (int l = 0; l < localMap.getLocalMap()[0].length; l++) {
@@ -376,7 +553,7 @@ public class GamePanel extends JPanel {
 			else
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
 		}
-		
+
 		/** Paint Trees */
 		g.setPaintMode();
 		ObjectMapManager tree1MapManager = GameWindow.gw.objectMapManagers.get("tree1");
@@ -398,7 +575,7 @@ public class GamePanel extends JPanel {
 							tile1 = localMap1.getTileImage(k, l, GameWindow.gw.getTileMapManager());
 							tile2 = localMap2.getTileImage(k, l, GameWindow.gw.getTileMapManager());
 							if(tile1 != null) {
-								g.drawImage(tile1, (int) (localMap1.getOrigin().x + k*32-viewPointX), (int) (localMap1.getOrigin().y + l*32-viewPointY), this);	
+								g.drawImage(tile1,(int) (localMap1.getOrigin().x + k*32-viewPointX), (int) (localMap1.getOrigin().y + l*32-viewPointY), this);	
 							}
 							if(tile2 != null) {
 								g.drawImage(tile2, (int) (localMap2.getOrigin().x + k*32-viewPointX), (int) (localMap2.getOrigin().y+ GameStates.distanceOfSecondTreeLayer + l*32-viewPointY), this);	
@@ -444,20 +621,16 @@ public class GamePanel extends JPanel {
 					tree2MapManager.remove(p);
 				}
 			}
-//				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Map");
 		}	
 		
 
 		/** Paint Server-Entities */
 		g.setPaintMode();
-//		GameWindow.gw.gameInfoConsole.appendInfo("IdList Entities: "+EntityManager.size());
-//		for (int i = 0; i < EntityManager.size(); i++) {
 		List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
 		for (BigInteger i: idListTempEntities) {
 			Entity e= EntityManager.get(i);
 			if(e != null) {
 				if(e.getSprite().getImage() != null) {
-//					GameWindow.gw.gameInfoConsole.appendInfo("Entity "+e.getId());
 					g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
 				}
 			}
@@ -465,15 +638,23 @@ public class GamePanel extends JPanel {
 			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
 		}
 		
-		/** paint player Entity */
-		g.setPaintMode();
-		if(playerEntity != null) {
-			if(playerEntity.getSprite().getImage() != null) {
-				g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
-			}
-		}else
-			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
 		
+		/** player painting */
+		if (playerEntity != null) {
+			GamePanel.gp.setViewPoint((int)playerEntity.getX()+(int)(playerEntity.getWidth()/2)-(int)(GameStates.getWidth()/2/zoomFactor), (int) playerEntity.getY()+(int)(playerEntity.getHeight()/2)-(int)(GameStates.getHeight()/2/zoomFactor));
+			/** paint player Entity */
+			if(tempZoom == GamePanel.gp.getZoomFactor()) {
+				if(playerEntity.getSprite().getImage() != null) {
+					g.setPaintMode();
+					g.drawImage(playerEntity.getSprite().getImage(), (int) (playerEntity.getX()-viewPointX), (int) (playerEntity.getY()-viewPointY), this);
+				}
+			}
+		}
+		
+		/** reset ViewPoint */
+		GamePanel.gp.setViewPoint(oldViewPoint.x, oldViewPoint.y);
+
+		/** paint the other players */
 		g.setPaintMode();
 		if(PlayerManager.size() >0) {
 			List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
@@ -596,6 +777,33 @@ public class GamePanel extends JPanel {
 //			GameWindow.gw.gameInfoConsole.paint(g, 0, 0);
 //		}
 //		GameWindow.gw.setFocusable(true);
+		if (GameWindow.gw.hasLight()) {
+			g.setPaintMode();
+			/** calc region */
+			light3.setLocation(new Point((int ) (playerEntity.getX()+playerEntity.getWidth()/2) , (int) (playerEntity.getY()+playerEntity.getHeight()/2) )) ;
+			LightManager.overwrite(light3);
+			Rectangle lightRect = new Rectangle((int)(playerEntity.getX()-((float)GameStates.lightMapWidth/2) - (playerEntity.getX() % GameStates.mapTileSetWidth)), (int)(playerEntity.getY()-((float)GameStates.lightMapHeight/2) - (playerEntity.getY() % GameStates.mapTileSetHeight)), GameStates.lightMapWidth, GameStates.lightMapHeight);
+	//		if (!LightManager.getLightsOfRegion(lightRect).isEmpty()) {
+			/** get shadow tiles depending on day or night */
+			TileSet lightTile = null;
+			if (GameWindow.gw.isNight()) lightTile = TileSetManager.manager.getTileSet(GameStates.lightTileSetNameNight, GameStates.lightTileWidth, GameStates.lightTileHeight);
+			else lightTile = TileSetManager.manager.getTileSet(GameStates.lightTileSetNameDay, GameStates.lightTileWidth, GameStates.lightTileHeight);
+			int[][] lightMap = LightManager.getLightMap(lightRect);
+			BufferedImage lightImage = null;
+			int lightX = 0;
+			int lightY = 0;
+			for(int i = 0; i < lightMap.length; i ++ ) {
+				for (int j = 0; j < lightMap[0].length; j++) {
+					lightX = lightRect.x+i *GameStates.lightTileWidth;
+					lightY = lightRect.y+j *GameStates.lightTileHeight;
+					lightImage = lightTile.getTileImage(Math.min(lightMap[i][j], GameStates.maxLightIntenityCutoff)) ;
+					g.drawImage(lightImage, lightX-viewPointX, lightY-viewPointY, this);
+//					 g.drawImage(lightImage, lightX-viewPointX, lightY-viewPointY, this);
+				}
+			}
+		}
+//		}
+		
 		GameWindow.gw.requestFocus();
 	}
 	
@@ -821,6 +1029,10 @@ public class GamePanel extends JPanel {
 	public PlayerEntity getPlayerEntity() {
 		return this.playerEntity;
 	}
+	
+	public void setPlayerEntityName(String strname) {
+		this.playerEntity.setName(strname);
+	}
 
 	public boolean isInitializedPlayer() {
 		return initializedPlayer;
@@ -860,5 +1072,29 @@ public class GamePanel extends JPanel {
 
 	public void setPaintEditSpaceArea(boolean paintEditSpaceArea) {
 		this.paintEditSpaceArea = paintEditSpaceArea;
+	}
+
+	public TileSet getLightTileDay() {
+		return lightTileDay;
+	}
+
+	public void setLightTileDay(TileSet lightTile) {
+		this.lightTileDay = lightTile;
+	}
+	
+	public TileSet getLightTileNight() {
+		return lightTileNight;
+	}
+
+	public void setLightTileNight(TileSet lightTile) {
+		this.lightTileNight = lightTile;
+	}
+
+	public int[][] getLightMap() {
+		return lightMap;
+	}
+
+	public void setLightMap(int[][] lightMap) {
+		this.lightMap = lightMap;
 	}
 }

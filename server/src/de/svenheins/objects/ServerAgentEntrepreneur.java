@@ -23,9 +23,9 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 	private boolean settled;
 
 
-	public ServerAgentEntrepreneur(ServerSprite sprite, BigInteger id, float x,
+	public ServerAgentEntrepreneur(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x,
 			float y, float mx, float my) {
-		super(sprite, id, x, y, mx, my);
+		super(sprite, id, tileSetName, tileSetPathName, x, y, mx, my);
 		this.settled = false;
 	}
 

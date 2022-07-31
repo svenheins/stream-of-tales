@@ -21,6 +21,7 @@ public class PlayerEntity extends Entity {
 		this.experience = 0;
 		this.lastSeen = System.currentTimeMillis();
 		this.setVisible(false);
+		System.out.println("created "+name);
 	}
 
 

@@ -37,6 +37,7 @@ public class MapManager {
 	
 	public MapManager(String paintLayer) {
 		this.paintLayer = paintLayer;
+		changedList = new ArrayList<Point>();
 	}
 	
 	public void remove(Point point) {

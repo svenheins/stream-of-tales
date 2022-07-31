@@ -539,5 +539,10 @@ public class Space extends LocalObject{
 		this.textureName = textureName;
 	}
 	
-	
+	public boolean contains(Point p) {
+		for (Polygon poly : this.polygon) {
+			if (poly.contains(p)) return true;
+		}
+		return false;
+	}
 }

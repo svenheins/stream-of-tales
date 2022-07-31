@@ -56,21 +56,35 @@ public class MainMenu extends JMenuBar {
 		});
 		menu.add(mainMenuItem);
 		
-//		final JMenuItem setGameMaster = new JMenuItem("Set Game-Master");
-//		setGameMaster.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//            	if (!GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
-//            		GameWindow.gw.setGameMasterName(GameWindow.gw.getPlayerName());
-//            		GameWindow.gw.initSendMapList();
-//            		setGameMaster.setText("Set Player");
-//            	} else {
-//            		GameWindow.gw.setGameMasterName("standard");
-//            		setGameMaster.setText("Set Game-Master");
-//            	}
-//            	
-//            }
-//		});
-//		menu.add(setGameMaster);
+		final JMenuItem setNightItem = new JMenuItem("Set night");
+		setNightItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	if (!GameWindow.gw.isNight()) {
+            		GameWindow.gw.setNight(true);
+            		setNightItem.setText("Set day");
+            	} else {
+            		GameWindow.gw.setNight(false);
+            		setNightItem.setText("Set night");
+            	}
+            	
+            }
+		});
+		menu.add(setNightItem);
+		
+		final JMenuItem setLightItem = new JMenuItem("light on");
+		setLightItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            	if (!GameWindow.gw.hasLight()) {
+            		GameWindow.gw.setLight(true);
+            		setLightItem.setText("light off");
+            	} else {
+            		GameWindow.gw.setLight(false);
+            		setLightItem.setText("light on");
+            	}
+            	
+            }
+		});
+		menu.add(setLightItem);
 		
 		JMenuItem logoutItem = new JMenuItem("Logout");
 		logoutItem.addActionListener(new ActionListener() {
@@ -184,7 +198,7 @@ public class MainMenu extends JMenuBar {
 //					    GameWindow.gw.deleteOnlyMapsOfMapManagers();
 					    GameWindow.gw.setGameMasterName(playerName);
 					    GameWindow.gw.initLocalMapFileList(playerName);
-					    if (GameWindow.gw.getGameMasterName().equals(GameWindow.gw.getPlayerName())) {
+					    if (GameWindow.gw.isGameMaster()) {
 //					    	GameWindow.gw.initSendMapList();
 					    }
 //						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayerName(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));

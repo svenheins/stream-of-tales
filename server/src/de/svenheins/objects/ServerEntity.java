@@ -12,6 +12,7 @@ import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
 
 import de.svenheins.WorldRoom;
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
 
 
@@ -29,8 +30,13 @@ public class ServerEntity extends WorldObject{
 	protected long lastTimestamp;
 	protected String tileSetPathName;
 	protected String tileSetName;
+	/** variables for the entity appearance */
+	protected EntityStates orientation;
+	protected EntityStates state;
 	
-    /** The {@link WorldRoom} this player is in, or null if none. */
+    
+
+	/** The {@link WorldRoom} this player is in, or null if none. */
     protected ManagedReference<WorldRoom> currentRoomRef = null;
     /** The {@link Logger} for this class. */
     protected static final Logger logger =
@@ -39,7 +45,7 @@ public class ServerEntity extends WorldObject{
 	public final static int DEFAULT_MOVEMENT_ON_X = 300;
 	public final static int DEFAULT_MOVEMENT_ON_Y = 300;
 	
-	public ServerEntity(ServerSprite sprite, BigInteger id, float x, float y, float mx, float my) {
+	public ServerEntity(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x, float y, float mx, float my) {
 		standardAnimation = new String[1];
 		standardAnimation[0] = sprite.getStrImg();
 		animation = standardAnimation;
@@ -54,8 +60,10 @@ public class ServerEntity extends WorldObject{
 		this.height = sprite.getHeight();
 		this.width = sprite.getWidth();
 		this.lastTimestamp = System.currentTimeMillis();
-		this.setTileSetName("");
-		this.setTileSetPathName("");
+		this.setTileSetName(tileSetName);
+		this.setTileSetPathName(tileSetPathName);
+		this.setOrientation(EntityStates.DOWN);
+		this.setState(EntityStates.STANDARD);
 	}
 	
 //	public void moveOnX(long duration){
@@ -172,4 +180,20 @@ public class ServerEntity extends WorldObject{
     public String getTileSetName() {
     	return tileSetName;
     }
+    
+    public EntityStates getOrientation() {
+		return orientation;
+	}
+
+	public void setOrientation(EntityStates orientation) {
+		this.orientation = orientation;
+	}
+
+	public EntityStates getState() {
+		return state;
+	}
+
+	public void setState(EntityStates state) {
+		this.state = state;
+	}
 }

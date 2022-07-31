@@ -98,7 +98,7 @@ public class ChannelUpdateThread implements Runnable {
 					Space space= SpaceManager.get(i);
 					if(space != null) {
 						playerInsideSpace = false;
-						PlayerEntity playerEnt = GamePanel.gp.playerEntity;
+						PlayerEntity playerEnt = GamePanel.gp.getPlayerEntity();
 						for (int j = 0; j < space.getPolygon().size(); j++) {
 							if (space.getPolygon().get(j).contains(playerEnt.getX()+ playerEnt.getWidth()/2, playerEnt.getY()+playerEnt.getHeight()/2) )
 									playerInsideSpace = true;

@@ -54,6 +54,7 @@ public class Animation {
 				long difference = timeNow - this.instantOfAnimation;
 				int loop = ((int) Math.floor(difference / this.timeBetweenAnimation));
 				int index =  loop % spriteList.size();
+//				if (difference<5000)System.out.println(index);
 				// Check if the last Spriteframe was reached
 				if(ending == true && loop == spriteList.size() ) ending = false;
 				return spriteList.get(index);

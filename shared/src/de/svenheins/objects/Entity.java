@@ -23,11 +23,19 @@ public class Entity extends LocalObject {
 	protected Sprite sprite;
 	protected String[] standardAnimation;
 	protected Animation animation;
+	protected Animation singleAnimation;
+	
+
 	protected TileSet tile;
 	protected boolean b_stdAni;
 	/** variables for the entity appearance */
 	protected EntityStates orientation;
-	protected EntityStates state;
+	protected EntityStates singleState;
+	protected EntityStates continuousState;
+
+	protected boolean changedStates;
+	protected boolean waitingForSingleAnimation;
+
 	
 //	public Entity(String src, BigInteger id, float x, float y, float mx, float my) {
 //		standardAnimation = new String[1];
@@ -80,7 +88,11 @@ public class Entity extends LocalObject {
 		this.height = sprite.getHeight();
 		this.width = sprite.getWidth();
 		this.setOrientation(EntityStates.DOWN);
-		this.setState(EntityStates.STANDARD);	
+		this.setSingleState(EntityStates.EMPTY);
+		this.setContinuousState(EntityStates.STANDING);
+		changedStates = false;
+		singleAnimation = null;
+		this.setWaitingForSingleAnimation(false);
 	}
 	
 	public EntityStates getOrientation() {
@@ -91,12 +103,12 @@ public class Entity extends LocalObject {
 		this.orientation = orientation;
 	}
 
-	public EntityStates getState() {
-		return state;
+	public EntityStates getSingleState() {
+		return singleState;
 	}
 
-	public void setState(EntityStates state) {
-		this.state = state;
+	public void setSingleState(EntityStates state) {
+		this.singleState = state;
 	}
 
 	public void move(long duration) {
@@ -121,8 +133,26 @@ public class Entity extends LocalObject {
 	
 	public void updateSprite() {
 		long timeNow = System.currentTimeMillis();
-		long complete = timeNow - animation.getInstantOfAnimation();
-		this.setSprite(animation.getSprite(timeNow));
+//		long complete = timeNow - animation.getInstantOfAnimation();
+		
+		/** check if there is a single Animation */
+		if (singleAnimation != null) {
+			/** update SingleAnimation */
+			if ( (timeNow-this.getSingleAnimation().getInstantOfAnimation()) >= singleAnimation.getTimeBetweenAnimation()*singleAnimation.getLength() ) {
+				/** here the animation ends so we start with standard animation at 0*/
+				this.singleAnimation = null;
+				this.singleState = EntityStates.EMPTY;
+				this.setWaitingForSingleAnimation(false);
+				this.startAnimation();
+				this.setChangedStates(true);
+				this.setSprite(animation.getSprite(timeNow));
+			} else {
+				/** continue with the single animation */
+				this.setSprite(singleAnimation.getSprite(timeNow));
+			}
+		} else {
+			this.setSprite(animation.getSprite(timeNow));
+		}
 	}
 	
 	
@@ -151,10 +181,10 @@ public class Entity extends LocalObject {
 		
 	}
 	
-	public void setAnimation(Animation animation) {
-		this.animation= animation;
-		animation.setTimeBetweenAnimation(this.getAnimation().getTimeBetweenAnimation());
-		animation.setInstantOfAnimation(this.getAnimation().getInstantOfAnimation());
+	public void setAnimation(Animation animationNew) {
+		this.animation= animationNew;
+//		animation.setTimeBetweenAnimation(this.getAnimation().getTimeBetweenAnimation());
+//		animation.setInstantOfAnimation(this.getAnimation().getInstantOfAnimation());
 //		animation.start();
 	}
 	
@@ -209,4 +239,35 @@ public class Entity extends LocalObject {
 		this.tile = tile;
 	}
 	
+	public void setChangedStates(boolean b) {
+		this.changedStates = b;
+	}
+	
+	public boolean hasChangedStates() {
+		return this.changedStates;
+	}
+	
+	public Animation getSingleAnimation() {
+		return singleAnimation;
+	}
+
+	public void setSingleAnimation(Animation singleAnimation) {
+		this.singleAnimation = singleAnimation;
+	}
+	
+	public EntityStates getContinuousState() {
+		return continuousState;
+	}
+
+	public void setContinuousState(EntityStates continuousState) {
+		this.continuousState = continuousState;
+	}
+
+	public boolean isWaitingForSingleAnimation() {
+		return waitingForSingleAnimation;
+	}
+
+	public void setWaitingForSingleAnimation(boolean waitingForSingleAnimation) {
+		this.waitingForSingleAnimation = waitingForSingleAnimation;
+	}
 }

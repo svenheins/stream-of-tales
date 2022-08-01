@@ -59,6 +59,19 @@ public class ServerMessages extends Messages{
         return buffer;
     }
     
+    
+    /** get object state */
+    public static ByteBuffer sendTakeItem (BigInteger id) {
+        byte[] bytes = new byte[1 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        /** let the player take the item */
+//        System.out.println("send take");
+        buffer.put((byte) OPCODE.TAKEITEM.ordinal());    
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
 //    /** get object name */
 //    public static ByteBuffer sendObjectName (OBJECTCODE objCode, int id,  String name) {
 //        byte[] bytes = new byte[1 + 4 + 4 + name.length()];

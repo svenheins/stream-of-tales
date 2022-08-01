@@ -63,7 +63,7 @@ public class ServerEntity extends WorldObject{
 		this.setTileSetName(tileSetName);
 		this.setTileSetPathName(tileSetPathName);
 		this.setOrientation(EntityStates.DOWN);
-		this.setState(EntityStates.STANDARD);
+		this.setState(EntityStates.STANDING);
 	}
 	
 //	public void moveOnX(long duration){

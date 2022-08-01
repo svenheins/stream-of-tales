@@ -38,6 +38,7 @@ import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.TileSetManager;
 import de.svenheins.managers.UndergroundMapManager;
+import de.svenheins.managers.WorldItemManager;
 
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
@@ -179,6 +180,8 @@ public class GamePanel extends JPanel {
 		playerEntity2 = new Entity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		playerEntity2 = new Entity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 		
+		
+		
 //		/** space that describes the paint area */
 //		editSpaceAreaPolygon.add((new Polygon(new int[]{0 , 0 , 2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth,2* GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth}, new int[]{0,2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight, 2*GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight,0}, 4)));
 //		editSpaceArea = new Space(editSpaceAreaPolygon, 0, 0, "editSpaceRegion", BigInteger.valueOf(0), new int[]{0, 60, 20}, true, 0.2f, 1.0f, 1.0f, "empty");
@@ -315,6 +318,7 @@ public class GamePanel extends JPanel {
 		LightManager.add(light4);
 		Light light3 = new Light(BigInteger.valueOf(4), standardLight, new Point(200,1000));
 		LightManager.add(light3);
+		
 		
 		/** add standard background texture */
 		ClientTextureManager.manager.getTexture(GameStates.standardBackgroundTexture);
@@ -629,6 +633,20 @@ public class GamePanel extends JPanel {
 		List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
 		for (BigInteger i: idListTempEntities) {
 			Entity e= EntityManager.get(i);
+			if(e != null) {
+				if(e.getSprite().getImage() != null) {
+					g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
+				}
+			}
+			else
+			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+		}
+		
+		/** Paint Server-Entities */
+		g.setPaintMode();
+		List<BigInteger> idListTempItems = new ArrayList<BigInteger>(WorldItemManager.idList);
+		for (BigInteger i: idListTempItems) {
+			Entity e= WorldItemManager.get(i).getItemEntity();
 			if(e != null) {
 				if(e.getSprite().getImage() != null) {
 					g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
@@ -1020,6 +1038,9 @@ public class GamePanel extends JPanel {
 	
 	public void updatePlayerSprite() {
 		this.playerEntity.updateSprite();
+//		System.out.println("dist: "+(System.currentTimeMillis() -playerEntity.getAnimation().getInstantOfAnimation()));
+//		System.out.println("nr.: "+((System.currentTimeMillis() - (int) Math.floor(playerEntity.getAnimation().getInstantOfAnimation()))/ playerEntity.getAnimation().getTimeBetweenAnimation())%4);
+		
 	}
 	
 	public void setPlayerEntity (PlayerEntity playerEntity) {

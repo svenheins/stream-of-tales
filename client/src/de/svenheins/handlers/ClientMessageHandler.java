@@ -30,8 +30,10 @@ import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.TileSetManager;
+import de.svenheins.managers.WorldItemManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.ITEMCODE;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
@@ -39,6 +41,8 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.items.WorldItem;
+import de.svenheins.objects.items.materials.Wood;
 
 public class ClientMessageHandler {
 	/* {@inheritDoc} */
@@ -220,18 +224,12 @@ public class ClientMessageHandler {
 			ArrayList<Entity> entityList = new ArrayList<Entity>();
 			/** for each available packet do */
     		while (packet.hasRemaining()) {
-//    			byte[] bigByte = new byte[packet.getInt()];
-//				for (int i =0; i<bigByte.length; i++) {
-//					bigByte[i] = packet.get();
-//				}
-//	    		BigInteger objectId = new BigInteger(bigByte);
     			id_entity = BigInteger.valueOf(packet.getLong()); // ID
     			byte[] nameBytes = new byte[packet.getInt()];
     			packet.get(nameBytes);
     			name_entity = new String(nameBytes); // name
     			tileEntity = new TileSet(name_entity, name_entity, 50, 50);
     			entityList.add(new Entity(tileEntity,name_entity, id_entity, 0,0,GameStates.animationDelay));
-//    			entityList.add(new Entity(name_entity, id_entity, 0,0, 0, 0));
     		}
     		/** transform list into array */
     		Entity[] entities = new Entity[entityList.size()];
@@ -260,20 +258,12 @@ public class ClientMessageHandler {
 			ArrayList<PlayerEntity> playerList = new ArrayList<PlayerEntity>();
 			/** for each available packet do */
     		while (packet.hasRemaining()) {
-//    			byte[] bigByte = new byte[packet.getInt()];
-//				for (int i =0; i<bigByte.length; i++) {
-//					bigByte[i] = packet.get();
-//				}
-//	    		BigInteger objectId = new BigInteger(bigByte);
-    			
     			id_player = BigInteger.valueOf(packet.getLong()); // ID
     			byte[] nameBytes = new byte[packet.getInt()];
     			packet.get(nameBytes);
     			name_player = new String(nameBytes); // name
-    			
 //    			System.out.println("packet-nr.: "+id_player);
 //    			System.out.println("packet-name.: "+name_player);
-    			
     			byte[] nameTileSetBytes = new byte[packet.getInt()];
     			packet.get(nameTileSetBytes);
     			name_player_TileSet = new String(nameTileSetBytes); // name
@@ -353,7 +343,6 @@ public class ClientMessageHandler {
     		playerEntity.setMovement(mx, my);
     		playerEntity.setX(x);
     		playerEntity.setY(y);
-//    		playerEntity.setMovement(10, 10);
     		GamePanel.gp.setPlayerEntity(playerEntity);
 //    		System.out.println("OK, initme complete!"+x);
     		GamePanel.gp.setInitializedPlayer(true);
@@ -390,17 +379,24 @@ public class ClientMessageHandler {
 	    	TileSet tileSet_add = TileSetManager.manager.getTileSet(tileName_add);
 	    	System.out.println("got tileset: "+tileName_add + " from player "+name_player_add+" ID="+objectId_player);
 	    	PlayerEntity playerEntity_overwrite = new PlayerEntity(tileSet_add, name_player_add, objectId_player, 0, 0, GameStates.animationDelay);
-//	    	playerEntity.setTileSetName(tileName_add);
-//	    	playerEntity.setTileSetPathName(tilePathName);
 	    	playerEntity_overwrite.setWidth(tileWidth);
 	    	playerEntity_overwrite.setHeight(tileHeight);
 	    	playerEntity_overwrite.setCountry(country_add);
 	    	playerEntity_overwrite.setGroupName(groupName_add);
 	    	playerEntity_overwrite.setExperience(experience_add);
-//	    	PlayerManager.overwrite(playerEntity_overwrite);
 	    	PlayerManager.updatePlayerAddons(objectId_player, name_player_add, tileName_add, tilePathName_add, tileWidth, tileHeight, country_add, groupName_add, experience_add);
 //	    	this.getRoom().editPlayerAddons(thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
 	    	
+    		break;
+    		
+    	case EDIT_PLAYER_STATES:
+    		/** ID */
+			BigInteger entityID_editStates = BigInteger.valueOf(packet.getLong()); // 8
+			/** get the orientation and states, to update the actual animation of the player */
+			EntityStates orientation = getEntityStates(packet);
+			EntityStates singleState = getEntityStates(packet);
+			EntityStates continuousState = getEntityStates(packet);
+			PlayerManager.updatePlayerState(entityID_editStates, orientation, singleState, continuousState);
     		break;
     	case SENDTEXTURE:
     		byte[] nameBytesTexture = new byte[packet.getInt()];
@@ -458,7 +454,7 @@ public class ClientMessageHandler {
     	case OBJECTDELETE:
     		if (GamePanel.gp.isServerInitialized()) {
 	    		OBJECTCODE objCode = OBJECTCODE.values()[packet.getInt()];
-	    		BigInteger objectId = BigInteger.valueOf(packet.getLong());;
+	    		BigInteger objectId = BigInteger.valueOf(packet.getLong());
 	    		
 	    		String deleteText = "";
 	    		
@@ -475,10 +471,57 @@ public class ClientMessageHandler {
 	    			PlayerManager.remove(objectId);
 	    			PlayerListGUIManager.get("playerList").remove(objectId);
 	    		}
+	    		if (objCode == OBJECTCODE.ITEM) {
+	    			deleteText = "Item "+ objectId +" was removed";
+	    			System.out.println(deleteText);
+	    			WorldItemManager.remove(objectId);
+	    		}
 	    		GameWindow.gw.gameInfoConsole.appendInfo(deleteText);
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
 //					GameWindow.gw.gameInfoConsole.appendInfo("Entity: x="+objectX+" y="+objectY);
 //				}
+    		}
+    		break;
+    		
+    	case ADDCOMPLETEITEM:
+    		ITEMCODE itemCode = getItemCode(packet);
+    		BigInteger addCompleteItemId = BigInteger.valueOf(packet.getLong());
+    		byte[] nameAddCompleteItemBytes = new byte[packet.getInt()];
+			packet.get(nameAddCompleteItemBytes);
+			String addCompleteItemName = new String(nameAddCompleteItemBytes); // name
+    		int addCompleteItemX = packet.getInt(); 
+    		int addCompleteItemY = packet.getInt();
+			int addCompleteItemCount = packet.getInt();
+			
+    		switch(itemCode) {
+    		case WOOD:
+    			Wood item = new Wood();
+    			item.setCount(addCompleteItemCount);
+    			TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", addCompleteItemName, GameStates.itemTileWidth, GameStates.itemTileHeight);
+    			Entity itemEntity = new Entity(woodTileSet, addCompleteItemName, addCompleteItemId, addCompleteItemX, addCompleteItemY, GameStates.animationDelayItems);
+    			WorldItem wood = new WorldItem(addCompleteItemId, item, itemEntity);
+    			if(WorldItemManager.add(wood)) {
+    				GameWindow.gw.gameInfoConsole.appendInfo("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
+    				
+    			} else {
+    				GameWindow.gw.gameInfoConsole.appendInfo("got the item "+addCompleteItemName+" with ID: "+addCompleteItemId+" already!");
+    			}
+    			break;
+    		case STONE:
+    			break;
+    		default:
+    				;
+    		}
+    		break;
+    	case TAKEITEM:
+//    		GameWindow.gw.gameConsole.appendInfo("taking item");
+    		if (GamePanel.gp.isServerInitialized()) {
+	    		BigInteger takeItemId = BigInteger.valueOf(packet.getLong());
+	    		/** take the item */
+//	    		System.out.println("inventory full: " +GamePanel.gp.getPlayerEntity().getPlayerInventory().getItemList().size()+"/"+GamePanel.gp.getPlayerEntity().getPlayerInventory().getWidth()*GamePanel.gp.getPlayerEntity().getPlayerInventory().getHeight());
+	    		GameWindow.gw.gameInfoConsole.appendInfo("inventory full: " +GamePanel.gp.getPlayerEntity().getPlayerInventory().getItemList().size()+"/"+GamePanel.gp.getPlayerEntity().getPlayerInventory().getWidth()*GamePanel.gp.getPlayerEntity().getPlayerInventory().getHeight());
+	    		GamePanel.gp.getPlayerEntity().getPlayerInventory().addItem(WorldItemManager.get(takeItemId).getItem());
+	    		GameWindow.gw.send(ClientMessages.tookItem(takeItemId));
     		}
     		break;
     	case READY_FOR_NEXT_TEXTURE_PACKET:
@@ -662,5 +705,19 @@ public class ClientMessageHandler {
         EntityStates entityStates = EntityStates.values()[esbyte];
         
         return entityStates;
+    }
+    
+    private static ITEMCODE getItemCode(ByteBuffer packet) 
+    {
+        byte itemByte = packet.get();
+        if ((itemByte < 0) || (itemByte > ITEMCODE.values().length - 1)) {
+        	//TODO: exception is better
+        	System.out.println("Unknown es value: " + itemByte);
+//            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        ITEMCODE itemCode = ITEMCODE.values()[itemByte];
+        
+        return itemCode;
     }
 }

@@ -1,13 +1,17 @@
 package de.svenheins.main;
 
 public enum EntityStates {
+	EMPTY,
 	/** states of an entity */
-	STANDARD,
+	STANDING,
+	WALKING,
+	RUNNING,
 	ATTACKING,
 	THROWING,
 	SHOOTING, 		/** bow */
 	HURTING,
 	DYING,
+	DEAD,
 	WORKING,
 	CRAFTING,
 	CONJURING,		/** performing magic  */

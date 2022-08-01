@@ -623,6 +623,28 @@ public class WorldPlayer
 		    	this.getRoom().sendEditSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	
 				break;
+			case ADDITEM:
+				BigInteger addItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
+				this.getRoom().addItem(addItemID);
+				break;
+			case TAKEITEM:
+				BigInteger takeItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
+				if (this.getRoom().getItemList().contains(takeItemID)) {
+					getSession().send(ServerMessages.sendTakeItem(takeItemID));
+					
+					logger.log(Level.INFO, "taking item {0} by player {1}",
+		    	            new Object[] { takeItemID, thisPlayerName});					
+				} else {
+//					logger.log(Level.INFO, "taking item {0} by player {1} was not successful, because item does noch exist",
+//		    	            new Object[] { takeItemID, thisPlayerName});
+				}
+				break;
+			case TOOKITEM:
+				BigInteger tookItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
+				logger.log(Level.INFO, "took item {0} by player {1}",
+	    	            new Object[] { tookItemID, thisPlayerName});
+				this.getRoom().removeItem(tookItemID);
+				break;
 			case RESPAWN:
 	//		    int respawnId = packet.getInt();
 	//		    float respawnX = packet.getFloat();

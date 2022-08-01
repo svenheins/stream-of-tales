@@ -2,6 +2,8 @@ package de.svenheins.objects;
 
 import java.math.BigInteger;
 
+import de.svenheins.objects.items.Container;
+
 public class PlayerEntity extends Entity {
 	/** attributes */
 	private String groupName;
@@ -10,6 +12,7 @@ public class PlayerEntity extends Entity {
 	private String country;
 	private long lastSeen;
 	private boolean visible;
+	private Container playerInventory;
 	
 	/** TileSet-Constructor */
 	public PlayerEntity(TileSet tileSet, String name, BigInteger id, float x,
@@ -22,6 +25,7 @@ public class PlayerEntity extends Entity {
 		this.lastSeen = System.currentTimeMillis();
 		this.setVisible(false);
 		System.out.println("created "+name);
+		this.playerInventory = new Container(8, 5);
 	}
 
 
@@ -82,6 +86,16 @@ public class PlayerEntity extends Entity {
 
 	public void setVisible(boolean visible) {
 		this.visible = visible;
+	}
+
+
+	public Container getPlayerInventory() {
+		return playerInventory;
+	}
+
+
+	public void setPlayerInventory(Container playerInventory) {
+		this.playerInventory = playerInventory;
 	}
 	
 	

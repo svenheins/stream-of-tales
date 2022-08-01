@@ -232,7 +232,7 @@ public class World
 //        TileSet tileSetEnemy = new TileSet("eye12.png", "enemy", 10, 6);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
         ServerEntity it_s_entityAgent;
-        int numAgentsEntrepreneur = 200;
+        int numAgentsEntrepreneur = 0;
         float it_x, it_y, it_mx, it_my;
 //        float it_x, it_y, it_mx, it_my;
         for (int i = 0; i<numAgentsEntrepreneur; i++) {

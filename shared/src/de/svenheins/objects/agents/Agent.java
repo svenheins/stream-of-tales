@@ -78,12 +78,26 @@ public abstract class Agent extends PlayerEntity {
 //		newMY = (float) (this.getActualGoal().getPosition().getY()-this.getY());
 		newMX = (float) (this.getActualPathElement().getX()-(this.getX()));
 		newMY = (float) (this.getActualPathElement().getY()-(this.getY()+(this.getHeight()/2)));
-		float tempVelocity = (float) Math.sqrt(newMX*newMX + newMY*newMY);
-		if (tempVelocity > 0) {
-			this.setMovement(velocity*(newMX/tempVelocity), velocity*(newMY/tempVelocity));
-		} else
-		{
+		/** correct the destination if it is an old one */
+		if ((newMX ==0 && newMY == 0) && this.pathList.size() >0) {
+			this.nextPathElement();
 			this.setMovement(0, 0);
+			/** if we have a path to follow */
+			System.out.println("old pathelement");
+		} else {
+			float tempVelocity = (float) Math.sqrt(newMX*newMX + newMY*newMY);
+			if (tempVelocity > 0) {
+				if ( getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)) < 3*GameStates.pathMinAcceptanceDistance) {
+					tempVelocity = tempVelocity*1.5f;
+				}
+				this.setMovement(velocity*(newMX/tempVelocity), velocity*(newMY/tempVelocity));
+				
+			} else
+			{
+				this.setMovement(0, 0);
+				/** if we have a path to follow */
+				System.out.println("STOP, because we reached the pathlistelement");
+			}
 		}
 		
 //		System.out.println("movement: X="+this.getMX()+" Y="+this.getMY());
@@ -106,7 +120,7 @@ public abstract class Agent extends PlayerEntity {
 	
 	/** calculate distance to Point (x,y) */
 	public float getDistance(float x, float y) {
-		return (float) Math.sqrt((x-this.getX())*(x-this.getX()) + (y-(this.getY()+this.getHeight()/2))*(y-(this.getY()+this.getHeight()/2)));
+		return (float) Math.sqrt((x-this.getX())*(x-this.getX()) + (y-(this.getY()))*(y-(this.getY())));
 	}
 	
 	public void setGoal(boolean goal) {
@@ -167,6 +181,7 @@ public abstract class Agent extends PlayerEntity {
 		if (pathList.size() >0 && pathList != null) {
 //			System.out.println("old position: x="+pathList.get(0).getX()+" y="+pathList.get(0).getY());
 			this.pathList.remove(0);
+			
 		}
 	}
 	
@@ -210,5 +225,6 @@ public abstract class Agent extends PlayerEntity {
 		pathCalculationComplete = false;
 		openList = new HashMap<WorldLatticePosition, PathTile>(); // defines the openList (A*-algorithm)
 		closedList = new HashMap<WorldLatticePosition, PathTile>(); // defines the closedList (A*-algorithm)
+		this.setActualPathElement(null);
 	}
 }

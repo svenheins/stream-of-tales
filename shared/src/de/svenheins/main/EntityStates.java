@@ -28,6 +28,12 @@ public enum EntityStates {
 	WAVING, 		/** (winken) */
 	LAUGHING,
 	SHOWING,
+	INVENTORY_DESTROYED,
+	INVENTORY_DAMAGED,
+	INVENTORY_SIMPLE, 
+	INVENTORY_GOOD, 
+	INVENTORY_PERFECT,
+	INVENTORY_MAGIC,
 	
 	
 	/** directions */

@@ -28,7 +28,6 @@ public class PlayerListGUI {
 	public List<BigInteger> idList = new ArrayList<BigInteger>();
 	private String strValue;
 	private int intValue;
-	private int maxYValue;
 //	private int xValue
 	private int fontSize;
 	private String name;
@@ -39,8 +38,6 @@ public class PlayerListGUI {
 		this.strValue = strValue;
 		this.intValue = intValue;
 		this.backgroundSpace = backgroundSpace;
-		this.setMaxYValue(0);
-//		this.setxValue(0);
 		this.fontSize = 12;
 	}
 	
@@ -49,7 +46,6 @@ public class PlayerListGUI {
 		this.strValue = strValue;
 		this.intValue = intValue;
 		this.backgroundSpace = null;
-		this.setMaxYValue(0);
 		this.fontSize = 12;
 //		this.setxValue(0);
 //		this.backgroundSpace = backgroundSpace;
@@ -60,8 +56,7 @@ public class PlayerListGUI {
 			Button button = buttonList.get(index);
 			buttonList.remove(index);
 			idList.remove(index);
-			
-			this.setMaxYValue((int) (this.getMaxYValue()-button.getY()-button.getHeight()-fontSize));
+			resort();
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		}
@@ -74,8 +69,17 @@ public class PlayerListGUI {
 		} else {
 			buttonList.put(button.getId(), button);
 			idList.add(button.getId());
-			this.setMaxYValue((int) (this.getMaxYValue()+button.getY()+button.getHeight()+fontSize));
+			resort();
 			return true;
+		}
+	}
+	
+	/** resort the buttons, use if someone logs out/ logs in */
+	public void resort() {
+		int tempY = 0;
+		for (BigInteger id : idList) {
+			buttonList.get(id).setY(tempY);
+			tempY += buttonList.get(id).getHeight()+GameStates.contextMenuButtonDistYBetweenButtons+fontSize;
 		}
 	}
 	
@@ -203,14 +207,6 @@ public class PlayerListGUI {
 
 	public void setBackgroundSpace(Space backgroundSpace) {
 		this.backgroundSpace = backgroundSpace;
-	}
-
-	public int getMaxYValue() {
-		return maxYValue;
-	}
-
-	public void setMaxYValue(int maxYValue) {
-		this.maxYValue = maxYValue;
 	}
 
 

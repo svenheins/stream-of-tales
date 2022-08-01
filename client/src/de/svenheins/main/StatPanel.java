@@ -1,6 +1,7 @@
 package de.svenheins.main;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -9,11 +10,13 @@ import java.math.BigInteger;
 import javax.swing.JPanel;
 
 import de.svenheins.main.gui.Button;
+import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.ContextMenuGUI;
 import de.svenheins.main.gui.EditorGUI;
 import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUI;
 import de.svenheins.main.gui.PlayerListGUIManager;
+import de.svenheins.objects.Entity;
 
 public class StatPanel  extends JPanel{
 
@@ -82,15 +85,35 @@ public class StatPanel  extends JPanel{
 		if (GameWindow.gw.isGameMaster()) {
 			for (String str : EditorGUIManager.idList) {
 				EditorGUI editorGUI = EditorGUIManager.get(str);
-				editorGUI.paint(g, 0, 22, this);
+				editorGUI.paint(g, 0, 0, this);
 			}
 		}
 		for (String str : PlayerListGUIManager.idList) {
 			PlayerListGUI playerListGUI = PlayerListGUIManager.get(str);
-			playerListGUI.paint(g, 5, 30, this);
+			playerListGUI.paint(g, 0, 0, this);
 		}
+		for (String str : ContainerGUIManager.idList) {
+			/** only paint the inventories, that are visible */
+			if (ContainerGUIManager.get(str).isVisible()) {
+				ContainerGUIManager.get(str).paint(g, this);
+			}
+		}
+		
+		
 		/** paint the context menu */
-		contextMenu.paint(g, 0, 22,  this);
+		contextMenu.paint(g, 0, 0,  this);
+		
+		if(GamePanel.gp.getMouseItem() != null) {
+			Entity mouseItemEntity = GamePanel.gp.getMouseItem().getItemEntity();
+			g.setColor(new Color(250, 250, 250));
+			g.setFont(new Font("Arial", Font.PLAIN , GameStates.inventoryFontSize));
+//			drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
+			g.drawString(""+GamePanel.gp.getMouseItem().getCount()/*+" "+item.getName()*/,GameStates.inventoryFontDistanceX + (int)mouseItemEntity.getX(), GameStates.inventoryFontDistanceY +(int) mouseItemEntity.getY() + mouseItemEntity.getHeight() /*+ g.getFontMetrics().getHeight()*/);
+			
+			g.setPaintMode();
+			g.drawImage(mouseItemEntity.getSprite().getImage(), (int) (mouseItemEntity.getX()), (int) (mouseItemEntity.getY()), this);
+			
+		}
 	}
 
 

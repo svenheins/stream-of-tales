@@ -25,7 +25,6 @@ public class Entity extends LocalObject {
 	protected Animation animation;
 	protected Animation singleAnimation;
 	
-
 	protected TileSet tile;
 	protected boolean b_stdAni;
 	/** variables for the entity appearance */

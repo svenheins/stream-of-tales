@@ -5,18 +5,20 @@ import java.math.BigInteger;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.items.Item;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.StatPanel;
+import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.ItemManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
-import de.svenheins.managers.WorldItemManager;
 
 public class AnimationThread implements Runnable {
 	private long duration, last; 
@@ -48,6 +50,8 @@ public class AnimationThread implements Runnable {
 						entity = EntityManager.get(EntityManager.idList.get(i));
 					} catch (IndexOutOfBoundsException exception){
 						System.out.println(exception);
+					} catch (java.lang.NullPointerException e) {
+						System.out.println(e);
 					}
 					if(entity != null) {
 						determineAnimation(entity);
@@ -55,12 +59,14 @@ public class AnimationThread implements Runnable {
 					}
 				}
 				
-				for (int i = WorldItemManager.size()-1; i >= 0; i--) {
+				for (int i = ItemManager.size()-1; i >= 0; i--) {
 					Entity entity = null;
 					try {
-						entity = WorldItemManager.get(WorldItemManager.idList.get(i)).getItemEntity();
+						entity = ItemManager.get(ItemManager.idList.get(i)).getItemEntity();
 					} catch (IndexOutOfBoundsException exception){
 						System.out.println(exception);
+					} catch (java.lang.NullPointerException e) {
+						System.out.println(e);
 					}
 					if(entity != null) {
 						determineAnimation(entity);
@@ -74,6 +80,8 @@ public class AnimationThread implements Runnable {
 						e2 = PlayerManager.get(PlayerManager.idList.get(j));
 					} catch (IndexOutOfBoundsException exception) {
 						System.out.println(exception);
+					} catch (java.lang.NullPointerException e) {
+						System.out.println(e);
 					}
 					if(e2 != null) {
 						//e2.updateSprite();
@@ -94,6 +102,8 @@ public class AnimationThread implements Runnable {
 						space = SpaceManager.get(SpaceManager.idList.get(k));
 					} catch (IndexOutOfBoundsException exception ) {
 						System.out.println(exception);
+					} catch (java.lang.NullPointerException e) {
+						System.out.println(e);
 					}
 					if(space != null) space.updateSpace();
 				}
@@ -107,6 +117,11 @@ public class AnimationThread implements Runnable {
 					}
 					for (BigInteger buttonID : StatPanel.sp.contextMenu.idList) {
 						StatPanel.sp.contextMenu.get(buttonID).updateSprite();
+					}
+					for (String inventoryName : ContainerGUIManager.idList) {
+						for (Item item: ContainerGUIManager.get(inventoryName).getContainer().getItemList().values()) {
+							item.getItemEntity().updateSprite();
+						}
 					}
 				} catch(java.util.ConcurrentModificationException error) {
 					System.out.println(error);

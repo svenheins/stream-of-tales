@@ -9,6 +9,8 @@ import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.main.gui.ContainerGUI;
+import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.messages.ClientMessages;
@@ -129,6 +131,15 @@ public class InputThread implements Runnable{
 //						GamePanel.gp.setMenu(!GamePanel.gp.isMenu());
 						input.infoConsole = false;
 					}
+					if (input.inventory ){
+						ContainerGUIManager.get("Player Inventory").setVisible(!ContainerGUIManager.get("Player Inventory").isVisible());
+//						GamePanel.gp.setMenu(!GamePanel.gp.isMenu());
+						input.inventory = false;
+					}
+					
+					/** add here new key for the inventory */
+					ContainerGUIManager.get("Player Inventory").setContainer(GamePanel.gp.getPlayerEntity().getInventory());
+					
 //					GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //				}
 					

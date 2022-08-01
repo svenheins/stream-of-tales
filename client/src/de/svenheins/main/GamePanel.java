@@ -16,6 +16,7 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,11 @@ import java.util.Set;
 
 import javax.swing.JPanel;
 
+import com.sun.sgs.client.ClientChannel;
+
 import de.svenheins.main.gui.Button;
+import de.svenheins.main.gui.ContainerGUI;
+import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.EditorGUI;
 import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUI;
@@ -31,6 +36,7 @@ import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.ItemManager;
 import de.svenheins.managers.LightManager;
 import de.svenheins.managers.MapManager;
 import de.svenheins.managers.ObjectMapManager;
@@ -38,7 +44,8 @@ import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.TileSetManager;
 import de.svenheins.managers.UndergroundMapManager;
-import de.svenheins.managers.WorldItemManager;
+import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.ITEMCODE;
 
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
@@ -50,6 +57,7 @@ import de.svenheins.objects.Player;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.items.Item;
 
 import de.svenheins.threads.AnimationThread;
 import de.svenheins.threads.ChannelUpdateMapsThread;
@@ -113,6 +121,8 @@ public class GamePanel extends JPanel {
 	private int paintType;
 	private boolean paintEditSpaceArea = true;
 	
+	private Item mouseItem = null;
+	
 //	private ArrayList<Polygon> editSpaceAreaPolygon = new ArrayList<Polygon>();
 //	private Space editSpaceArea;
 	private Light light3;
@@ -166,7 +176,7 @@ public class GamePanel extends JPanel {
 	 */
 	public void init() {
 
-		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I, KeyEvent.VK_1, KeyEvent.VK_2));
+		p = new Player("Spieler1", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_SPACE, KeyEvent.VK_P, KeyEvent.VK_ESCAPE, KeyEvent.VK_I, KeyEvent.VK_1, KeyEvent.VK_2, KeyEvent.VK_Q));
 //		p2 = new Player("Spieler2", new InputHandler(KeyEvent.VK_A, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_S,KeyEvent.VK_E, KeyEvent.VK_R, KeyEvent.VK_O));
 		players = new Player[]{p}; 
 		TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
@@ -247,12 +257,12 @@ public class GamePanel extends JPanel {
 	}
 	
 	private void initGUI() {	
-		TileSet tileSetCobbleButton = new TileSet("tilesets/buttons/cobbleButton.png", "cobbleButton", 32, 32);
-		TileSet tileSetGrassButton = new TileSet("tilesets/buttons/grassButton.png", "grassButton", 32, 32);
-		TileSet tileSetSnowButton = new TileSet("tilesets/buttons/snowButton.png", "snowButton", 32, 32);
-		TileSet tileSetTreeButton = new TileSet("tilesets/buttons/treeButton.png", "treeButton", 32, 32);
-		TileSet tileSetSnowTreeButton = new TileSet("tilesets/buttons/snowTreeButton.png", "snowTreeButton", 32, 32);
-		TileSet tileSetUndergroundGrassButton = new TileSet("tilesets/buttons/undergroundGrassButton.png", "undergroundGrassButton", 32, 32);
+		TileSet tileSetCobbleButton = new TileSet("tilesets/buttons/cobbleButton.png", "cobbleButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
+		TileSet tileSetGrassButton = new TileSet("tilesets/buttons/grassButton.png", "grassButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
+		TileSet tileSetSnowButton = new TileSet("tilesets/buttons/snowButton.png", "snowButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
+		TileSet tileSetTreeButton = new TileSet("tilesets/buttons/treeButton.png", "treeButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
+		TileSet tileSetSnowTreeButton = new TileSet("tilesets/buttons/snowTreeButton.png", "snowTreeButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
+		TileSet tileSetUndergroundGrassButton = new TileSet("tilesets/buttons/undergroundGrassButton.png", "undergroundGrassButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
 		Button cobbleButtonGUI = new Button(tileSetCobbleButton, "cobbleButton", BigInteger.valueOf(0), GameStates.width - 208, 25, GameStates.animationDelay, "cobble", 110, "");
 		Button grassButtonGUI = new Button(tileSetGrassButton, "grassButton", BigInteger.valueOf(1), GameStates.width - 172, 25, GameStates.animationDelay, "grass", 558, "");
 		Button snowButtonGUI = new Button(tileSetSnowButton, "snowButton", BigInteger.valueOf(2), GameStates.width-100 , 25, GameStates.animationDelay, "snow", 654, "");
@@ -261,7 +271,7 @@ public class GamePanel extends JPanel {
 		Button undergroundGrassButtonGUI = new Button(tileSetUndergroundGrassButton, "undergroundGrassButton", BigInteger.valueOf(5), GameStates.width - 244, 25, GameStates.animationDelay, "underground", 10, "");
 				
 		ArrayList<Polygon> editorGUISpacePolygon = new ArrayList<Polygon>();
-		editorGUISpacePolygon.add((new Polygon(new int[]{GameStates.width -250 , GameStates.width -250 ,GameStates.width -25, GameStates.width -25}, new int[]{40 , 85 ,85, 40}, 4) ));
+		editorGUISpacePolygon.add((new Polygon(new int[]{GameStates.width -250 , GameStates.width -250 ,GameStates.width -25, GameStates.width -25}, new int[]{25-5 , 25+GameStates.tileSetHeight+5 ,25+GameStates.tileSetHeight+5, 25-5}, 4) ));
 		Space editorGUISpace = new Space(editorGUISpacePolygon, 0, 0, "editorGUISpace", BigInteger.valueOf(0), new int[]{0, 0, 0}, true, 0.6f, 1.0f, 1.0f, "empty");
 		
 		EditorGUI floorEditor = new EditorGUI("floor", "cobble", 110, editorGUISpace);
@@ -278,6 +288,19 @@ public class GamePanel extends JPanel {
 		PlayerListGUI playerEditorGUI = new PlayerListGUI("playerList", "standard", 0);
 		playerEditorGUI.add(playerMeGUIButton);
 		PlayerListGUIManager.add(playerEditorGUI);
+		
+		/** inventory GUI */
+		int totalWidthInventory = GameStates.inventoryDistToFrameX*2 + (GameStates.inventorySlotDistX*2+GameStates.inventoryItemTileWidth)*getPlayerEntity().getInventory().getWidth();
+		int totalHeightInventory = GameStates.inventoryDistToFrameY*2 + (GameStates.inventorySlotDistY*2+GameStates.inventoryItemTileHeight+GameStates.inventoryFontDistanceY)*getPlayerEntity().getInventory().getHeight();
+		ArrayList<Polygon> inventoryGUISpacePolygon = new ArrayList<Polygon>();
+		inventoryGUISpacePolygon.add((new Polygon(new int[]{0 , 0 , totalWidthInventory, totalWidthInventory}, new int[]{0 , totalHeightInventory, totalHeightInventory, 0}, 4) ));
+		Space inventoryGUISpace = new Space(inventoryGUISpacePolygon, 0, 0, "inventoryGUISpace", BigInteger.valueOf(0), new int[]{0, 0, 0}, true, 0.6f, 1.0f, 1.0f, "empty");
+		
+		ContainerGUI playerInventoryGUI = new ContainerGUI(this.getPlayerEntity().getInventory(), "Player Inventory", GameStates.inventoryPlayerX, GameStates.inventoryPlayerY, "", 0, inventoryGUISpace);
+		ContainerGUIManager.add(playerInventoryGUI);
+		/** there is no item at the mouseCursor */
+		this.setMouseItem(null);
+		
 		/** init GUI elements */
 		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
 		connectButton.setAllXY(100, 50);
@@ -644,16 +667,21 @@ public class GamePanel extends JPanel {
 		
 		/** Paint Server-Entities */
 		g.setPaintMode();
-		List<BigInteger> idListTempItems = new ArrayList<BigInteger>(WorldItemManager.idList);
+		List<BigInteger> idListTempItems = new ArrayList<BigInteger>(ItemManager.idList);
 		for (BigInteger i: idListTempItems) {
-			Entity e= WorldItemManager.get(i).getItemEntity();
-			if(e != null) {
-				if(e.getSprite().getImage() != null) {
-					g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
+			Item tempItem = ItemManager.get(i);
+			if (tempItem != null) {
+				Entity e= tempItem.getItemEntity();
+				if(e != null) {
+					if(e.getSprite().getImage() != null) {
+						g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
+					}
 				}
+				else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
+			} else {
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Item");
 			}
-			else
-			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
 		}
 		
 		
@@ -821,6 +849,7 @@ public class GamePanel extends JPanel {
 			}
 		}
 //		}
+		
 		
 		GameWindow.gw.requestFocus();
 	}
@@ -1117,5 +1146,32 @@ public class GamePanel extends JPanel {
 
 	public void setLightMap(int[][] lightMap) {
 		this.lightMap = lightMap;
+	}
+
+	public Item getMouseItem() {
+		return mouseItem;
+	}
+
+	public void setMouseItem(Item mouseItem) {
+		this.mouseItem = mouseItem;
+	}
+	
+	public void dropMouseItem(Point p) {
+		/** send the complete Item to all players of the channel */
+		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
+			/** first send to server for the itemList */
+			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId(), mouseItem.getItemCode(), mouseItem.getCount(), mouseItem.getCapacity(), mouseItem.getItemEntity().getX(), mouseItem.getItemEntity().getY(), mouseItem.getItemEntity().getMX(), mouseItem.getItemEntity().getMY(), mouseItem.getName(), mouseItem.getItemEntity().getTileSet().getFileName(), mouseItem.getItemEntity().getName()));
+			
+//			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId()));
+			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+				ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+				try {
+					channel.send(ClientMessages.addCompleteItem(mouseItem.getItemCode(), mouseItem.getId(), mouseItem.getName(), p.x, p.y, mouseItem.getCount(), new float[1]));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}	
+			}
+			this.mouseItem = null;
+		}
 	}
 }

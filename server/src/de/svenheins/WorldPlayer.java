@@ -49,17 +49,25 @@ import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.SpriteManager;
 import de.svenheins.managers.TileSetManager;
 import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.ITEMCODE;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
+import de.svenheins.objects.ServerAgentEntrepreneur;
+import de.svenheins.objects.ServerContainer;
+import de.svenheins.objects.ServerEntity;
+import de.svenheins.objects.ServerItem;
 import de.svenheins.objects.ServerPlayer;
 import de.svenheins.objects.ServerRegion;
 import de.svenheins.objects.ServerSpace;
+import de.svenheins.objects.ServerSprite;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.Sprite;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldObject;
 
@@ -625,15 +633,41 @@ public class WorldPlayer
 				break;
 			case ADDITEM:
 				BigInteger addItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
-				this.getRoom().addItem(addItemID);
+				ITEMCODE itemCode_ADDITEM = getItemCode(message); // 1 Byte
+				int count_ADDITEM = message.getInt(); // 4 Bytes
+				int capacity_ADDITEM = message.getInt(); // 4
+				float x_ADDITEM = message.getFloat(); // 4
+				float y_ADDITEM= message.getFloat(); // 4
+				float mx_ADDITEM= message.getFloat(); // 4
+				float my_ADDITEM= message.getFloat(); // 4
+				
+				byte[] itemName_ADDITEM_Bytes = new byte[message.getInt()];
+				message.get(itemName_ADDITEM_Bytes);
+				String itemName_ADDITEM = new String(itemName_ADDITEM_Bytes); // name
+
+				byte[] spriteString_ADDITEM_Bytes = new byte[message.getInt()];
+				message.get(spriteString_ADDITEM_Bytes);
+				String spriteString_ADDITEM = new String(spriteString_ADDITEM_Bytes); // name
+				
+				byte[] spriteShortName_ADDITEM_Bytes = new byte[message.getInt()];
+				message.get(spriteShortName_ADDITEM_Bytes);
+				String spriteShortName_ADDITEM = new String(spriteShortName_ADDITEM_Bytes); // name
+				
+		        Sprite sprite_ADDITEM = SpriteManager.manager.getSprite(spriteString_ADDITEM);
+		        ServerSprite serverSprite_ADDITEM = new ServerSprite(spriteString_ADDITEM, sprite_ADDITEM.getHeight(), sprite_ADDITEM.getWidth());
+		        ServerEntity serverEntity_ADDITEM;
+		        
+		        serverEntity_ADDITEM = new ServerEntity(serverSprite_ADDITEM, addItemID, spriteShortName_ADDITEM, spriteString_ADDITEM, x_ADDITEM, y_ADDITEM, mx_ADDITEM, my_ADDITEM);
+	        	
+				this.getRoom().addItem(addItemID, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM ));
 				break;
 			case TAKEITEM:
 				BigInteger takeItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
-				if (this.getRoom().getItemList().contains(takeItemID)) {
+				if (this.getRoom().getItemList().get().containsKey(takeItemID)) {
 					getSession().send(ServerMessages.sendTakeItem(takeItemID));
 					
-					logger.log(Level.INFO, "taking item {0} by player {1}",
-		    	            new Object[] { takeItemID, thisPlayerName});					
+//					logger.log(Level.INFO, "taking item {0} by player {1}",
+//		    	            new Object[] { takeItemID, thisPlayerName});					
 				} else {
 //					logger.log(Level.INFO, "taking item {0} by player {1} was not successful, because item does noch exist",
 //		    	            new Object[] { takeItemID, thisPlayerName});
@@ -641,8 +675,8 @@ public class WorldPlayer
 				break;
 			case TOOKITEM:
 				BigInteger tookItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
-				logger.log(Level.INFO, "took item {0} by player {1}",
-	    	            new Object[] { tookItemID, thisPlayerName});
+//				logger.log(Level.INFO, "took item {0} by player {1}",
+//	    	            new Object[] { tookItemID, thisPlayerName});
 				this.getRoom().removeItem(tookItemID);
 				break;
 			case RESPAWN:
@@ -731,7 +765,11 @@ public class WorldPlayer
 		float mx = s_player.getMX();
 		float my = s_player.getMY();
 		
-        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my));
+		ServerContainer inventory = s_player.getInventory().get();
+		
+		BigInteger maxItemID = this.getRoom().getMaxItemIndex();
+		
+        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my, maxItemID, inventory));
 
 	}
 	
@@ -874,6 +912,20 @@ public class WorldPlayer
         OPCODE code = OPCODE.values()[opbyte];
         
         return code;
+    }
+    
+    private static ITEMCODE getItemCode(ByteBuffer packet) 
+    {
+        byte itemByte = packet.get();
+        if ((itemByte < 0) || (itemByte > ITEMCODE.values().length - 1)) {
+        	//TODO: exception is better
+        	System.out.println("Unknown es value: " + itemByte);
+//            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        ITEMCODE itemCode = ITEMCODE.values()[itemByte];
+        
+        return itemCode;
     }
     
 //    /**

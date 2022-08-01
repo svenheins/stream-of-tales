@@ -1,6 +1,15 @@
 package de.svenheins.objects.items;
 
+import java.math.BigInteger;
+
+import de.svenheins.messages.ITEMCODE;
+import de.svenheins.objects.Entity;
+
 public class Potion extends Item implements Usable, Stackable {
+
+	public Potion(BigInteger id, Entity itemEntity) {
+		super(id);
+	}
 
 	@Override
 	public void use() {

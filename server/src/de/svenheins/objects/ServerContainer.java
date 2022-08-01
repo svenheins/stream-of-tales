@@ -1,20 +1,26 @@
-package de.svenheins.objects.items;
+package de.svenheins.objects;
 
 import java.math.BigInteger;
 import java.util.HashMap;
 
-import de.svenheins.main.GameStates;
-import de.svenheins.managers.ItemManager;
+import com.sun.sgs.app.AppContext;
+import com.sun.sgs.app.ManagedReference;
 
-public class Container {
-	private HashMap<BigInteger, Item> itemList = new HashMap<BigInteger, Item>();
+import de.svenheins.main.GameStates;
+import de.svenheins.objects.items.Stackable;
+
+public class ServerContainer extends WorldObject {
+	private static final long serialVersionUID = 1L;
+	
+	private HashMap<BigInteger, ManagedReference<ServerItem>> itemList;
 	private int width;
 	private int height;
 	private BigInteger[][] containerArray;
 	
-	public Container(int width, int height) {
+	public ServerContainer(int width, int height) {
 		this.setHeight(height);
 		this.setWidth(width);
+		itemList = new HashMap<BigInteger, ManagedReference<ServerItem>>();
 		containerArray = new BigInteger[height][width];
 		for (int i = 0; i < height; i ++) {
 			for (int j = 0; j < width; j ++) {
@@ -29,9 +35,9 @@ public class Container {
 		if (itemList.values().size() < width*height) {
 			return true;
 		} else {
-			// here we have only the possibillity, that a stack is not yet full
+			// here we have only the possibility, that a stack is not yet full
 			for (BigInteger id : itemList.keySet() ) {
-				if (itemList.get(id).getCount() < itemList.get(id).getCapacity()) {
+				if (itemList.get(id).get().getCount() < itemList.get(id).get().getCapacity()) {
 					return true;
 				}
 			}
@@ -51,13 +57,14 @@ public class Container {
 	}
 	
 	/** addItem on an optimal spot */
-	public Item addItem(Item item) {
+	public ServerItem addItem(ServerItem item) {
 //		String name = item.getName();
 		
 		int tempCount = item.getCount();
 		if (item instanceof Stackable ) {
 			if (item.getCount() < item.getCapacity() || !this.hasEmptyField()) {
-				for (Item loopItem: itemList.values()) {
+				for (ManagedReference<ServerItem> loopItemRef: itemList.values()) {
+					ServerItem loopItem = loopItemRef.get();
 					if (loopItem.getItemCode() == item.getItemCode()) {
 						if ( loopItem.getCount() < loopItem.getCapacity() ) {
 							if (tempCount <= loopItem.getCapacity()-loopItem.getCount()) {
@@ -85,13 +92,13 @@ public class Container {
 //							System.out.println("put into row = "+i+" | col =  "+j);
 //							BigInteger newItemID = ItemManager.getMaxID().add(addBigInteger);
 //							System.out.println("new id: "+newItemID);
-							try {
-								item.getItemEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
-								item.getItemEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
-								itemList.put(item.getId(), (Item) item.clone());
-							} catch (CloneNotSupportedException e) {
-								e.printStackTrace();
-							}
+//							try {
+								item.getItemEntity().getForUpdate().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
+								item.getItemEntity().getForUpdate().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);	
+								itemList.put(item.getId(), AppContext.getDataManager().createReference(new ServerItem(item.getId(), item.getItemCode(), item.getName(), item.getItemEntity().get(), item.getCount(), item.getCapacity())));
+//							} catch (CloneNotSupportedException e) {
+//								e.printStackTrace();
+//							}
 //							itemList.get(newItemID).setId(newItemID);
 							containerArray[i][j] = item.getId();
 							item.setCount(0);
@@ -122,23 +129,11 @@ public class Container {
 		} else return false;
 	}
 	
-	public HashMap<BigInteger, Item> getItemList() {
+	public HashMap<BigInteger, ManagedReference<ServerItem>> getItemList() {
 		return itemList;
 	}
-	public void setItemList(HashMap<BigInteger, Item> itemList) {
+	public void setItemList(HashMap<BigInteger, ManagedReference<ServerItem>> itemList) {
 		this.itemList = itemList;
-	}
-	public int getWidth() {
-		return width;
-	}
-	public void setWidth(int width) {
-		this.width = width;
-	}
-	public int getHeight() {
-		return height;
-	}
-	public void setHeight(int height) {
-		this.height = height;
 	}
 
 	public BigInteger[][] getContainerArray() {

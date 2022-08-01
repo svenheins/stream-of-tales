@@ -18,9 +18,9 @@ import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.ItemManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
-import de.svenheins.managers.WorldItemManager;
 import de.svenheins.messages.ClientMessages;
 
 import de.svenheins.objects.Entity;
@@ -201,20 +201,26 @@ public class MoveThread implements Runnable {
 					if (!yCollides) GamePanel.gp.getPlayerEntity().setY(GamePanel.gp.getPlayerEntity().getY()+movementY);
 				}
 				
-				
-				/** check if wants to take an item */
-				try {
-					for (BigInteger itemID : WorldItemManager.idList) {
-						if (itemID != null) {
-							if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.playerTileWidth/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.playerTileHeight/4, WorldItemManager.get(itemID).getItemEntity().getX()+GameStates.itemTileWidth/2, WorldItemManager.get(itemID).getItemEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
-								/** TODO: check if there is enough space inside the inventory */
-								GameWindow.gw.send(ClientMessages.takeItem(itemID));
+				/** check if there is enough space inside the inventory */
+				if(GamePanel.gp.getPlayerEntity().getInventory().hasAvailableField()) {
+					/** check if wants to take an item */
+					try {
+						for (BigInteger itemID : ItemManager.idList) {
+							if (itemID != null) {
+								try {
+									if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.playerTileWidth/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.playerTileHeight/4, ItemManager.get(itemID).getItemEntity().getX()+GameStates.itemTileWidth/2, ItemManager.get(itemID).getItemEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
+										/** send a item collect request */
+										GameWindow.gw.send(ClientMessages.takeItem(itemID));
+									}
+								} catch(java.lang.NullPointerException error) {
+									System.out.println(error);
+								}
 							}
-						}
-					} 
-				} catch(java.util.ConcurrentModificationException modError) {
-					// IGNORE CONCURRENT MODS
-//					System.out.println(modError);
+						} 
+					} catch(java.util.ConcurrentModificationException modError) {
+						// IGNORE CONCURRENT MODS
+	//					System.out.println(modError);
+					}
 				}
 		
 				/** move spaces */

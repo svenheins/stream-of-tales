@@ -229,7 +229,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		/** create MainMenu */
 		MainMenu menuBar = new MainMenu(panel);
 		// Comment to unsupport Menu
-		this.setJMenuBar(menuBar);
+//		this.setJMenuBar(menuBar);
 
 //		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		

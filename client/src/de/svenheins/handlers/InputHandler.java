@@ -8,21 +8,22 @@ import java.awt.event.KeyListener;
 
 public class InputHandler implements KeyListener{
 
-	private int k1, k2, k3, k4, k5, k6, k7, k8, k9, k10;
-	public boolean up, down, left, right, attack, pause, options, infoConsole, zoomIn, zoomOut;
+	private int keyLeft, keyRight, keyUp, keyDown, keyAttack, keyPause, keyOptions, keyInfoConsole, keyZoomIn, keyZoomOut, keyInventory;
+	public boolean up, down, left, right, attack, pause, options, infoConsole, zoomIn, zoomOut, inventory;
 	
 	
-	public InputHandler(int k1, int k2, int k3, int k4, int k5, int k6, int k7, int k8, int k9, int k10) {
-		this.k1 = k1;
-		this.k2 = k2;
-		this.k3 = k3;
-		this.k4 = k4;
-		this.k5 = k5;
-		this.k6 = k6;
-		this.k7 = k7;
-		this.k8 = k8;
-		this.k9 = k9;
-		this.k10 = k10;
+	public InputHandler(int keyLeft, int keyRight, int keyUp, int keyDown, int keyAttack, int keyPause, int keyOptions, int keyInfoConsole, int keyZoomIn, int keyZoomOut, int keyInventory) {
+		this.keyLeft = keyLeft;
+		this.keyRight = keyRight;
+		this.keyUp = keyUp;
+		this.keyDown = keyDown;
+		this.keyAttack = keyAttack;
+		this.keyPause = keyPause;
+		this.keyOptions = keyOptions;
+		this.keyInfoConsole = keyInfoConsole;
+		this.keyZoomIn = keyZoomIn;
+		this.keyZoomOut = keyZoomOut;
+		this.keyInventory = keyInventory;
 	}
 	
 	@Override
@@ -30,35 +31,38 @@ public class InputHandler implements KeyListener{
 		// TODO Auto-generated method stub
 //		System.out.println("pressed");
 		int key = e.getKeyCode();
-		if (key== k1) {
+		if (key== keyLeft) {
 			left = true;
 		}
-		if (key== k2) {
+		if (key== keyRight) {
 			right = true;
 		}
-		if (key== k3) {
+		if (key== keyUp) {
 			up = true;
 		}
-		if (key== k4) {
+		if (key== keyDown) {
 			down = true;
 		}
-		if (key== k5) {
+		if (key== keyAttack) {
 			attack = true;
 		}
-		if (key== k6) {
+		if (key== keyPause) {
 			pause = true;
 		}
-		if (key== k7) {
+		if (key== keyOptions) {
 			options = true;
 		}
-		if (key== k8) {
+		if (key== keyInfoConsole) {
 			infoConsole = true;
 		}
-		if (key== k9) {
+		if (key== keyZoomIn) {
 			zoomIn= true;
 		}
-		if (key== k10) {
+		if (key== keyZoomOut) {
 			zoomOut = true;
+		}
+		if (key== keyInventory) {
+			inventory = true;
 		}
 	}
 
@@ -66,37 +70,39 @@ public class InputHandler implements KeyListener{
 	public void keyReleased(KeyEvent e) {
 		// TODO Auto-generated method stub
 		int key = e.getKeyCode();
-		if (key== k1) {
+		if (key== keyLeft) {
 			left = false;
 		}
-		if (key== k2) {
+		if (key== keyRight) {
 			right = false;
 		}
-		if (key== k3) {
+		if (key== keyUp) {
 			up = false;
 		}
-		if (key== k4) {
+		if (key== keyDown) {
 			down = false;
 		}
-		if (key== k5) {
+		if (key== keyAttack) {
 			attack = false;
 		}
-		if (key== k6) {
+		if (key== keyPause) {
 			pause = false;
 		}
-		if (key== k7) {
+		if (key== keyOptions) {
 			options = false;
 		}
-		if (key== k8) {
+		if (key== keyInfoConsole) {
 			infoConsole = false;
 		}
-		if (key == k9) {
+		if (key == keyZoomIn) {
 			zoomIn = false;
 		}
-		if (key == k10) {
+		if (key == keyZoomOut) {
 			zoomOut = false;
 		}
-		
+		if (key == keyInventory) {
+			inventory = false;
+		}
 	}
 
 	@Override

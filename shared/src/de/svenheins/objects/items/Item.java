@@ -5,6 +5,8 @@ import java.math.BigInteger;
 import de.svenheins.main.GameStates;
 import de.svenheins.messages.ITEMCODE;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.items.equipment.bodyarmors.Cloak;
+import de.svenheins.objects.items.materials.Wood;
 
 public abstract class Item implements Cloneable {
 	public static final int[] tileSetX = new int[]{0,0,0,0, GameStates.itemTileWidth, GameStates.itemTileWidth, GameStates.itemTileWidth, GameStates.itemTileWidth};
@@ -19,8 +21,12 @@ public abstract class Item implements Cloneable {
 	private ITEMCODE itemCode;
 	private Entity itemEntity;
 	private long creationTime;
+	private float[] states;
+	protected float x;
+	protected float y;
+	protected boolean visible;
 
-	protected Object clone() throws CloneNotSupportedException {
+	public Object clone() throws CloneNotSupportedException {
 		return super.clone();
 	}
 	
@@ -28,6 +34,7 @@ public abstract class Item implements Cloneable {
 		this.id = id;
 //		this.setItemEntity(itemEntity);
 		this.setCreationTime(System.currentTimeMillis());
+		this.setVisible(true);
 	}
 	
 	public int getCount() {
@@ -76,5 +83,58 @@ public abstract class Item implements Cloneable {
 	public void setCreationTime(long creationTime) {
 		this.creationTime = creationTime;
 	}
+
+	public float[] getStates() {
+		return states;
+	}
+
+	public void setStates(float[] states) {
+		this.states = states;
+	}
 	
+	public static Item getItem(ITEMCODE itemCode, BigInteger id, String name, int count, int capacity, float x, float y, long creationTime, float[] states) {
+		Item retItem = null;
+		switch (itemCode) {
+		case WOOD:
+			retItem = new Wood(id, x, y);
+			retItem.setCount(count);
+			break;
+		case STONE:
+			retItem = null;
+			break;
+			
+		case BODY:
+			if (name.equals("Cloak")) {
+				retItem = new Cloak(id, x, y, states);
+				retItem.setCount(count);
+			}
+			break;
+		default: ;
+		}
+		return retItem;
+	}
+
+	public float getX() {
+		return x;
+	}
+
+	public void setX(float x) {
+		this.x = x;
+	}
+
+	public float getY() {
+		return y;
+	}
+
+	public void setY(float y) {
+		this.y = y;
+	}
+	
+	public void setVisible(boolean b) {
+		visible = b;
+	}
+	
+	public boolean isVisible() {
+		return visible;
+	}
 }

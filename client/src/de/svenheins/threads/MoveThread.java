@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.JComponent;
-
 import de.svenheins.functions.MyMath;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
@@ -26,6 +25,7 @@ import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.TileSet;
 
 public class MoveThread implements Runnable {
 
@@ -210,7 +210,13 @@ public class MoveThread implements Runnable {
 								try {
 									if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.playerTileWidth/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.playerTileHeight/4, ItemManager.get(itemID).getItemEntity().getX()+GameStates.itemTileWidth/2, ItemManager.get(itemID).getItemEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
 										/** send a item collect request */
-										GameWindow.gw.send(ClientMessages.takeItem(itemID));
+//										EFFEKTIVER nur einmal senden lassen, solange die antwort noch nicht kam!!!
+										if (!GameWindow.gw.getSendItemList().contains(itemID)) {
+											ItemManager.get(itemID).setVisible(false);
+											GameWindow.gw.send(ClientMessages.takeItem(itemID));
+											GameWindow.gw.addSendItemListEntry(itemID);
+										}
+										
 									}
 								} catch(java.lang.NullPointerException error) {
 									System.out.println(error);

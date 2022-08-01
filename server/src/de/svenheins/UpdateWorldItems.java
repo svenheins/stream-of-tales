@@ -1,7 +1,8 @@
 package de.svenheins;
 
 import java.io.Serializable;
-import java.util.logging.Level;
+import java.math.BigInteger;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 import com.sun.sgs.app.AppContext;
@@ -10,7 +11,7 @@ import com.sun.sgs.app.ManagedObject;
 import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.Task;
 
-public class InitializePlayersTask  implements Task, Serializable, ManagedObject{
+public class UpdateWorldItems implements Task, Serializable, ManagedObject{
 	/**
 	 * 
 	 */
@@ -19,12 +20,13 @@ public class InitializePlayersTask  implements Task, Serializable, ManagedObject
 	int index;
 	int packageSize;
 	private ManagedReference<WorldRoom> room = null;
+	private Iterator<BigInteger> itKeys;
 
 	private long lastTimestamp = System.currentTimeMillis();
 	
 	private static final Logger logger = Logger.getLogger(WorldRoom.class.getName());
 	
-	public InitializePlayersTask(WorldRoom worldRoom, int begin, int end, int packageSize) {
+	public UpdateWorldItems(WorldRoom worldRoom, int begin, int end, int packageSize) {
 		this.begin = begin;
 		this.end = end;
 		this.index = begin;
@@ -32,22 +34,24 @@ public class InitializePlayersTask  implements Task, Serializable, ManagedObject
 		DataManager dataManager = AppContext.getDataManager();
 		this.room = dataManager.createReference(worldRoom);
 		lastTimestamp = System.currentTimeMillis();
+		itKeys = room.get().getItemList().get().keySet().iterator();
 	}
 			
 	@Override
 	public void run() throws Exception {
-
-//		
-//		int endIndex = this.index + this.packageSize;
-//		if (endIndex > this.end) endIndex =this.end;
+		/** update length */
+		this.end = this.room.get().getItemList().get().size();
 		
-		this.room.get().initializePlayersEntities();
-		this.room.get().initializePlayersItems();
+		int endIndex = this.index + this.packageSize;
+		if (endIndex > this.end) endIndex =this.end;
 		
-//		this.index += this.packageSize;
-//		if (this.index >= this.end) this.index = this.begin;
-
+		this.room.get().updateItems(this.index, endIndex, itKeys);
+		
+		this.index += this.packageSize;
+		if (this.index >= this.end) {
+			this.index = this.begin;
+			itKeys = room.get().getItemList().get().keySet().iterator();
+		}
 
 	}
-
 }

@@ -135,6 +135,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     /** ArrayList of filenames that need to be send to other channel players */
     private ArrayList<String> sendMapList = new ArrayList<String>();
     
+    private ArrayList<BigInteger> sendItemList = new ArrayList<BigInteger>();
+    
     /** TileMapManger */
    protected TileMapManager tileMapManager = new TileMapManager(GameStates.tileSetFile, GameStates.mapTileSetWidth, GameStates.mapTileSetHeight);
    /** TileUndergroundMapManger */
@@ -971,5 +973,27 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		this.light = light;
 	}
 
+	public ArrayList<BigInteger> getSendItemList() {
+		return sendItemList;
+	}
+
+	public void setSendItemList(ArrayList<BigInteger> sendItemList) {
+		this.sendItemList = sendItemList;
+	}
+
+	public BigInteger takeFirstSendItem() {
+		BigInteger retID = BigInteger.valueOf(0);
+		if (sendItemList.size() > 0) {
+			retID = sendItemList.get(0);
+			sendItemList.remove(0);
+		} 
+		return retID;
+		
+	}
+	
+	public void addSendItemListEntry(BigInteger itemID) {
+//		System.out.println(mapFile);
+		if (!this.sendItemList.contains(itemID)) this.sendItemList.add(itemID);
+	}
 
 }

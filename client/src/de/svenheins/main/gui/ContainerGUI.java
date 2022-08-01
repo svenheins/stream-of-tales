@@ -13,9 +13,11 @@ import java.util.List;
 
 import com.sun.sgs.client.ClientChannel;
 
+import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.managers.ItemManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.ITEMCODE;
@@ -29,7 +31,6 @@ public class ContainerGUI {
 	public Container container;
 	private String strValue;
 	private int intValue;
-//	private int xValue
 	private int fontSize;
 	private String name;
 	private Space backgroundSpace;
@@ -47,128 +48,87 @@ public class ContainerGUI {
 		this.container = container;
 		this.setX(x);
 		this.setY(y);
-//		this.backgroundSpace.setPolyX(x);
-//		this.backgroundSpace.setPolyY(y);
-//		this.backgroundSpace.setAllXY(x, y);
 		this.visible = true;
 	}
 	
-	public ContainerGUI(Container container, String name, int x, int y, String strValue, int intValue) {
-		this.name = name;
-		this.strValue = strValue;
-		this.intValue = intValue;
-		this.backgroundSpace = null;
-		this.fontSize = GameStates.inventoryFontSize;
-		this.container = container;
-		this.setX(x);
-		this.setY(y);
-//		this.backgroundSpace.setPolyX(x);
-//		this.backgroundSpace.setPolyY(y);
-//		this.backgroundSpace.setAllXY(x, y);
-		this.visible = true;
-	}
-	
-//	public void remove(BigInteger index) throws IllegalArgumentException {
-//		try {
-//			Button button = buttonList.get(index);
-//			buttonList.remove(index);
-//			idList.remove(index);
-//			resort();
-//		} catch (IllegalArgumentException e) {
-//			e.printStackTrace();
-//		}
-//		
-//	}
-//	
-//	public boolean add(Button button) {
-//		if (buttonList.containsKey(button.getId())) {
-//			return false;
-//		} else {
-//			buttonList.put(button.getId(), button);
-//			idList.add(button.getId());
-//			resort();
-//			return true;
-//		}
-//	}
-//	
-//	/** resort the buttons, use if someone logs out/ logs in */
-//	public void resort() {
-//		int tempY = 0;
-//		for (BigInteger id : idList) {
-//			buttonList.get(id).setY(tempY);
-//			tempY += buttonList.get(id).getHeight()+GameStates.contextMenuButtonDistYBetweenButtons+fontSize;
-//		}
-//	}
-//	
-//	public Button get(BigInteger index){
-//		try {
-//			return (Button) buttonList.get(index);
-//		}
-//		catch(IndexOutOfBoundsException e){
-//			return null;
-//		}
-//		
-//	}
-//	
-//	public boolean overwrite(Button button){
-//		if (!buttonList.containsKey(button.getId())) {
-//			/** do nothing if key is not yet set*/
-//			return false;
-//		} else {
-//			buttonList.put(button.getId(), button);
-//			idList.add(button.getId());
-//			return true;
-//		}
-//	}
-//	
-//	public int size(){
-//		return buttonList.size();
-//	}
-//	
-//	public boolean contains(Button button) {
-//		return buttonList.containsValue(button);
+//	public ContainerGUI(Container container, String name, int x, int y, String strValue, int intValue) {
+//		this.name = name;
+//		this.strValue = strValue;
+//		this.intValue = intValue;
+//		this.backgroundSpace = null;
+//		this.fontSize = GameStates.inventoryFontSize;
+//		this.container = container;
+//		this.setX(x);
+//		this.setY(y);
+//		this.visible = true;
 //	}
 	
+	
+	/** click */
 	public void mouseClick(Point p) {
 		Item retItem = null;
 		Point correctedPoint = (Point) p.clone();
 		correctedPoint.setLocation(p.x - this.getX(), p.y-this.getY());
-		
-//		BigInteger takeItemID = BigInteger.valueOf(0);
 		for (Item item : container.getItemList().values()) {
 			if (item.getItemEntity().contains(correctedPoint)) {
 				retItem = item;
 			}
 		}
-//		for (int i =0; i < container.getHeight(); i++) {
-//			for (int j = 0; j < container.getWidth(); j++) {
-//				
-//				if (container.getContainerArray()[i][j] != BigInteger.valueOf(-1) && container.getItemList().get(container.getContainerArray()[i][j]).getItemEntity().contains(correctedPoint)) {
-//					
-//				}
-//			}
-//		}
 		
-		if (retItem != null) {
-			/** take the item */
-			if (GamePanel.gp.getMouseItem() != null) {
-				container.getItemList().remove(retItem.getId());
-				container.getItemList().put(GamePanel.gp.getMouseItem().getId(), GamePanel.gp.getMouseItem());
-				for (int i =0; i < container.getHeight(); i++) {
-					for (int j = 0; j < container.getWidth(); j++) {
-						if (container.getContainerArray()[i][j].equals(retItem.getId())) {
-//							System.out.println("found it"+container.getContainerArray()[i][j]);
-							GamePanel.gp.getMouseItem().getItemEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
-							GamePanel.gp.getMouseItem().getItemEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
-							
-							container.getContainerArray()[i][j] = GamePanel.gp.getMouseItem().getId();
-//							System.out.println(container.getContainerArray()[i][j]);
+		if (GamePanel.gp.getMouseItem() != null) {
+			if (container.getAllowedItems() == GamePanel.gp.getMouseItem().getItemCode() || container.getAllowedItems() == ITEMCODE.ALL) {
+				if (container.hasAvailableField()) {
+					if (retItem != null) {
+						container.getItemList().remove(retItem.getId());
+						container.getItemList().put(GamePanel.gp.getMouseItem().getId(), GamePanel.gp.getMouseItem());
+						for (int i =0; i < container.getHeight(); i++) {
+							for (int j = 0; j < container.getWidth(); j++) {
+								if (container.getContainerArray()[i][j].equals(retItem.getId())) {
+									GamePanel.gp.getMouseItem().getItemEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
+									GamePanel.gp.getMouseItem().getItemEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
+									container.getContainerArray()[i][j] = GamePanel.gp.getMouseItem().getId();
+								}
+							}
 						}
+						retItem.getItemEntity().setX(p.x);
+						retItem.getItemEntity().setY(p.y);
+						GamePanel.gp.setMouseItem(retItem);
+					} else {
+						/** retItem == null  so we did not click onto any valid item */
+						Item tooManyItem = null;
+						try {
+							tooManyItem = container.addItem((Item) GamePanel.gp.getMouseItem().clone());
+							GamePanel.gp.setMouseItem(null);
+						} catch (CloneNotSupportedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}/*, GamePanel.gp.getMouseItem().getId()*///);
+						if (tooManyItem != null) {
+							if (tooManyItem.getCount() > 0) {
+								/** first send to server for the itemList */
+//								GameWindow.gw.send(ClientMessages.addItem(tooManyItem.getId(), tooManyItem.getItemCode(), tooManyItem.getCount(), tooManyItem.getCapacity(), tooManyItem.getItemEntity().getX(), tooManyItem.getItemEntity().getY(), tooManyItem.getItemEntity().getMX(), tooManyItem.getItemEntity().getMY(), tooManyItem.getName(), tooManyItem.getItemEntity().getTileSet().getFileName(), tooManyItem.getItemEntity().getName(), tooManyItem.getStates()));
+//								for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+//									ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+//									try {
+//										channel.send(ClientMessages.addCompleteItem(tooManyItem.getItemCode(), tooManyItem.getId(), tooManyItem.getName(), tooManyItem.getItemEntity().getX(),tooManyItem.getItemEntity().getY(), tooManyItem.getCount(), tooManyItem.getStates()));
+//									} catch (IOException e) {
+//										e.printStackTrace();
+//									}	
+//								}
+								tooManyItem.getItemEntity().setX(p.x);
+								tooManyItem.getItemEntity().setY(p.y);
+								GamePanel.gp.setMouseItem(tooManyItem);
+				    		} else {
+				    			GamePanel.gp.setMouseItem(null);
+				    		}
+						}
+//						GamePanel.gp.setMouseItem(null);
 					}
 				}
-				
-			} else {
-//				container.addItem(retItem, retItem.getId());
+			}
+		} else {
+			if (retItem != null) {
+				/** just take the item */
 				if(container.removeItem(retItem.getId())) {
 					// OK
 				}
@@ -176,80 +136,76 @@ public class ContainerGUI {
 				{
 					// not OK
 				}
-				
+				retItem.getItemEntity().setX(p.x);
+				retItem.getItemEntity().setY(p.y);
+				GamePanel.gp.setMouseItem(retItem);
+			} else {
+				// both are null, so just ignore the process
+			}
+		}
+		
+//		if (retItem != null) {
+//			retItem.getItemEntity().setX(p.x);
+//			retItem.getItemEntity().setY(p.y);
+//			GamePanel.gp.setMouseItem(retItem);
+//		}
+			
+		
+//		if (retItem != null) {
+//			/** take the item */
+//			if (GamePanel.gp.getMouseItem() != null) {
+//				container.getItemList().remove(retItem.getId());
+//				container.getItemList().put(GamePanel.gp.getMouseItem().getId(), GamePanel.gp.getMouseItem());
 //				for (int i =0; i < container.getHeight(); i++) {
 //					for (int j = 0; j < container.getWidth(); j++) {
 //						if (container.getContainerArray()[i][j].equals(retItem.getId())) {
-//							container.getContainerArray()[i][j] = BigInteger.valueOf(-1);
+//							GamePanel.gp.getMouseItem().getItemEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
+//							GamePanel.gp.getMouseItem().getItemEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
+//							container.getContainerArray()[i][j] = GamePanel.gp.getMouseItem().getId();
 //						}
 //					}
 //				}
-			}
-			retItem.getItemEntity().setX(p.x);
-			retItem.getItemEntity().setY(p.y);
-			GamePanel.gp.setMouseItem(retItem);
-		} else {
-			if (GamePanel.gp.getMouseItem() != null) {
-				/** retItem == null  so we did not click onto any valid item */
-				Item tooManyItem = container.addItem(GamePanel.gp.getMouseItem()/*, GamePanel.gp.getMouseItem().getId()*/);
-				if (tooManyItem != null) {
-					if (tooManyItem.getCount() > 0) {
-						/** first send to server for the itemList */
-						GameWindow.gw.send(ClientMessages.addItem(tooManyItem.getId(), tooManyItem.getItemCode(), tooManyItem.getCount(), tooManyItem.getCapacity(), tooManyItem.getItemEntity().getX(), tooManyItem.getItemEntity().getY(), tooManyItem.getItemEntity().getMX(), tooManyItem.getItemEntity().getMY(), tooManyItem.getName(), tooManyItem.getItemEntity().getTileSet().getFileName(), tooManyItem.getItemEntity().getName()));
-//						GameWindow.gw.send(ClientMessages.addItem(tooManyItem.getId()));
-						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
-							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
-							try {
-								channel.send(ClientMessages.addCompleteItem(ITEMCODE.WOOD, tooManyItem.getId(), "wood", GamePanel.gp.getPlayerEntity().getX(),GamePanel.gp.getPlayerEntity().getY(), tooManyItem.getCount(), new float[1]));
-							} catch (IOException e) {
-								e.printStackTrace();
-							}	
-						}
-						
-		    		}
-				}
-				GamePanel.gp.setMouseItem(null);
-			} // else there is no item in the inventory or in the mouseItem
-		}
+//				
+//			} else {
+//				/** just take the item */
+//				if(container.removeItem(retItem.getId())) {
+//					// OK
+//				}
+//				else
+//				{
+//					// not OK
+//				}
+//			}
+//			retItem.getItemEntity().setX(p.x);
+//			retItem.getItemEntity().setY(p.y);
+//			GamePanel.gp.setMouseItem(retItem);
+//		} else {
+//			if (GamePanel.gp.getMouseItem() != null) {
+//				/** retItem == null  so we did not click onto any valid item */
+//				Item tooManyItem = container.addItem(GamePanel.gp.getMouseItem()/*, GamePanel.gp.getMouseItem().getId()*/);
+//				if (tooManyItem != null) {
+//					if (tooManyItem.getCount() > 0) {
+//						/** first send to server for the itemList */
+//						GameWindow.gw.send(ClientMessages.addItem(tooManyItem.getId(), tooManyItem.getItemCode(), tooManyItem.getCount(), tooManyItem.getCapacity(), tooManyItem.getItemEntity().getX(), tooManyItem.getItemEntity().getY(), tooManyItem.getItemEntity().getMX(), tooManyItem.getItemEntity().getMY(), tooManyItem.getName(), tooManyItem.getItemEntity().getTileSet().getFileName(), tooManyItem.getItemEntity().getName(), tooManyItem.getStates()));
+//						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+//							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+//							try {
+//								channel.send(ClientMessages.addCompleteItem(ITEMCODE.WOOD, tooManyItem.getId(), "wood", GamePanel.gp.getPlayerEntity().getX(),GamePanel.gp.getPlayerEntity().getY(), tooManyItem.getCount(), new float[1]));
+//							} catch (IOException e) {
+//								e.printStackTrace();
+//							}	
+//						}
+//						
+//		    		}
+//				}
+//				GamePanel.gp.setMouseItem(null);
+//			} // else there is no item in the inventory or in the mouseItem
+//		}
 		
-//		for (BigInteger id : idList) {
-//			Button button = buttonList.get(id);
-//			if (button.contains(p)) {
-//				this.setIntValue(button.getIntValue());
-//				this.setStrValue(button.getStrValue());
-//				if (button.getId() == BigInteger.valueOf(0)) {
-//					retEntity = GamePanel.gp.getPlayerEntity();
-//				} else {
-//					retEntity = PlayerManager.get(button.getId());	
-//				}
-//				this.setStrValue(retEntity.getName());
-				
-				/** now change the animation */
-//				button.setActive();
-//				deactivateOthers(button);
-				
-//				if (GameWindow.gw.isLoggedIn()) {
-//					/** create map folder for the chosen player */
-//					String playerName = this.getStrValue();
-//				    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+playerName)).mkdirs();
-//				    if (!createMapFolderSccess) {
-//				         // Directory creation failed
-//				    }
-//				    /** delete only the Maps, not the changedPoints */
-//				    GameWindow.gw.setGameMasterName(playerName);
-//				    GameWindow.gw.initLocalMapFileList(playerName);
-//				}
-//			}
-//		}
+		/** update server */
+		ClientMessageHandler.containerUpdateSendBrutal(this.container);
 	}
-//	
-//	public void deactivateOthers(Button button) {
-//		for(Button otherButton : buttonList.values()) {
-//			if (otherButton != button) {
-//				otherButton.setInactive();
-//			}
-//		}
-//	}
+
 	
 	public void paint(Graphics2D g, ImageObserver iObserver) {
 		/** paint backgroundSpace only if it exists */
@@ -265,16 +221,17 @@ public class ContainerGUI {
 //					System.out.print(" "+container.getContainerArray()[i][j] +" ");
 					Item item = container.getItemList().get(container.getContainerArray()[i][j]);
 //					Button button = get(itemID);
-					
-					Entity itemEntity = item.getItemEntity();
-					g.setColor(new Color(250, 250, 250));
-					g.setFont(new Font("Arial", Font.PLAIN , fontSize));
-//					drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
-					g.drawString(""+item.getCount()/*+" "+item.getName()*/,this.x+GameStates.inventoryFontDistanceX + (int)itemEntity.getX(), this.y+ GameStates.inventoryFontDistanceY +(int) itemEntity.getY() + itemEntity.getHeight() /*+ g.getFontMetrics().getHeight()*/);
-					
-					g.setPaintMode();
-					g.drawImage(itemEntity.getSprite().getImage(), this.x + (int)itemEntity.getX(), this.y +(int) itemEntity.getY(), iObserver);
-					
+					if (item.isVisible()) {
+						Entity itemEntity = item.getItemEntity();
+						if (item.getCount()>1) {
+							g.setColor(new Color(250, 250, 250));
+							g.setFont(new Font("Arial", Font.PLAIN , fontSize));
+		//					drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
+							g.drawString(""+item.getCount()/*+" "+item.getName()*/,this.x+GameStates.inventoryFontDistanceX + (int)itemEntity.getX(), this.y+ GameStates.inventoryFontDistanceY +(int) itemEntity.getY() + itemEntity.getHeight() /*+ g.getFontMetrics().getHeight()*/);
+						}
+						g.setPaintMode();
+						g.drawImage(itemEntity.getSprite().getImage(), this.x + (int)itemEntity.getX(), this.y +(int) itemEntity.getY(), iObserver);
+					}
 				} else {
 					// dont draw anything into the field
 //					System.out.println("item "+container.getContainerArray()[i][j] +" is not in container");

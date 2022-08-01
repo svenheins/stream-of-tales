@@ -50,7 +50,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 
 	private boolean dragging = false;
 	protected Space dragSpace=null; 
-	protected int localX, localY;
+//	protected int localX, localY;
 	
 	@Override
 	public void mouseClicked(MouseEvent mouseEvent) {
@@ -684,6 +684,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 									// create drop 
 									BigInteger itemId = ItemManager.getMaxIDValue().add(GamePanel.gp.getPlayerEntity().getId());
 									Wood woodItem = new Wood(itemId, p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)));
+									woodItem.setCount(49);
 									System.out.println("added new wood object: "+itemId);
 //									Wood item = new Wood();
 //									TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", "WoodPileTileSet", GameStates.itemTileWidth, GameStates.itemTileHeight);
@@ -694,14 +695,14 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 									/** send the complete Item to all players of the channel */
 									if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 										/** first send to server for the itemList */
-										GameWindow.gw.send(ClientMessages.addItem(woodItem.getId(), woodItem.getItemCode(), woodItem.getCount(), woodItem.getCapacity(), woodItem.getItemEntity().getX(), woodItem.getItemEntity().getY(), woodItem.getItemEntity().getMX(), woodItem.getItemEntity().getMY(), woodItem.getName(), woodItem.getItemEntity().getTileSet().getFileName(), woodItem.getItemEntity().getName()));
+										GameWindow.gw.send(ClientMessages.addItem(woodItem.getId(), woodItem.getItemCode(), woodItem.getCount(), woodItem.getCapacity(), woodItem.getItemEntity().getX(), woodItem.getItemEntity().getY(), woodItem.getItemEntity().getMX(), woodItem.getItemEntity().getMY(), woodItem.getName(), woodItem.getItemEntity().getTileSet().getFileName(), woodItem.getItemEntity().getName(), woodItem.getStates()));
 										
 //										GameWindow.gw.send(ClientMessages.addItem(itemId));
 										
 										for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 											ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 											try {
-												channel.send(ClientMessages.addCompleteItem(ITEMCODE.WOOD, itemId, "wood", p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)), 7, new float[1]));
+												channel.send(ClientMessages.addCompleteItem(woodItem.getItemCode(), woodItem.getId(), woodItem.getName(), woodItem.getItemEntity().getX(), woodItem.getItemEntity().getY(), woodItem.getCount(), woodItem.getStates()));
 											} catch (IOException e) {
 												e.printStackTrace();
 											}	

@@ -32,7 +32,7 @@ public class ServerItem extends WorldObject{
 	private ITEMCODE itemCode;
 	private ManagedReference<ServerEntity> itemEntity;
 	private long creationTime;
-	
+	private float[] states;
     
 
 	/** The {@link WorldRoom} this player is in, or null if none. */
@@ -42,13 +42,17 @@ public class ServerItem extends WorldObject{
         Logger.getLogger(ServerEntity.class.getName());
 	
 	
-    public ServerItem (BigInteger id, ITEMCODE itemCode, String name, ServerEntity itemEntity, int count, int capacity) {
+    public ServerItem (BigInteger id, ITEMCODE itemCode, String name, ServerEntity itemEntity, int count, int capacity, float[] states) {
     	setId(id);
     	setItemCode(itemCode);
     	setName(name);
     	setItemEntity(AppContext.getDataManager().createReference(itemEntity));
     	setCount(count);
     	setCapacity(capacity);
+    	setStates(states);
+    	setX(itemEntity.getX());
+    	setY(itemEntity.getY());
+    	setCreationTime(System.currentTimeMillis());
     }
 
 
@@ -119,5 +123,15 @@ public class ServerItem extends WorldObject{
 
 	public void setCreationTime(long creationTime) {
 		this.creationTime = creationTime;
+	}
+
+
+	public float[] getStates() {
+		return states;
+	}
+
+
+	public void setStates(float[] states) {
+		this.states = states;
 	}
 }

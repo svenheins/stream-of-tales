@@ -22,6 +22,8 @@ public class Wood extends Material {
 //		TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", this.getName(), GameStates.itemTileWidth, GameStates.itemTileHeight);
 		TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", this.getName(), Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight);
 		Entity itemEntity = new Entity(woodTileSet, this.getName(), id, x, y, GameStates.animationDelayItems);
+		this.setX(x);
+		this.setY(y);
 		this.setItemEntity(itemEntity);
 	}
 

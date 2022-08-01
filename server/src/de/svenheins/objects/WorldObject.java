@@ -199,7 +199,6 @@ public class WorldObject
 		return this.height;
 	}
 	
-	
 	public void setHeight(float height){
 		this.height = height;
 	}

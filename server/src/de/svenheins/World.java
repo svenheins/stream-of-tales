@@ -105,6 +105,8 @@ public class World
     private Set<ManagedReference<SendUpdatePlayersTaskSimple>> supSimple = new HashSet<ManagedReference<SendUpdatePlayersTaskSimple>>();
     private Set<ManagedReference<UpdateWorldTaskSimple>> uwtSimple = new HashSet<ManagedReference<UpdateWorldTaskSimple>>();
     
+    private Set<ManagedReference<UpdateWorldItems>> uItemsSimple = new HashSet<ManagedReference<UpdateWorldItems>>();
+    
     /** A Set reference to each of the Update Task and the sendTask */
     private Set<ManagedReference<SendUpdatePlayersSpaces>> supsSimple = new HashSet<ManagedReference<SendUpdatePlayersSpaces>>();
     private Set<ManagedReference<UpdateWorldSpaces>> uwsSimple = new HashSet<ManagedReference<UpdateWorldSpaces>>();
@@ -121,7 +123,7 @@ public class World
     /** The name of the global chat channel {@value #CHANNEL_CHAT_GLOBAL} */
     static final String CHANNEL_CHAT_GLOBAL = "GLOBAL CHAT";
     
- 
+    
     /** 
      * The first {@link Channel}.  The second channel is looked up
      * by name.
@@ -353,6 +355,10 @@ public class World
         	end = end + (room.getCountEntities()/countPackets);
         	logger.log(Level.INFO, "end: "+end);
         }
+        
+        /** add item update task */
+        UpdateWorldItems uit = new UpdateWorldItems(room, 0, 0, 10);
+        addUpdateItemsTask(uit);
        
         /** create Space-Tasks */
         begin = 0;
@@ -476,6 +482,13 @@ public class World
 		    	for (ManagedReference<SendUpdatePlayersTaskSimple> sup : supSimple) {
 		    		supReal = sup.get();
 		    		supReal.run();
+		    	}
+		    	
+		    	/** start item task */
+		    	UpdateWorldItems uit;
+		    	for(ManagedReference<UpdateWorldItems> uitTemp: uItemsSimple) {
+		    		uit = uitTemp.get();
+		    		uit.run();
 		    	}
 		    	
 		    	/** Start Space Tasks */
@@ -651,6 +664,21 @@ public class World
 	    dataManager.markForUpdate(this);
 	
 	    return uwtSimple.add(dataManager.createReference(uwt));
+	}
+	
+	/** add an additional UpdateTask (size depends on Entities) */
+	public boolean addUpdateItemsTask(UpdateWorldItems uit) {
+	    logger.log(Level.INFO, "{0} placed in {1}",
+	        new Object[] { uit, this });
+	
+	    // NOTE: we can't directly save the item in the list, or
+	    // we'll end up with a local copy of the item. Instead, we
+	    // must save a ManagedReference to the item.
+	
+	    DataManager dataManager = AppContext.getDataManager();
+	    dataManager.markForUpdate(this);
+	
+	    return uItemsSimple.add(dataManager.createReference(uit));
 	}
 	
 	/** add an additional Space-UpdateTask (size depends on Spaces) */

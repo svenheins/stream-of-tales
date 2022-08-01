@@ -10,11 +10,9 @@ import java.util.ArrayList;
 import de.svenheins.animation.SpaceAnimation;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
-import de.svenheins.managers.WorldItemManager;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
-import de.svenheins.objects.items.WorldItem;
 import de.svenheins.objects.items.materials.Wood;
 
 
@@ -117,11 +115,26 @@ public class ClientMessages extends Messages{
      * @param id
      * @return 
      */
-    public static ByteBuffer addItem(BigInteger id) {
-        byte[] bytes = new byte[1 + 8];
+    public static ByteBuffer addItem(BigInteger id, ITEMCODE itemCode_ADDITEM, int count_ADDITEM, int capacity_ADDITEM, float x_ADDITEM, float y_ADDITEM, float mx_ADDITEM, float my_ADDITEM, String itemName_ADDITEM, String spriteString_ADDITEM, String spriteShortName_ADDITEM) {
+        byte[] bytes = new byte[1 + 8 + 1 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + itemName_ADDITEM.length() + 4 + spriteString_ADDITEM.length() + 4 + spriteShortName_ADDITEM.length() ];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.ADDITEM.ordinal());
         buffer.putLong(id.longValue()); // 8 Bytes
+        
+        buffer.put((byte) itemCode_ADDITEM.ordinal()); // 1
+		buffer.putInt(count_ADDITEM); // 4
+		buffer.putInt(capacity_ADDITEM); // 4
+		buffer.putFloat(x_ADDITEM); // 4
+		buffer.putFloat(y_ADDITEM); // 4
+		buffer.putFloat(mx_ADDITEM); // 4
+		buffer.putFloat(my_ADDITEM); // 4
+		buffer.putInt(itemName_ADDITEM.length()); // 4
+	    buffer.put(itemName_ADDITEM.getBytes()); // itemName_ADDITEM.length() 
+	    buffer.putInt(spriteString_ADDITEM.length()); // 4
+	    buffer.put(spriteString_ADDITEM.getBytes()); // spriteString_ADDITEM.length() 
+	    buffer.putInt(spriteShortName_ADDITEM.length()); // 4
+	    buffer.put(spriteShortName_ADDITEM.getBytes()); // spriteShortName_ADDITEM.length() 
+        
         buffer.flip();
         return buffer;
     }
@@ -131,7 +144,7 @@ public class ClientMessages extends Messages{
      * @param id
      * @return 
      */
-    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, int x, int y, int count, float[] states) {
+    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, float x, float y, int count, float[] states) {
         byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.ADDCOMPLETEITEM.ordinal()); // 1
@@ -140,8 +153,8 @@ public class ClientMessages extends Messages{
         buffer.putLong(id.longValue()); // 8 Bytes
         buffer.putInt(name.length()); // 4
     	buffer.put(name.getBytes()); // playerName.length() 
-    	buffer.putInt(x); // 4
-    	buffer.putInt(y); // 4
+    	buffer.putFloat(x); // 4
+    	buffer.putFloat(y); // 4
         buffer.putInt(count); // 4
         
         buffer.flip();

@@ -15,6 +15,8 @@ import java.util.ArrayList;
 
 import javax.swing.JComboBox;
 
+import com.sun.sgs.client.ClientChannel;
+
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
@@ -26,11 +28,11 @@ import de.svenheins.main.gui.PlayerListGUI;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.ItemManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.TileSetManager;
-import de.svenheins.managers.WorldItemManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.ITEMCODE;
@@ -41,7 +43,7 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
-import de.svenheins.objects.items.WorldItem;
+import de.svenheins.objects.items.Item;
 import de.svenheins.objects.items.materials.Wood;
 
 public class ClientMessageHandler {
@@ -285,7 +287,7 @@ public class ClientMessageHandler {
     				/** add PlayerButton */
     				TileSet tileSet = new TileSet("tilesets/buttons/undergroundGrassButton.png", "undergroundGrassButton", 32, 32);
     				PlayerListGUI playerListGUI = PlayerListGUIManager.get("playerList");
-    				Button newPlayerButton = new Button(tileSet, name_player_TileSet, id_player, 0 , playerListGUI.getMaxYValue()+10, animationDelay, name_player, 0, "");
+    				Button newPlayerButton = new Button(tileSet, name_player_TileSet, id_player, 0 , 0, animationDelay, name_player, 0, "");
     				playerListGUI.add(newPlayerButton);
     				
     				GameWindow.gw.gameInfoConsole.appendInfo("got data of player: "+name_player);
@@ -334,6 +336,8 @@ public class ClientMessageHandler {
     		float mx = packet.getFloat();
     		float my = packet.getFloat();
     		
+    		BigInteger maxItemID = BigInteger.valueOf(packet.getLong());
+    		
     		TileSet tileSet = new TileSet(tilePathName, tileName, GameStates.playerTileWidth, GameStates.playerTileHeight);
     		PlayerEntity playerEntity = new PlayerEntity(tileSet, GameWindow.gw.getPlayerName(), myId, x, y, GameStates.animationDelay);
     		playerEntity.setGroupName(groupName);
@@ -343,6 +347,9 @@ public class ClientMessageHandler {
     		playerEntity.setMovement(mx, my);
     		playerEntity.setX(x);
     		playerEntity.setY(y);
+    		
+    		ItemManager.setMaxIDValue(maxItemID);
+    		
     		GamePanel.gp.setPlayerEntity(playerEntity);
 //    		System.out.println("OK, initme complete!"+x);
     		GamePanel.gp.setInitializedPlayer(true);
@@ -473,8 +480,8 @@ public class ClientMessageHandler {
 	    		}
 	    		if (objCode == OBJECTCODE.ITEM) {
 	    			deleteText = "Item "+ objectId +" was removed";
-	    			System.out.println(deleteText);
-	    			WorldItemManager.remove(objectId);
+//	    			System.out.println(deleteText);
+	    			ItemManager.remove(objectId);
 	    		}
 	    		GameWindow.gw.gameInfoConsole.appendInfo(deleteText);
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
@@ -489,21 +496,19 @@ public class ClientMessageHandler {
     		byte[] nameAddCompleteItemBytes = new byte[packet.getInt()];
 			packet.get(nameAddCompleteItemBytes);
 			String addCompleteItemName = new String(nameAddCompleteItemBytes); // name
-    		int addCompleteItemX = packet.getInt(); 
-    		int addCompleteItemY = packet.getInt();
+    		float addCompleteItemX = packet.getFloat(); 
+    		float addCompleteItemY = packet.getFloat();
 			int addCompleteItemCount = packet.getInt();
 			
     		switch(itemCode) {
     		case WOOD:
-    			Wood item = new Wood();
-    			item.setCount(addCompleteItemCount);
-    			TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", addCompleteItemName, GameStates.itemTileWidth, GameStates.itemTileHeight);
-    			Entity itemEntity = new Entity(woodTileSet, addCompleteItemName, addCompleteItemId, addCompleteItemX, addCompleteItemY, GameStates.animationDelayItems);
-    			WorldItem wood = new WorldItem(addCompleteItemId, item, itemEntity);
-    			if(WorldItemManager.add(wood)) {
+    			Wood wood = new Wood(addCompleteItemId, addCompleteItemX, addCompleteItemY);
+    			wood.setCount(addCompleteItemCount);
+    			if(ItemManager.add(wood)) {
+    				System.out.println("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
     				GameWindow.gw.gameInfoConsole.appendInfo("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
-    				
     			} else {
+    				System.out.println("failed inserting item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
     				GameWindow.gw.gameInfoConsole.appendInfo("got the item "+addCompleteItemName+" with ID: "+addCompleteItemId+" already!");
     			}
     			break;
@@ -519,9 +524,24 @@ public class ClientMessageHandler {
 	    		BigInteger takeItemId = BigInteger.valueOf(packet.getLong());
 	    		/** take the item */
 //	    		System.out.println("inventory full: " +GamePanel.gp.getPlayerEntity().getPlayerInventory().getItemList().size()+"/"+GamePanel.gp.getPlayerEntity().getPlayerInventory().getWidth()*GamePanel.gp.getPlayerEntity().getPlayerInventory().getHeight());
-	    		GameWindow.gw.gameInfoConsole.appendInfo("inventory full: " +GamePanel.gp.getPlayerEntity().getPlayerInventory().getItemList().size()+"/"+GamePanel.gp.getPlayerEntity().getPlayerInventory().getWidth()*GamePanel.gp.getPlayerEntity().getPlayerInventory().getHeight());
-	    		GamePanel.gp.getPlayerEntity().getPlayerInventory().addItem(WorldItemManager.get(takeItemId).getItem());
-	    		GameWindow.gw.send(ClientMessages.tookItem(takeItemId));
+//	    		GameWindow.gw.gameInfoConsole.appendInfo("inventory used: " +GamePanel.gp.getPlayerEntity().getInventory().getItemList().size()+"/"+GamePanel.gp.getPlayerEntity().getInventory().getWidth()*GamePanel.gp.getPlayerEntity().getInventory().getHeight());
+//	    		System.out.println("ID = "+takeItemId);
+	    		if (ItemManager.get(takeItemId)!= null) {
+		    		Item restItem = GamePanel.gp.getPlayerEntity().getInventory().addItem(ItemManager.get(takeItemId)/*, GamePanel.gp.getPlayerEntity().getId()*/);
+		    		GameWindow.gw.send(ClientMessages.tookItem(takeItemId));
+		    		if (restItem != null) {
+	    				/** first send to server for the itemList */
+						GameWindow.gw.send(ClientMessages.addItem(restItem.getId(), restItem.getItemCode(), restItem.getCount(), restItem.getCapacity(), restItem.getItemEntity().getX(), restItem.getItemEntity().getY(), restItem.getItemEntity().getMX(), restItem.getItemEntity().getMY(), restItem.getName(), restItem.getItemEntity().getTileSet().getFileName(), restItem.getItemEntity().getName()));
+						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+							try {
+								channel.send(ClientMessages.addCompleteItem(restItem.getItemCode(), takeItemId, restItem.getName(), restItem.getItemEntity().getX(), restItem.getItemEntity().getY(), restItem.getCount(), new float[1]));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}	
+						}
+					}
+	    		}
     		}
     		break;
     	case READY_FOR_NEXT_TEXTURE_PACKET:

@@ -48,8 +48,26 @@ public class GameStates {
 	public static int DEFAULT_MOVEMENT_ON_X = 100;
 	public static int DEFAULT_MOVEMENT_ON_Y = 100;
 	
-	/** take distance */
+	/** item/ inventory stuff */ 
+	/**take distance */
 	public static int takeDistance = 16;
+	public static int dropDistance = 20;
+	public static int inventoryPlayerX = width / 2;
+	public static int inventoryPlayerY = 120;
+	public static int inventoryWidthPlayer = 6;
+	public static int inventoryHeightPlayer = 3;
+	public static int inventoryDistToFrameX = 10;
+	public static int inventoryDistToFrameY = 10;
+	public static int inventoryItemTileWidth = 16;
+	public static int inventoryItemTileHeight = 16;
+	public static int inventorySlotDistX = 5;
+	public static int inventorySlotDistY = 5;
+	public static int inventoryFontSize = 10;
+	public static int inventoryFontDistanceX = 0;
+	public static int inventoryFontDistanceY = inventoryFontSize/2;
+	
+	/** item properties */
+	public static int itemMaterialCapacity = 50;
 	
 	/** animation stuff */
 	public static int animationDelay = 200;
@@ -85,11 +103,11 @@ public class GameStates {
 	public static int ani_walking_l_start = 28;
 	public static int ani_walking_l_end = 31;
 	public static int ani_walking_r_start = 12;
-	public static int ani_walking_r_end = 14;
+	public static int ani_walking_r_end = 15;
 	public static int ani_walking_u_start = 32;
 	public static int ani_walking_u_end = 35;
-	public static int ani_walking_d_start = 15;
-	public static int ani_walking_d_end = 18;
+	public static int ani_walking_d_start = 16;
+	public static int ani_walking_d_end = 19;
 	
 	/** sleeping **/
 	public static int ani_sleeping_l_start = 16;
@@ -125,8 +143,11 @@ public class GameStates {
 	public static int contextMenuFontSize = 10;
 	public static int contextMenuButtonDistX = 5;
 	public static int contextMenuButtonDistY = 5;
+	public static int contextMenuButtonDistYBetweenButtons = 10;
 	public static int contextMenuTextDistX = 5;
 	public static int contextMenuTextDistY = 0;
+	public static int contextMenuFrameDistX = 5;
+	public static int contextMenuFrameDistY = 5;
 	
 	/** channel settings */
 	public static boolean useChannels = true;

@@ -53,7 +53,9 @@ import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
 import de.svenheins.objects.ServerAgentEntrepreneur;
+import de.svenheins.objects.ServerContainer;
 import de.svenheins.objects.ServerEntity;
+import de.svenheins.objects.ServerItem;
 import de.svenheins.objects.ServerPlayer;
 import de.svenheins.objects.ServerRegion;
 import de.svenheins.objects.ServerSpace;
@@ -79,9 +81,9 @@ public class WorldRoom extends WorldObject
     private static final Logger logger =
         Logger.getLogger(WorldRoom.class.getName());
 
-    /** The set of items in this room. */
-    private final Set<ManagedReference<WorldObject>> items =
-        new HashSet<ManagedReference<WorldObject>>();
+//    /** The set of items in this room. */
+//    private final Set<ManagedReference<WorldObject>> items =
+//        new HashSet<ManagedReference<WorldObject>>();
     
     /** The set of entities in this room. */
     private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> entities;// =
@@ -93,11 +95,15 @@ public class WorldRoom extends WorldObject
     private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerSpace>>> spaces;// =
 //        new HashMap<BigInteger, ManagedReference<ServerSpace>>();
     
-    private ArrayList<BigInteger> itemList = new ArrayList<BigInteger>();
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerItem>>> itemList;
+    private BigInteger maxItemIndex;
+    
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerList;
     
 //    private static List<ManagedReference<ServerSpace>> spacesArray = null;
 
-    /** The set of players in this room. */
+
+	/** The set of players in this room. */
     private final HashMap<BigInteger, ManagedReference<WorldPlayer>> players =
         new HashMap<BigInteger, ManagedReference<WorldPlayer>>();
     
@@ -139,7 +145,13 @@ public class WorldRoom extends WorldObject
         ScalableHashMap<String, ManagedReference<ServerPlayer>> tempPlayers = new ScalableHashMap<String, ManagedReference<ServerPlayer>>();
         serverPlayers = dm.createReference(tempPlayers);
         
-        itemList = new ArrayList<BigInteger>();
+        ScalableHashMap<BigInteger, ManagedReference<ServerItem>> tempItemList = new ScalableHashMap<BigInteger, ManagedReference<ServerItem>>();
+        itemList = dm.createReference(tempItemList);
+//        BigInteger tempMaxItemID = BigInteger.valueOf(0);
+        maxItemIndex = BigInteger.valueOf(0);
+        
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerList = dm.createReference(tempContainerList);
     }
 
 //    /**
@@ -178,11 +190,37 @@ public class WorldRoom extends WorldObject
         refEnt.getForUpdate().setId(entID);
     	logger.log(Level.INFO, "{0} placed in {1}",
                     new Object[] { entity, this });
-	        
         entity.setRoom(this);
         entities.get().put(refEnt.getId(),refEnt);
 //        entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
     }
+    
+    /** add itemID into room */
+    public void addItem(BigInteger itemID, ServerItem serverItem) {
+    	DataManager dataManager = AppContext.getDataManager();
+        dataManager.markForUpdate(this);
+//        ManagedReference<BigInteger> tempItemID = dataManager.createReference(itemID);
+        if (maxItemIndex.compareTo(itemID) < 0) {
+        	maxItemIndex = itemID;
+        }
+        ManagedReference<ServerItem> tempServerItem = dataManager.createReference(serverItem);
+        if (!itemList.get().containsKey(itemID)) {
+        	itemList.getForUpdate().put(itemID, tempServerItem);
+        }
+    }
+    
+    /** only remove the item for the players who cannot see the item */
+    public void removeItem(BigInteger itemID) {
+    	this.getItemList().getForUpdate().remove(itemID);
+		for (BigInteger playerIds : players.keySet()) {
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.ITEM, itemID));
+			} else {
+				// player does not exist
+			}
+		}
+	}
     
     /**
      * Adds an serverPlayer to this room.
@@ -892,26 +930,22 @@ public class WorldRoom extends WorldObject
 		
 	}
 
-	public ArrayList<BigInteger> getItemList() {
+	
+	public BigInteger getMaxItemIndex() {
+		return maxItemIndex;
+	}
+
+	public void setMaxItemIndex(BigInteger maxItemIndex) {
+		this.maxItemIndex = maxItemIndex;
+	}
+
+	public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerItem>>> getItemList() {
 		return itemList;
 	}
 	
-	public void addItem(BigInteger itemID) {
-		if (!itemList.contains(itemID))
-		this.itemList.add(itemID);
-	}
-	
-	public void removeItem(BigInteger itemID) {
-		this.itemList.remove(itemID);
-		for (BigInteger playerIds : players.keySet()) {
-			/*** check if player does exist */
-			if (players.get(playerIds) != null) {
-				logger.log(Level.INFO, "deleting message for item {0} send to player {1}",
-	    	            new Object[] { itemID, playerIds});
-				this.players.get(playerIds).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.ITEM, itemID));
-			} else {
-				// player does not exist
-			}
-		}
+	/** add an item to the player Container */
+	public void addItemToContainer(String playerName, ServerItem serverItem, int i, int j) {
+		this.containerList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+		this.containerList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
 	}
 }

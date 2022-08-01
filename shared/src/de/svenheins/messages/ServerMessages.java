@@ -276,8 +276,26 @@ public class ServerMessages extends Messages{
         return buffer;
     }
     
-    public static ByteBuffer sendMe(BigInteger id, String tileName, String tilePathName, String groupName, long firstServerLogin, int experience, String country, float x, float y, float mx, float my) {
-    	byte[] bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4];
+    public static ByteBuffer sendMe(BigInteger id, String tileName, String tilePathName, String groupName, long firstServerLogin, int experience, String country, float x, float y, float mx, float my, BigInteger maxItemID, ServerContainer inventory) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+    	/** get the length of Bytes that must be reserved for the names */
+		int inventoryHeight = inventory.;
+		int inventoryWidth = 0;
+		int tileFileNameLength = 0;
+    	
+		for (int i = 0; i<localObjects.length; i++) {
+			namesLength += localObjects[i].getName().length();
+			tileNameLength += localObjects[i].getTileSet().getName().length();
+			tileFileNameLength += localObjects[i].getTileSet().getFileName().length();
+		}
+		/** use Object-specific send-routine */
+		/** init bytes */
+		bytes = new byte[1 + 36*localObjects.length + namesLength + tileNameLength + tileFileNameLength];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITPLAYERS.ordinal()); 
+    	
+    	byte[] bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4 + 8];
     	ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITME.ordinal()); // 1
  
@@ -296,7 +314,7 @@ public class ServerMessages extends Messages{
     	buffer.putFloat(y); // + 4 
     	buffer.putFloat(mx); // + 4 
     	buffer.putFloat(my); // + 4
-    	
+    	buffer.putLong(maxItemID.longValue()); // + 8 
         
         buffer.flip();
         return buffer;

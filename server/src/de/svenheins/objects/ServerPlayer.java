@@ -2,6 +2,11 @@ package de.svenheins.objects;
 
 import java.math.BigInteger;
 
+import com.sun.sgs.app.AppContext;
+import com.sun.sgs.app.ManagedReference;
+
+import de.svenheins.main.GameStates;
+
 public class ServerPlayer extends ServerEntity {
 
 	/**
@@ -14,6 +19,8 @@ public class ServerPlayer extends ServerEntity {
 	private long firstServerLogin;
 	private int experience;
 	private String country;
+	private ManagedReference<ServerContainer> inventory;
+	
 	
 	public ServerPlayer(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x, float y,
 			float mx, float my) {
@@ -22,6 +29,8 @@ public class ServerPlayer extends ServerEntity {
 		this.country = "";
 		this.firstServerLogin = System.currentTimeMillis();
 		this.experience = 0;
+		ServerContainer inventory = new ServerContainer(GameStates.inventoryWidthPlayer, GameStates.inventoryHeightPlayer);
+		this.inventory = AppContext.getDataManager().createReference(inventory);
 	}
 
 	public String getGroupName() {
@@ -54,6 +63,14 @@ public class ServerPlayer extends ServerEntity {
 
 	public void setCountry(String country) {
 		this.country = country;
+	}
+
+	public ManagedReference<ServerContainer> getInventory() {
+		return inventory;
+	}
+
+	public void setInventory(ManagedReference<ServerContainer> inventory) {
+		this.inventory = inventory;
 	}
 
 	

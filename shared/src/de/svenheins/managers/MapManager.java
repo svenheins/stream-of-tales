@@ -1183,7 +1183,7 @@ public class MapManager {
 //	       	System.out.print((char)mapBytes[i]);
 //            }
  
-	    System.out.println("prepared File "+ GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map"+" with "+mapBytes.length+" bytes");
+//	    System.out.println("prepared File "+ GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map"+" with "+mapBytes.length+" bytes");
         
         } catch(Exception e){
         	e.printStackTrace();

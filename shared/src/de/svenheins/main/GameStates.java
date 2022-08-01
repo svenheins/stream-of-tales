@@ -45,8 +45,9 @@ public class GameStates {
 	public static int itemTileHeight = 16;
 	
 	/** movement properties */
-	public static int DEFAULT_MOVEMENT_ON_X = 100;
-	public static int DEFAULT_MOVEMENT_ON_Y = 100;
+//	public static int DEFAULT_MOVEMENT_ON_X = 100;
+//	public static int DEFAULT_MOVEMENT_ON_Y = 100;
+	public static float entityMaxSpeed = 100.0f;
 	
 	/** item/ inventory stuff */ 
 	/**take distance */
@@ -54,17 +55,17 @@ public class GameStates {
 	public static int dropDistance = 20;
 	public static int inventoryPlayerX = width * 15 / 20;
 	public static int inventoryPlayerY = 120;
-	public static int inventoryWidthPlayer = 8;
-	public static int inventoryHeightPlayer = 5;
+	public static int inventoryWidthPlayer = 4;
+	public static int inventoryHeightPlayer = 3;
 	public static int inventoryDistToFrameX = 10;
 	public static int inventoryDistToFrameY = 10;
-	public static int inventoryItemTileWidth = 16;
-	public static int inventoryItemTileHeight = 16;
+	public static int inventoryItemTileWidth = 32;
+	public static int inventoryItemTileHeight = 32;
 	public static int inventorySlotDistX = 5;
 	public static int inventorySlotDistY = 5;
-	public static int inventoryFontSize = 10;
-	public static int inventoryFontDistanceX = 0;
-	public static int inventoryFontDistanceY = inventoryFontSize/2;
+	public static int inventoryFontSize = 12;
+	public static int inventoryFontDistanceX = 10;
+	public static int inventoryFontDistanceY = 0;//inventoryFontSize;
 	
 	public static int inventoryUseWidthPlayer = 5;
 	public static int inventoryUseHeightPlayer = 1;
@@ -77,6 +78,10 @@ public class GameStates {
 	/** item properties */
 	public static int itemMaterialCapacity = 50;
 	public static long maximumLifeDurationItems = 300000; // milliseconds life duration
+	
+	/** interaction properties */
+	public static long interactionMaximumLifeDuration = 20000; // milliseconds life duration
+	public static int interactionLimit = 100;
 	
 	/** animation stuff */
 	public static int animationDelay = 200;
@@ -137,6 +142,19 @@ public class GameStates {
 	public static int ani_attacking_d_start = 28;
 	public static int ani_attacking_d_end = 31;
 	
+	/** item animation stuff **/
+	public static int ani_inventory_simple_start = 4;
+	public static int ani_inventory_simple_end = 4;
+	public static int ani_inventory_good_start = 5;
+	public static int ani_inventory_good_end = 5;
+	public static int ani_inventory_perfect_start = 6;
+	public static int ani_inventory_perfect_end = 6;
+	public static int ani_inventory_magic_start = 7;
+	public static int ani_inventory_magic_end = 7;
+	public static int ani_inventory_destroyed_start = 8;
+	public static int ani_inventory_destroyed_end = 8;
+	public static int ani_inventory_damaged_start = 9;
+	public static int ani_inventory_damaged_end = 9;
 	
 	/** button animation */
 	public static int button_inactive_start = 0;
@@ -185,6 +203,14 @@ public class GameStates {
 	public static int overlayOffsetY = -2*mapTileSetWidth;
 	public static int distanceOfSecondTreeLayer = 6;
 	
+	/** tileType properties */
+	public static int treeTile = 501;
+	public static int grassTile = 558;
+	public static int cobbleTile = 110;
+	public static int snowTile = 654;
+	public static int snowTreeTile = 391;
+	public static int undergroundGrassTile = 10;
+	
 	/** light settings */
 	public static String lightTileSetNameDay = "tilesets/light16day.png";
 	public static String lightTileSetNameNight = "tilesets/light16night.png";
@@ -193,6 +219,9 @@ public class GameStates {
 	public static int lightMapHeight = (int) (2* ((float) height));
 	public static int lightTileWidth = 16;
 	public static int lightTileHeight = 16;
+	
+	/** agent properties */
+	public static float agentGoalDistance = 100.0f;
 	
 	public static int getWidth() {
 		return width;

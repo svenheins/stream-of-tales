@@ -47,7 +47,7 @@ public class ServerSpace extends WorldObject{
 		this.setY(space.getPolyY());
 		this.setWidth(space.getWidth());
 		this.setHeight(space.getHeight());
-		this.setMovement(space.getHorizontalMovement(), space.getVerticalMovement());
+		this.setMovement(space.getMX(), space.getMY());
 		this.setId(space.getId());
 		this.setScale(space.getScale());
 		this.textureName = space.getTextureName();

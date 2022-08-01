@@ -1,6 +1,5 @@
 package de.svenheins.main.gui;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -54,27 +53,30 @@ public class ContextMenuGUI {
 			idList.clear();
 			int guiHeight = GameStates.contextMenuButtonDistY;
 			if (localObject instanceof PlayerEntity) {
+				BigInteger runningID = BigInteger.valueOf(0);
 				/** add one button */
-//				System.out.println(((PlayerEntity) localObject).getName());
-				Button gmButton = standardButton(BigInteger.valueOf(0), localObject.getName(), 0, GameStates.contextMenuButtonDistX, guiHeight, "Gamemaster");
+				Button gmButton = standardButton(runningID, localObject.getName(), 0, GameStates.contextMenuButtonDistX, guiHeight, "Gamemaster");
 				if (this.add(gmButton)) ; else System.out.println("couldn't add");
 				guiHeight += gmButton.getHeight() + GameStates.contextMenuButtonDistY;
-//				/** add next button */
-//				Button secondButton = standardButton(BigInteger.valueOf(1), "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "Button2");
-//				if (this.add(secondButton)) ; else System.out.println("couldn't add");
-//				guiHeight += secondButton.getHeight() + GameStates.contextMenuButtonDistY;
+				runningID = runningID.add(BigInteger.valueOf(1));
 				
-				/** if its me */
-				/** add next button */
-				Button animationButton = standardButton(BigInteger.valueOf(20), "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "go to bed");
-				if (this.add(animationButton)) ; else System.out.println("couldn't add");
-				guiHeight += animationButton.getHeight() + GameStates.contextMenuButtonDistY;
-				
-				/** add next button */
-				Button cloakButton = standardButton(BigInteger.valueOf(21), "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "drop cloak");
-				if (this.add(cloakButton)) ; else System.out.println("couldn't add");
-				guiHeight += cloakButton.getHeight() + GameStates.contextMenuButtonDistY;
-				
+				/** if it is me myself */
+				if (localObject.getName().equals(GameWindow.gw.getPlayerName())) {
+					/** add next button */
+					Button animationButton = standardButton(runningID, "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "go to bed");
+					if (this.add(animationButton)) ; else System.out.println("couldn't add");
+					guiHeight += animationButton.getHeight() + GameStates.contextMenuButtonDistY;
+					runningID = runningID.add(BigInteger.valueOf(1));
+					
+					/** add next button */
+					Button cloakButton = standardButton(runningID, "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "drop cloak");
+					if (this.add(cloakButton)) ; else System.out.println("couldn't add");
+					guiHeight += cloakButton.getHeight() + GameStates.contextMenuButtonDistY;
+					runningID = runningID.add(BigInteger.valueOf(1));
+				} else {
+					/** if i clicked onto another playerEntity */
+					/** TODO: add stuff for interaction with other playerEntites */
+				}
 			}
 			this.setLocalObject(localObject);
 			contextMenuSpacePolygon.add((new Polygon(new int[]{0 , 0 , GameStates.contextMenuButtonWidth + GameStates.contextMenuButtonDistX *2, GameStates.contextMenuButtonWidth+ GameStates.contextMenuButtonDistX *2}, new int[]{0 ,  guiHeight, guiHeight, 0}, 4) ));
@@ -180,11 +182,11 @@ public class ContextMenuGUI {
 				break;
 			case LEFT:
 				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - (GameStates.dropDistance+GameStates.inventoryItemTileWidth));
-				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 -GamePanel.gp.getMouseItem().getItemEntity().getHeight()/2);
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 -GameStates.itemTileHeight/2);
 				break;
 			case UP:
 				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2- GameStates.inventoryItemTileWidth/2);
-				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - (GameStates.dropDistance+GamePanel.gp.getMouseItem().getItemEntity().getHeight()));
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - (GameStates.dropDistance+GameStates.itemTileHeight));
 				break;
 			case DOWN:
 				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - GameStates.inventoryItemTileWidth/2);
@@ -202,7 +204,7 @@ public class ContextMenuGUI {
 			/** send the complete Item to all players of the channel */
 			if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 				/** first send to server for the itemList */
-				GameWindow.gw.send(ClientMessages.addItem(cloak.getId(), cloak.getItemCode(), cloak.getCount(), cloak.getCapacity(), cloak.getItemEntity().getX(), cloak.getItemEntity().getY(), cloak.getItemEntity().getMX(), cloak.getItemEntity().getMY(), cloak.getName(), cloak.getItemEntity().getTileSet().getFileName(), cloak.getItemEntity().getName(), cloak.getStates()));
+				GameWindow.gw.send(ClientMessages.addItem(cloak.getId(), cloak.getItemCode(), cloak.getCount(), cloak.getCapacity(), cloak.getEntity().getX(), cloak.getEntity().getY(), cloak.getEntity().getMX(), cloak.getEntity().getMY(), cloak.getName(), cloak.getEntity().getTileSet().getFileName(), cloak.getEntity().getName(), cloak.getStates()));
 				
 //				GameWindow.gw.send(ClientMessages.addItem(itemId));
 				

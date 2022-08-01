@@ -24,7 +24,7 @@ public class Wood extends Material {
 		Entity itemEntity = new Entity(woodTileSet, this.getName(), id, x, y, GameStates.animationDelayItems);
 		this.setX(x);
 		this.setY(y);
-		this.setItemEntity(itemEntity);
+		this.setEntity(itemEntity);
 	}
 
 	@Override

@@ -104,15 +104,17 @@ public class StatPanel  extends JPanel{
 		contextMenu.paint(g, 0, 0,  this);
 		
 		if(GamePanel.gp.getMouseItem() != null) {
-			Entity mouseItemEntity = GamePanel.gp.getMouseItem().getItemEntity();
+			Entity mouseItemEntity = GamePanel.gp.getMouseItem().getEntity();
+			
+			
+			g.drawImage(mouseItemEntity.getSprite().getImage(), (int) (mouseItemEntity.getX()), (int) (mouseItemEntity.getY()), this);
+			g.setPaintMode();
 			if (GamePanel.gp.getMouseItem().getCount() >1) {
 				g.setColor(new Color(250, 250, 250));
 				g.setFont(new Font("Arial", Font.PLAIN , GameStates.inventoryFontSize));
 	//			drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
 				g.drawString(""+GamePanel.gp.getMouseItem().getCount()/*+" "+item.getName()*/,GameStates.inventoryFontDistanceX + (int)mouseItemEntity.getX(), GameStates.inventoryFontDistanceY +(int) mouseItemEntity.getY() + mouseItemEntity.getHeight() /*+ g.getFontMetrics().getHeight()*/);
 			}
-			g.setPaintMode();
-			g.drawImage(mouseItemEntity.getSprite().getImage(), (int) (mouseItemEntity.getX()), (int) (mouseItemEntity.getY()), this);
 			
 		}
 	}

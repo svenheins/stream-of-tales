@@ -15,6 +15,7 @@ import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ItemManager;
@@ -26,6 +27,7 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.agents.Agent;
 
 public class MoveThread implements Runnable {
 
@@ -208,7 +210,7 @@ public class MoveThread implements Runnable {
 						for (BigInteger itemID : ItemManager.idList) {
 							if (itemID != null) {
 								try {
-									if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.playerTileWidth/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.playerTileHeight/4, ItemManager.get(itemID).getItemEntity().getX()+GameStates.itemTileWidth/2, ItemManager.get(itemID).getItemEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
+									if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.playerTileWidth/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.playerTileHeight/4, ItemManager.get(itemID).getEntity().getX()+GameStates.itemTileWidth/2, ItemManager.get(itemID).getEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
 										/** send a item collect request */
 //										EFFEKTIVER nur einmal senden lassen, solange die antwort noch nicht kam!!!
 										if (!GameWindow.gw.getSendItemList().contains(itemID)) {
@@ -263,6 +265,17 @@ public class MoveThread implements Runnable {
 					Entity e= EntityManager.get(i);
 					if (e != null) { 
 //						this.determineAnimation(e);
+						e.move(duration);
+					}
+					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
+				}
+				
+				List<BigInteger> idListTempAgents = new ArrayList<BigInteger>(AgentManager.idList);
+				for (BigInteger i: idListTempAgents) {
+					Agent e= AgentManager.get(i);
+					if (e != null) { 
+//						this.determineAnimation(e);
+						e.getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
 						e.move(duration);
 					}
 					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());

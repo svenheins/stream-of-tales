@@ -22,6 +22,7 @@
 package de.svenheins;
 
 
+import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.TrayIcon.MessageType;
 import java.io.UnsupportedEncodingException;
@@ -57,6 +58,7 @@ import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.ServerAgentEntrepreneur;
 import de.svenheins.objects.ServerContainer;
@@ -69,6 +71,7 @@ import de.svenheins.objects.ServerSprite;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.Sprite;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.WorldLatticePosition;
 import de.svenheins.objects.WorldObject;
 import de.svenheins.objects.items.Container;
 import de.svenheins.objects.items.Item;
@@ -838,6 +841,41 @@ public class WorldPlayer
 		        } else {
 		        	// nothing should be send to player
 		        }    
+				break;
+			}
+			
+			case DELETE_MAPOBJECT:
+			{
+				int localX = message.getInt();
+				int localY = message.getInt();
+				int mapX = message.getInt();
+				int mapY = message.getInt();
+				BigInteger gmID = BigInteger.valueOf(message.getLong());
+				byte[] roomName_Bytes = new byte[message.getInt()];
+				message.get(roomName_Bytes);
+				String roomName = new String(roomName_Bytes); // name
+				byte[] gmName_Bytes = new byte[message.getInt()];
+				message.get(gmName_Bytes);
+				String gmName = new String(gmName_Bytes); // name
+				byte[] objectMapNameName_Bytes = new byte[message.getInt()];
+				message.get(objectMapNameName_Bytes);
+				String objectMapName = new String(objectMapNameName_Bytes); // name
+				byte[] objectOverlayMapNameName_Bytes = new byte[message.getInt()];
+				message.get(objectOverlayMapNameName_Bytes);
+				String objectOverlayMapName = new String(objectOverlayMapNameName_Bytes); // name
+				
+				
+				int valueLength = message.getInt();
+				int[] values = new int[valueLength];
+				for (int i = 0; i< valueLength; i++) {
+					values[i] = message.getInt();
+				}
+					
+				InteractionTile iTile = new InteractionTile(new WorldLatticePosition(new Point(mapX, mapY), localX, localY));
+				iTile.setValues(values);
+				iTile.getPosition().setRoom(roomName);
+				this.getRoom().deleteMapObject(gmID, iTile, objectMapName, objectOverlayMapName);
+		    	
 				break;
 			}
 			case RESPAWN:

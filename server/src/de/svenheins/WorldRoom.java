@@ -49,6 +49,7 @@ import de.svenheins.managers.TileSetManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
@@ -219,7 +220,7 @@ public class WorldRoom extends WorldObject
         ManagedReference<ServerItem> tempServerItem = dataManager.createReference(serverItem);
         if (!itemList.get().containsKey(itemID)) {
         	itemList.getForUpdate().put(itemID, tempServerItem);
-        	System.out.println("itemlist size: "+itemList.get().size());
+//        	System.out.println("itemlist size: "+itemList.get().size());
         }
     }
     
@@ -670,7 +671,7 @@ public class WorldRoom extends WorldObject
     		if (itKeys.hasNext()) {
     			actualID = itKeys.next();
 				ServerItem item = itemList.get().get(actualID).get();
-				System.out.println("got item id "+item.getId());
+//				System.out.println("got item id "+item.getId());
 //				TileSet tileSet = TileSetManager.manager.getTileSetByPath(item.getItemEntity().get().getTileSetName(), item.getItemEntity().get().getTileSetPathName());
 				realItem = Item.getItem(item.getItemCode(), item.getId(), item.getName(), item.getCount(), item.getCapacity(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
 				objectListTemp[objectCounter] = realItem;
@@ -770,7 +771,7 @@ public class WorldRoom extends WorldObject
 	    		
 	    		timestamp = System.currentTimeMillis();
 	    		if (timestamp - si.getCreationTime() > GameStates.maximumLifeDurationItems) {
-	    			System.out.println("difference: " + (timestamp - si.getCreationTime()));
+//	    			System.out.println("difference: " + (timestamp - si.getCreationTime()));
 	    			removeItem(si.getId());
 	    		}
 	    		
@@ -1049,7 +1050,7 @@ public class WorldRoom extends WorldObject
 					}
 					realLength = i+1;
 				}
-				System.out.println("realLength = "+realLength);
+//				System.out.println("realLength = "+realLength);
 				Item[] realItems = new Item[realLength];
 				for (int i = 0; i <realLength; i++) {
 					realItems[i] = itemArray[i];
@@ -1141,5 +1142,9 @@ public class WorldRoom extends WorldObject
 
 	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqBodyList() {
 		return containerEqBodyList;
+	}
+	
+	public void deleteMapObject( BigInteger playerID, InteractionTile interactionTile, String objectMapName, String objectOverlayMap) {
+		players.get(playerID).get().getSession().send(ServerMessages.sendDeleteMapObject(interactionTile, objectMapName, objectOverlayMap));
 	}
 }

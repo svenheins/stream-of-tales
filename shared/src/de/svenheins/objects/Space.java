@@ -410,8 +410,8 @@ public class Space extends LocalObject{
 	 * always move; the collision should be handled in the collision-thread
 	 */
 	public void move(long duration){
-		float movementX = duration * this.getHorizontalMovement()/1000;
-		float movementY = duration * this.getVerticalMovement()/1000;
+		float movementX = duration * this.getMX()/1000;
+		float movementY = duration * this.getMY()/1000;
 		// Always update
 		if(GameStates.getWidth()>0 && GameStates.getHeight()>0) {
 			setX(this.getX()+movementX);

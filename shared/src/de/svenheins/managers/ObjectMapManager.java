@@ -17,7 +17,12 @@ import java.util.List;
 
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
+import de.svenheins.main.TileDimensions;
+import de.svenheins.main.TileType;
+import de.svenheins.objects.InteractionArea;
+import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.LocalMap;
+import de.svenheins.objects.WorldLatticePosition;
 
 public class ObjectMapManager {
 	public HashMap<Point, LocalMap> localMapList = new HashMap<Point, LocalMap>();
@@ -27,10 +32,12 @@ public class ObjectMapManager {
 	public List<Point> pointList = new ArrayList<Point>();
 	public String paintLayer;
 	public ArrayList<Point> changedList = new ArrayList<Point>();
+	public ArrayList<Point> stayList = new ArrayList<Point>();
 	
 	public ObjectMapManager(String paintLayer) {
 		this.paintLayer = paintLayer;
 		changedList = new ArrayList<Point>();
+		stayList = new ArrayList<Point>();
 	}
 	
 	public void remove(Point point) {
@@ -102,14 +109,50 @@ public class ObjectMapManager {
 	}
 	
 	
-	public void adjustSurrounding(LocalMap localMap, int localX, int localY, int paintType) {
+	public void adjustSurrounding(LocalMap localMap, int localX, int localY, int paintType, TileDimensions tileDim) {
+		switch (tileDim) {
+		case RowCol2x3: {
+			setTileCorners(localMap, localX, localY-1, paintType);
+			setTileCorners(localMap, localX-1, localY, paintType);
+			setTileCorners(localMap, localX+1, localY, paintType);			
+			setTileCorners(localMap, localX-1, localY-1, paintType);
+			setTileCorners(localMap, localX+1, localY-1, paintType);
+			break;
+		}
+		case RowCol2x2: {
+			setTileCorners(localMap, localX+1, localY, paintType);
+			setTileCorners(localMap, localX, localY+1, paintType);
+			setTileCorners(localMap, localX+1, localY+1, paintType);
+			break;
+		}
+		case RowCol1x2: {
+			setTileCorners(localMap, localX+1, localY, paintType);
+			break;
+		}
+		case RowCol2x1: {
+			setTileCorners(localMap, localX, localY-1, paintType);
+			break;
+		}
+		}
+
+//		setTileCorners(localMap, localX, localY-1, paintType);
+//		setTileCorners(localMap, localX-1, localY, paintType);
+//		setTileCorners(localMap, localX+1, localY, paintType);
+//		
+//		setTileCorners(localMap, localX-1, localY-1, paintType);
+//		setTileCorners(localMap, localX+1, localY-1, paintType);
+	}
+	
+	/** Set Id by corners for (2 x 2) Objects with an Overlay (e.g. thin trees) */
+	/** center is the upper left corner Tile of the object */
+public void adjustSurrounding2x2(LocalMap localMap, int localX, int localY, int paintType) {
 		
-		setTileCorners(localMap, localX, localY-1, paintType);
-		setTileCorners(localMap, localX-1, localY, paintType);
 		setTileCorners(localMap, localX+1, localY, paintType);
+		setTileCorners(localMap, localX, localY+1, paintType);
+		setTileCorners(localMap, localX+1, localY+1, paintType);
 		
-		setTileCorners(localMap, localX-1, localY-1, paintType);
-		setTileCorners(localMap, localX+1, localY-1, paintType);
+//		setTileCorners(localMap, localX-1, localY-1, paintType);
+//		setTileCorners(localMap, localX+1, localY-1, paintType);
 		
 		//setTileCorners(localMap, localX, localY);
 		
@@ -117,9 +160,21 @@ public class ObjectMapManager {
 //		setTileCorners(localMap, localX, localY+1, paintType);
 //		setTileCorners(localMap, localX+1, localY+1, paintType);
 	}
+
+/** Set Id by corners for (1 x 2) Objects without an Overlay (e.g. large chest) */
+/** center is the left side Tile of the object */
+public void adjustSurrounding1x2(LocalMap localMap, int localX, int localY, int paintType) {
+	setTileCorners(localMap, localX+1, localY, paintType);
+}
+
+
+/** Set Id by corners for (2 x 1) Objects without an Overlay (e.g. large sign/ thin and large tree) */
+/** center is the lower Tile of the object */
+public void adjustSurrounding2x1(LocalMap localMap, int localX, int localY, int paintType) {
+	setTileCorners(localMap, localX, localY-1, paintType);
+}
 	
-	
-	public void deleteSurrounding(LocalMap localMap, int localX, int localY, int paintType) {
+	public void deleteSurrounding(LocalMap localMap, int localX, int localY, int paintType, TileDimensions tileDim) {
 		Point origin = localMap.getOrigin();
 		LocalMap ulMap;
 		LocalMap uMap;
@@ -559,15 +614,15 @@ public class ObjectMapManager {
 		drMap.setUl(drTile.x, drTile.y, 0 );
 		/** and adjust the surrounding */
 		
-		adjustSurrounding(uMap, uTile.x, uTile.y, paintType);
-		adjustSurrounding(lMap, lTile.x, lTile.y, paintType);
-		adjustSurrounding(rMap, rTile.x, rTile.y, paintType);
-		adjustSurrounding(dMap, dTile.x, dTile.y, paintType);
+		adjustSurrounding(uMap, uTile.x, uTile.y, paintType, tileDim);
+		adjustSurrounding(lMap, lTile.x, lTile.y, paintType, tileDim);
+		adjustSurrounding(rMap, rTile.x, rTile.y, paintType, tileDim);
+		adjustSurrounding(dMap, dTile.x, dTile.y, paintType, tileDim);
 		
-		adjustSurrounding(ulMap, ulTile.x, ulTile.y, paintType);
-		adjustSurrounding(urMap, urTile.x, urTile.y, paintType);		
-		adjustSurrounding(dlMap, dlTile.x, dlTile.y, paintType);
-		adjustSurrounding(drMap, drTile.x, drTile.y, paintType);
+		adjustSurrounding(ulMap, ulTile.x, ulTile.y, paintType, tileDim);
+		adjustSurrounding(urMap, urTile.x, urTile.y, paintType, tileDim);		
+		adjustSurrounding(dlMap, dlTile.x, dlTile.y, paintType, tileDim);
+		adjustSurrounding(drMap, drTile.x, drTile.y, paintType, tileDim);
 	}
 	
 	
@@ -1136,7 +1191,6 @@ public class ObjectMapManager {
 				pointList.add(lMap.getOrigin());
 			}
 		}
-		
 	}
 	
 	public void loadFromFileSystem(String playerName, int x,int y) {
@@ -1214,6 +1268,26 @@ public class ObjectMapManager {
 		changedList = new ArrayList<Point>();
 	}
 	
+	public void emptyStayList() {
+		stayList = new ArrayList<Point>();
+	}
+	
+	public void addStayList(Point p) {
+		if (!stayList.contains(p)) this.stayList.add(p);
+	}
+	
+	public void removeStayList(Point p) {
+		if (stayList.contains(p)) this.stayList.remove(p);
+	}
+	
+	public void setStayList(  ArrayList<Point> stayList) {
+		this.stayList = stayList;
+	}
+	
+	public ArrayList<Point> getStayList() {
+		return stayList;
+	}
+
 	public void initLocalMapFileList(String playerName) {
 		ArrayList<String> listOfFiles = new ArrayList<String>();
 		File folder = new File(GameStates.standardMapFolder+playerName);
@@ -1232,5 +1306,36 @@ public class ObjectMapManager {
 	
 	public void putMapFileName(Point p, String fileName) {
 		localMapFileList.put(p, fileName);
+	}
+	
+	/**
+	 * 
+	 * @param interactionArea
+	 * @return interactions, that reached the LIMIT
+	 */
+	public ArrayList<InteractionTile> interact(InteractionArea interactionArea) {
+		ArrayList<InteractionTile> retList = new ArrayList<InteractionTile>();
+		int[] interactValues;
+		for (WorldLatticePosition worldLatticePosition : interactionArea.getInfluencedInteractionTilePositions()) {
+			if (localMapList.containsKey(worldLatticePosition.getMapCoordinates())) {		
+				if (localMapList.get(worldLatticePosition.getMapCoordinates()).getLocalMap()[worldLatticePosition.getLocalX()][worldLatticePosition.getLocalY()] != 0) {
+					/** calculate index, that is not null */
+					TileType interactionIndex = LocalMap.getTileType(LocalMap.getPaintType(localMapList.get(worldLatticePosition.getMapCoordinates()).getLocalMap()[worldLatticePosition.getLocalX()][worldLatticePosition.getLocalY()]));
+					InteractionArea realInteraction = new InteractionArea(interactionArea.getPosition(), new int[interactionArea.getValues().length], interactionArea.getWidth(), interactionArea.getHeight());
+					realInteraction.getValues()[interactionIndex.ordinal()] = interactionArea.getValues()[interactionIndex.ordinal()];
+					interactValues = InteractionManager.interact(realInteraction, worldLatticePosition);
+					System.out.println("wood " +interactValues[TileType.TREE.ordinal()]+" stone "+interactValues[TileType.STONE.ordinal()]);
+					if (interactValues != null ) {
+						for (int i = 0; i < interactValues.length; i++) {
+							/** if the limit is reached, add the interaction to the return List */
+							if (interactValues[i] >= GameStates.interactionLimit) {
+								retList.add(InteractionManager.interactionList.get(worldLatticePosition));
+							}
+						}
+					}
+				}	
+			}
+		}
+		return retList;
 	}
 }

@@ -40,5 +40,11 @@ public enum EntityStates {
 	LEFT,
 	RIGHT,
 	UP,
-	DOWN
+	DOWN,
+	
+	/** types */
+	PLAYER,
+	OTHERPLAYER,
+	AGENT,
+	ENTITY
 }

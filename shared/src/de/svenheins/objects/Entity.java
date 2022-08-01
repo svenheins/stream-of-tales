@@ -84,6 +84,7 @@ public class Entity extends LocalObject {
 		this.tile = tileSet;
 		my = 0;
 		mx = 0;
+		this.setMaxSpeed(GameStates.entityMaxSpeed);
 		this.height = sprite.getHeight();
 		this.width = sprite.getWidth();
 		this.setOrientation(EntityStates.DOWN);
@@ -268,5 +269,47 @@ public class Entity extends LocalObject {
 
 	public void setWaitingForSingleAnimation(boolean waitingForSingleAnimation) {
 		this.waitingForSingleAnimation = waitingForSingleAnimation;
+	}
+	
+	public void determineOrientation(Point p) {
+		int distX = Math.abs((int) (this.getX()+this.getWidth()/2)-p.x);
+		int distY = Math.abs((int) (this.getY()+this.getHeight()*3/4)-p.y);
+		
+		/** define orientation by point of the mouse */
+		if (distX > distY) {
+			if ((this.getX()+this.getWidth()/2) < p.x){
+				if (this.getOrientation() != EntityStates.RIGHT)  {
+//					this.startAnimation();
+					this.setOrientation(EntityStates.RIGHT);
+					this.setChangedStates(true);
+//					System.out.println("dist: "+(System.currentTimeMillis() -entity.getAnimation().getInstantOfAnimation()));
+					
+				}
+			} else {
+				if (this.getOrientation() != EntityStates.LEFT) {
+//					this.startAnimation();
+					this.setOrientation(EntityStates.LEFT);
+					this.setChangedStates(true);
+					
+				}
+			}
+		} else {
+			if ((this.getY()+this.getHeight()*3/4) < p.y){
+				if (this.getOrientation() != EntityStates.DOWN) {
+//					this.startAnimation();
+					this.setOrientation(EntityStates.DOWN);
+					this.setChangedStates(true);
+					
+				}
+			} else  {
+				if (this.getOrientation() != EntityStates.UP) {
+//					this.startAnimation();
+					this.setOrientation(EntityStates.UP);
+					this.setChangedStates(true);
+					
+				}
+				
+			}
+		}
 	}
 }

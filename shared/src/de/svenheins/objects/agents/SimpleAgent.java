@@ -21,7 +21,7 @@ public class SimpleAgent extends Agent {
 		super(tileSet, name, id, x, y, animationDelay);
 //		this.setMY(0.0f);
 //		this.setMY(0.0f);
-		this.setMaxSpeed(50.0f);
+		this.setMaxSpeed(150.0f);
 	}
 	
 	@Override
@@ -56,17 +56,22 @@ public class SimpleAgent extends Agent {
 	public void searchBetterLocation() {
 		/** update the pathList */
 		if (this.pathList != null && this.pathList.size() > 0) {
-			if ( getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()) < GameStates.pathMinAcceptanceDistance) {
+			if ( getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)) < GameStates.pathMinAcceptanceDistance) {
+				/** ensure we landed exactly on the right spot */
+//				if (Math.abs(this.getX() - this.pathList.get(0).getX()) <GameStates.pathMinAcceptanceDistance)
+				this.setX(this.pathList.get(0).getX());
+//				if (Math.abs(this.getY() +(this.getHeight()/2)- this.pathList.get(0).getY()) <GameStates.pathMinAcceptanceDistance)
+				this.setY(this.pathList.get(0).getY()-(this.getHeight()/2));
+				this.setMovement(0, 0);
 				/** position is close enough, so get next pathElement */
 				this.nextPathElement();
-				System.out.println("next pathList element!");
+				System.out.println("next pathList element! remaining: "+this.pathList.size());
+			} else {
+//				System.out.println("Distance = "+getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)));
 			}
 			if (this.pathList != null && this.pathList.size() > 0) {			
 				/** here we already have a valid pathList */
 				this.setActualPathElement(this.pathList.get(0));
-//				this.getActualGoal().setPosition(this.pathList.get(0));
-
-//				System.out.println("updated actual pathList element!");
 			} else {
 				/** here the pathList does not yet exist or the pathList might be empty */
 				this.pathList = new ArrayList<WorldPosition>();
@@ -160,7 +165,7 @@ public class SimpleAgent extends Agent {
 				/** add first PathTile (entity itself) 
 				 * here we do not need to calculate the manhatten distance
 				 * */
-				WorldLatticePosition firstPosition = WorldLatticePosition.getWorldLatticePosition(new WorldPosition(this.getX(), this.getY()));
+				WorldLatticePosition firstPosition = WorldLatticePosition.getWorldLatticePosition(new WorldPosition(this.getX(), this.getY()+(this.getHeight()/2)));
 				PathTile originTile = new PathTile(firstPosition, firstPosition, 0, 0, 0);
 				closedList.put(originTile.getPosition(), originTile); //(originTile);
 				float f, g, h;
@@ -235,8 +240,15 @@ public class SimpleAgent extends Agent {
 				oldWLP = saveWLPList.get(0);
 				parentWLP = closedList.get(oldWLP).getParentPosition();
 				saveWLPList.add(0, closedList.get(parentWLP).getPosition());
-				returnList.add(0, WorldPosition.getWorldPosition(saveWLPList.get(0)));
-				System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
+				/** only add the new coordinate if not yet existent */
+				if (returnList.get(0).getX() != (WorldPosition.getWorldPosition(saveWLPList.get(0))).getX() ||
+						returnList.get(0).getY() != (WorldPosition.getWorldPosition(saveWLPList.get(0))).getY()) {
+					returnList.add(0, WorldPosition.getWorldPosition(saveWLPList.get(0)));
+					System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
+				} else {
+					System.out.println("double entry!");
+				}
+				
 			}
 		}
 		return returnList;

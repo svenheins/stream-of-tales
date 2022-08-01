@@ -142,6 +142,7 @@ public class MoveThread implements Runnable {
 //						e.getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
 						if(this.moveWithCollisions(e)) {
 							/** collided -> restart path calculation */
+							System.out.println("Agent collided!!!");
 							e.restartPathCalculation();
 						}
 						

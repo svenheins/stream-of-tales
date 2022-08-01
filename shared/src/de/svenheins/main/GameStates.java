@@ -224,7 +224,7 @@ public class GameStates {
 	public static float agentGoalDistance = 20.0f;
 	
 	/** agent path properties */
-	public static float pathMinAcceptanceDistance = 1.0f;
+	public static float pathMinAcceptanceDistance = 3.0f;
 	
 	public static int getWidth() {
 		return width;

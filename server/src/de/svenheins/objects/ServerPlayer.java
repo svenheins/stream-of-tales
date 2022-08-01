@@ -6,6 +6,9 @@ import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.ManagedReference;
 
 import de.svenheins.main.GameStates;
+import de.svenheins.messages.ITEMCODE;
+import de.svenheins.messages.OBJECTCODE;
+import de.svenheins.objects.items.Container;
 
 public class ServerPlayer extends ServerEntity {
 
@@ -20,6 +23,8 @@ public class ServerPlayer extends ServerEntity {
 	private int experience;
 	private String country;
 	private ManagedReference<ServerContainer> inventory;
+	private ManagedReference<ServerContainer> inventoryUse;
+	private ManagedReference<ServerContainer> inventoryEqBody;
 	
 	
 	public ServerPlayer(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x, float y,
@@ -29,8 +34,15 @@ public class ServerPlayer extends ServerEntity {
 		this.country = "";
 		this.firstServerLogin = System.currentTimeMillis();
 		this.experience = 0;
-		ServerContainer inventory = new ServerContainer(GameStates.inventoryWidthPlayer, GameStates.inventoryHeightPlayer);
+		ServerContainer inventory = new ServerContainer(GameStates.inventoryWidthPlayer, GameStates.inventoryHeightPlayer, OBJECTCODE.CONTAINER_MAIN, ITEMCODE.ALL);
 		this.inventory = AppContext.getDataManager().createReference(inventory);
+		
+		ServerContainer inventoryUseRef= new ServerContainer(GameStates.inventoryUseWidthPlayer, GameStates.inventoryUseHeightPlayer, OBJECTCODE.CONTAINER_USE, ITEMCODE.ALL);
+		this.inventoryUse = AppContext.getDataManager().createReference(inventoryUseRef);
+		
+		ServerContainer inventoryEqBodyRef= new ServerContainer(1,1 , OBJECTCODE.CONTAINER_EQUIPMENT_BODY, ITEMCODE.BODY);
+		this.inventoryEqBody = AppContext.getDataManager().createReference(inventoryEqBodyRef);
+		
 	}
 
 	public String getGroupName() {
@@ -71,6 +83,22 @@ public class ServerPlayer extends ServerEntity {
 
 	public void setInventory(ManagedReference<ServerContainer> inventory) {
 		this.inventory = inventory;
+	}
+
+	public ManagedReference<ServerContainer> getInventoryUse() {
+		return inventoryUse;
+	}
+
+	public void setInventoryUse(ManagedReference<ServerContainer> inventoryUse) {
+		this.inventoryUse = inventoryUse;
+	}
+
+	public ManagedReference<ServerContainer> getInventoryEqBody() {
+		return inventoryEqBody;
+	}
+
+	public void setInventoryEqBody(ManagedReference<ServerContainer> inventoryEqBody) {
+		this.inventoryEqBody = inventoryEqBody;
 	}
 
 	

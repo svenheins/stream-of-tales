@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.swing.JComboBox;
 
@@ -24,6 +25,8 @@ import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.main.LoadingStates;
 import de.svenheins.main.gui.Button;
+import de.svenheins.main.gui.ContainerGUI;
+import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.PlayerListGUI;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.ClientTextureManager;
@@ -43,7 +46,9 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.items.Container;
 import de.svenheins.objects.items.Item;
+import de.svenheins.objects.items.equipment.bodyarmors.Cloak;
 import de.svenheins.objects.items.materials.Wood;
 
 public class ClientMessageHandler {
@@ -349,8 +354,9 @@ public class ClientMessageHandler {
     		playerEntity.setY(y);
     		
     		ItemManager.setMaxIDValue(maxItemID);
-    		
     		GamePanel.gp.setPlayerEntity(playerEntity);
+    		GamePanel.gp.initContainers();
+    		
 //    		System.out.println("OK, initme complete!"+x);
     		GamePanel.gp.setInitializedPlayer(true);
     		
@@ -360,6 +366,241 @@ public class ClientMessageHandler {
     		
     		break;
     		
+    	case SENDCONTAINER: {
+    		/** if its my own id, it is my container, so overwrite my inventory with this one */
+    		BigInteger myId_SC = BigInteger.valueOf(packet.getLong());    	
+    		OBJECTCODE containerType_SC = getObjectCode(packet);//OBJECTCODE.values()[packet.getInt()];
+    		ITEMCODE containerAllowedItems_SC = getItemCode(packet);
+    		int inventoryWidth_SC = packet.getInt();
+    		int inventoryHeight_SC = packet.getInt();
+    		
+    		BigInteger[][] containerArray_SC = new BigInteger[inventoryHeight_SC][inventoryWidth_SC];
+    		Container inventory_SC = new Container(inventoryWidth_SC, inventoryHeight_SC, containerType_SC, containerAllowedItems_SC);
+    		Item item_SC;
+    		int count_SC;
+    		int capacity_SC;
+    		byte[] itemNameBytes_SC;
+    		String itemName_SC;
+    		ITEMCODE itemCode_SC;
+    		long creationTime_SC;
+    		
+    		BigInteger entityID_SC;
+    		byte[] entityNameBytes_SC;
+    		String entityName_SC;
+    		byte[] entityTileSetNameBytes_SC;
+    		String entityTileSetName_SC;
+    		byte[] entityTileSetFileNameBytes_SC;
+    		String entityTileSetFileName_SC;
+    		
+    		float itemX_SC;
+    		float itemY_SC;
+    		
+    		Entity itemEntity_SC;
+    		
+    		int itemStatesLength_SC;
+    		float[] itemStates_SC;
+    		
+    		 /** now put all container stuff into buffer */
+        	for (int i = 0; i < inventoryHeight_SC; i++) {
+        		for(int j = 0 ; j< inventoryWidth_SC; j++) {
+        			containerArray_SC[i][j] = BigInteger.valueOf(packet.getLong());
+//        			buffer.putLong(inventory.getContainerArray()[i][j].longValue()); // 8 = ID for every array element
+        			/** only add item stuff if there is an item in the field */
+    				if (!containerArray_SC[i][j].equals(BigInteger.valueOf(-1))) {
+//    					item = inventory.getItemList().get(inventory.getContainerArray()[i][j]);
+    					/** get the item id and the corresponding item */
+    					count_SC = packet.getInt();
+//    					buffer.putInt(item.getCount()); // 4
+    					capacity_SC = packet.getInt();
+//    					buffer.putInt(item.getCapacity()); // 4
+    					itemNameBytes_SC = new byte[packet.getInt()];
+    		    		packet.get(itemNameBytes_SC);
+    		    		itemName_SC = new String(itemNameBytes_SC);
+//    					buffer.putInt(item.getName().length()); // 4
+//    			    	buffer.put(item.getName().getBytes()); // name.length
+    		    		itemCode_SC = getItemCode(packet);
+//    					buffer.put((byte) item.getItemCode().ordinal()); // 1
+    		    		creationTime_SC = packet.getLong();
+//    					buffer.putLong(item.getCreationTime());
+    					/** entity stuff */
+    		    		entityID_SC = BigInteger.valueOf(packet.getLong());
+    		    		entityNameBytes_SC = new byte[packet.getInt()];
+    		    		packet.get(entityNameBytes_SC);
+    		    		entityName_SC = new String(entityNameBytes_SC);
+//    					buffer.putInt(item.getItemEntity().getName().length()); // 4
+//    			    	buffer.put(item.getItemEntity().getName().getBytes()); // name.length
+    		    		entityTileSetNameBytes_SC = new byte[packet.getInt()];
+    		    		packet.get(entityTileSetNameBytes_SC);
+    		    		entityTileSetName_SC = new String(entityTileSetNameBytes_SC);
+//    			    	buffer.putInt(item.getItemEntity().getTileSet().getName().length()); // 4
+//    			    	buffer.put(item.getItemEntity().getTileSet().getName().getBytes()); // name.length
+    		    		entityTileSetFileNameBytes_SC = new byte[packet.getInt()];
+    		    		packet.get(entityTileSetFileNameBytes_SC);
+    		    		entityTileSetFileName_SC = new String(entityTileSetFileNameBytes_SC);
+//    			    	buffer.putInt(item.getItemEntity().getTileSet().getFileName().length()); // 4
+//    			    	buffer.put(item.getItemEntity().getTileSet().getFileName().getBytes()); // name.length
+    			    	/** item states */
+    		    		itemX_SC = packet.getFloat();
+    		    		itemY_SC = packet.getFloat();  
+//    		    		System.out.println("x:"+itemX_SC+" y:"+itemY_SC);
+    		    		itemStatesLength_SC = packet.getInt();
+    		    		itemStates_SC = new float[itemStatesLength_SC];
+//    					buffer.putInt(item.getStates().length);
+    					for (int k = 0; k< itemStatesLength_SC; k++) {
+    						itemStates_SC[k] = packet.getFloat();
+//    						buffer.putFloat(item.getStates()[k]);
+    					}
+    					itemEntity_SC = new Entity(new TileSet(entityTileSetFileName_SC, entityTileSetName_SC, Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight), entityName_SC, entityID_SC, itemX_SC, itemY_SC, GameStates.animationDelayItems);
+    					item_SC = Item.getItem(itemCode_SC,containerArray_SC[i][j] , itemName_SC, count_SC, capacity_SC, itemEntity_SC.getX(), itemEntity_SC.getY(), creationTime_SC, itemStates_SC);
+    					inventory_SC.getItemList().put(containerArray_SC[i][j], item_SC);
+    				} else {
+    					/** there is no item in this field */
+    				}
+        		}
+        	}
+    		inventory_SC.setContainerArray(containerArray_SC);
+    		
+    		if (myId_SC.equals(GamePanel.gp.getPlayerEntity().getId())) {
+    			switch (containerType_SC) {
+    			case CONTAINER_MAIN:
+//    				System.out.println("GOT my inventory!");
+    				GamePanel.gp.getPlayerEntity().setInventory(inventory_SC);
+    				break;
+    			case CONTAINER_EQUIPMENT_BODY:
+    				GamePanel.gp.getPlayerEntity().setEquipmentBody(inventory_SC);
+    				
+    				break;
+    			case CONTAINER_USE:
+    				GamePanel.gp.getPlayerEntity().setInventoryUse(inventory_SC);
+    				break;
+				default: ;
+    			}
+    		}
+        	
+//    		HIER WEITERMACHEN!!!
+    		break;}
+    		
+    	case SENDITEMFIELD: {
+    		/** if its my own id, it is my container, so overwrite my inventory with this one */
+    		BigInteger myId_SC = BigInteger.valueOf(packet.getLong());    	
+    		OBJECTCODE containerType_SC = getObjectCode(packet);//OBJECTCODE.values()[packet.getInt()];
+    		
+    		BigInteger itemID_SC;
+    		Item item_SC;
+    		int count_SC;
+    		int capacity_SC;
+    		byte[] itemNameBytes_SC;
+    		String itemName_SC;
+    		ITEMCODE itemCode_SC;
+    		long creationTime_SC;
+    		
+    		BigInteger entityID_SC;
+    		byte[] entityNameBytes_SC;
+    		String entityName_SC;
+    		byte[] entityTileSetNameBytes_SC;
+    		String entityTileSetName_SC;
+    		byte[] entityTileSetFileNameBytes_SC;
+    		String entityTileSetFileName_SC;
+    		
+    		float itemX_SC;
+    		float itemY_SC;
+    		int fieldX;
+    		int fieldY;
+    		
+    		Entity itemEntity_SC;
+    		
+    		int itemStatesLength_SC;
+    		float[] itemStates_SC;
+    		
+    		itemID_SC = BigInteger.valueOf(packet.getLong());
+			/** get the item id and the corresponding item */
+			count_SC = packet.getInt();
+			capacity_SC = packet.getInt();
+			itemNameBytes_SC = new byte[packet.getInt()];
+    		packet.get(itemNameBytes_SC);
+    		itemName_SC = new String(itemNameBytes_SC);
+    		itemCode_SC = getItemCode(packet);
+    		creationTime_SC = packet.getLong();
+			/** entity stuff */
+    		entityID_SC = BigInteger.valueOf(packet.getLong());
+    		entityNameBytes_SC = new byte[packet.getInt()];
+    		packet.get(entityNameBytes_SC);
+    		entityName_SC = new String(entityNameBytes_SC);
+    		entityTileSetNameBytes_SC = new byte[packet.getInt()];
+    		packet.get(entityTileSetNameBytes_SC);
+    		entityTileSetName_SC = new String(entityTileSetNameBytes_SC);
+    		entityTileSetFileNameBytes_SC = new byte[packet.getInt()];
+    		packet.get(entityTileSetFileNameBytes_SC);
+    		entityTileSetFileName_SC = new String(entityTileSetFileNameBytes_SC);
+	    	/** item states */
+    		itemX_SC = packet.getFloat();
+    		itemY_SC = packet.getFloat();  
+    		itemStatesLength_SC = packet.getInt();
+    		itemStates_SC = new float[itemStatesLength_SC];
+			for (int k = 0; k< itemStatesLength_SC; k++) {
+				itemStates_SC[k] = packet.getFloat();
+			}
+			fieldX = packet.getInt();
+			fieldY = packet.getInt();
+			
+			/** prepare item*/
+			itemEntity_SC = new Entity(new TileSet(entityTileSetFileName_SC, entityTileSetName_SC, Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight), entityName_SC, entityID_SC, itemX_SC, itemY_SC, GameStates.animationDelayItems);
+			item_SC = Item.getItem(itemCode_SC,itemID_SC , itemName_SC, count_SC, capacity_SC, itemEntity_SC.getX(), itemEntity_SC.getY(), creationTime_SC, itemStates_SC);
+
+    		if (myId_SC.equals(GamePanel.gp.getPlayerEntity().getId())) {
+    			switch (containerType_SC) {
+    			case CONTAINER_MAIN:
+//    				System.out.println("GOT my inventory!");
+    				GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[fieldY][fieldX] = itemID_SC;
+    				GamePanel.gp.getPlayerEntity().getInventory().getItemList().put(itemID_SC, item_SC);
+    				if (fieldX < GamePanel.gp.getPlayerEntity().getInventory().getWidth() || fieldY < GamePanel.gp.getPlayerEntity().getInventory().getHeight() ) {
+    					GameWindow.gw.send(ClientMessages.getNextItem(GamePanel.gp.getPlayerEntity().getId(), containerType_SC, fieldX, fieldY));
+    				}
+    				
+    				break;
+    			case CONTAINER_EQUIPMENT_BODY:
+    				GamePanel.gp.getPlayerEntity().getEquipmentBody().getContainerArray()[fieldY][fieldX] = itemID_SC;
+    				GamePanel.gp.getPlayerEntity().getEquipmentBody().getItemList().put(itemID_SC, item_SC);
+    				if (fieldX < GamePanel.gp.getPlayerEntity().getEquipmentBody().getWidth() || fieldY < GamePanel.gp.getPlayerEntity().getEquipmentBody().getHeight() ) {
+    					GameWindow.gw.send(ClientMessages.getNextItem(GamePanel.gp.getPlayerEntity().getId(), containerType_SC, fieldX, fieldY));
+    				}
+    				break;
+    			case CONTAINER_USE:
+    				GamePanel.gp.getPlayerEntity().getInventoryUse().getContainerArray()[fieldY][fieldX] = itemID_SC;
+    				GamePanel.gp.getPlayerEntity().getInventoryUse().getItemList().put(itemID_SC, item_SC);
+    				if (fieldX < GamePanel.gp.getPlayerEntity().getInventoryUse().getWidth() || fieldY < GamePanel.gp.getPlayerEntity().getInventoryUse().getHeight() ) {
+    					GameWindow.gw.send(ClientMessages.getNextItem(GamePanel.gp.getPlayerEntity().getId(), containerType_SC, fieldX, fieldY));
+ 
+    				}
+    				break;
+				default: ;
+    			}
+    		}
+    		break; }
+//    	case SEND_EMPTY_ITEM_FIELD: {
+//    		/** if its my own id, it is my container, so overwrite my inventory with this one */
+//    		BigInteger myId_SC = BigInteger.valueOf(packet.getLong());    	
+//    		OBJECTCODE containerType_SC = getObjectCode(packet);//OBJECTCODE.values()[packet.getInt()];
+//    		int fieldX = packet.getInt();
+//			int fieldY = packet.getInt();
+//			if (myId_SC.equals(GamePanel.gp.getPlayerEntity().getId())) {
+//    			switch (containerType_SC) {
+//    			case CONTAINER_MAIN:
+////    				System.out.println("GOT my inventory!");
+//    				if (fieldY < GameStates.inventoryHeightPlayer || fieldX < GameStates.inventoryWidthPlayer) {
+//    					
+//    				}
+////    				GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[fieldY][fieldX] = itemID_SC;
+////    				GamePanel.gp.getPlayerEntity().getInventory().getItemList().put(itemID_SC, item_SC);
+//    				break;
+//    			case CONTAINER_EQUIPMENT:
+//    				break;
+//    			case CONTAINER_USE:
+//    				break;
+//				default: ;
+//    			}
+//    		}
+//    		break;}
     	case EDIT_PLAYER_ADDONS:
     		/** ID */
 			BigInteger objectId_player = BigInteger.valueOf(packet.getLong()); // 8
@@ -384,7 +625,7 @@ public class ClientMessageHandler {
 	    	int experience_add = packet.getInt(); // 4
 	    	
 	    	TileSet tileSet_add = TileSetManager.manager.getTileSet(tileName_add);
-	    	System.out.println("got tileset: "+tileName_add + " from player "+name_player_add+" ID="+objectId_player);
+//	    	System.out.println("got tileset: "+tileName_add + " from player "+name_player_add+" ID="+objectId_player);
 	    	PlayerEntity playerEntity_overwrite = new PlayerEntity(tileSet_add, name_player_add, objectId_player, 0, 0, GameStates.animationDelay);
 	    	playerEntity_overwrite.setWidth(tileWidth);
 	    	playerEntity_overwrite.setHeight(tileHeight);
@@ -480,8 +721,10 @@ public class ClientMessageHandler {
 	    		}
 	    		if (objCode == OBJECTCODE.ITEM) {
 	    			deleteText = "Item "+ objectId +" was removed";
-//	    			System.out.println(deleteText);
-	    			ItemManager.remove(objectId);
+	    			if (ItemManager.get(objectId) != null) {
+		    			ItemManager.get(objectId).setVisible(true);
+		    			ItemManager.remove(objectId);
+	    			}
 	    		}
 	    		GameWindow.gw.gameInfoConsole.appendInfo(deleteText);
 //	    		if(objectId.intValue() == 0 && objectX != 0) {
@@ -490,7 +733,7 @@ public class ClientMessageHandler {
     		}
     		break;
     		
-    	case ADDCOMPLETEITEM:
+    	case ADDCOMPLETEITEM: {
     		ITEMCODE itemCode = getItemCode(packet);
     		BigInteger addCompleteItemId = BigInteger.valueOf(packet.getLong());
     		byte[] nameAddCompleteItemBytes = new byte[packet.getInt()];
@@ -499,25 +742,88 @@ public class ClientMessageHandler {
     		float addCompleteItemX = packet.getFloat(); 
     		float addCompleteItemY = packet.getFloat();
 			int addCompleteItemCount = packet.getInt();
+			int stateLength = packet.getInt();
+			float[] states = new float[stateLength];
+			for(int i = 0; i< stateLength; i++) {
+				states[i] = packet.getFloat();
+			}
 			
     		switch(itemCode) {
     		case WOOD:
     			Wood wood = new Wood(addCompleteItemId, addCompleteItemX, addCompleteItemY);
     			wood.setCount(addCompleteItemCount);
     			if(ItemManager.add(wood)) {
-    				System.out.println("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
+//    				System.out.println("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
     				GameWindow.gw.gameInfoConsole.appendInfo("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
     			} else {
-    				System.out.println("failed inserting item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
+//    				System.out.println("failed inserting item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
     				GameWindow.gw.gameInfoConsole.appendInfo("got the item "+addCompleteItemName+" with ID: "+addCompleteItemId+" already!");
     			}
     			break;
     		case STONE:
     			break;
+    		case BODY:
+    			if (addCompleteItemName.equals("Cloak")) {
+    				Cloak cloak = new Cloak(addCompleteItemId, addCompleteItemX, addCompleteItemY, states);
+        			cloak.setCount(addCompleteItemCount);
+        			ItemManager.add(cloak);
+    			}
+    			
+    			break;
     		default:
     				;
     		}
-    		break;
+    		break;}
+    	case INITITEMS: {
+    		int itemCount = packet.getInt();
+    		GameWindow.gw.gameInfoConsole.appendInfo("Got "+itemCount+" items");
+    		
+    		for (int j = 0; j < itemCount; j++) {
+    			ITEMCODE itemCode = getItemCode(packet);
+        		BigInteger addCompleteItemId = BigInteger.valueOf(packet.getLong());
+        		byte[] nameAddCompleteItemBytes = new byte[packet.getInt()];
+    			packet.get(nameAddCompleteItemBytes);
+    			String addCompleteItemName = new String(nameAddCompleteItemBytes); // name
+        		float addCompleteItemX = packet.getFloat(); 
+        		float addCompleteItemY = packet.getFloat();
+    			int addCompleteItemCount = packet.getInt();
+    			int stateLength = packet.getInt();
+    			float[] states = new float[stateLength];
+    			for(int i = 0; i< stateLength; i++) {
+    				states[i] = packet.getFloat();
+    			}
+    			
+        		switch(itemCode) {
+        		case WOOD:
+        			Wood wood = new Wood(addCompleteItemId, addCompleteItemX, addCompleteItemY);
+        			wood.setCount(addCompleteItemCount);
+        			if(ItemManager.add(wood)) {
+//        				System.out.println("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
+        				GameWindow.gw.gameInfoConsole.appendInfo("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
+        			} else {
+//        				System.out.println("failed inserting item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
+        				GameWindow.gw.gameInfoConsole.appendInfo("got the item "+addCompleteItemName+" with ID: "+addCompleteItemId+" already!");
+        			}
+        			break;
+        		case STONE:
+        			break;
+        		case BODY:
+        			if (addCompleteItemName.equals("Cloak")) {
+        				Cloak cloak = new Cloak(addCompleteItemId, addCompleteItemX, addCompleteItemY, states);
+            			cloak.setCount(addCompleteItemCount);
+            			ItemManager.add(cloak);
+        			}
+        			
+        			break;
+        		default:
+        				;
+        		}
+    			
+    			
+    		}
+    		
+    		
+    		break;}
     	case TAKEITEM:
 //    		GameWindow.gw.gameConsole.appendInfo("taking item");
     		if (GamePanel.gp.isServerInitialized()) {
@@ -527,11 +833,35 @@ public class ClientMessageHandler {
 //	    		GameWindow.gw.gameInfoConsole.appendInfo("inventory used: " +GamePanel.gp.getPlayerEntity().getInventory().getItemList().size()+"/"+GamePanel.gp.getPlayerEntity().getInventory().getWidth()*GamePanel.gp.getPlayerEntity().getInventory().getHeight());
 //	    		System.out.println("ID = "+takeItemId);
 	    		if (ItemManager.get(takeItemId)!= null) {
+	    			/** temporary save the inventory */
+//	    			int width = GamePanel.gp.getPlayerEntity().getInventory().getWidth();
+//	    			int height = GamePanel.gp.getPlayerEntity().getInventory().getHeight();
+//	    			Container tempInventory = new Container(width, height, GamePanel.gp.getPlayerEntity().getInventory().getContainerType());
+//	    			BigInteger tempID;
+//	    			Item tempItemOld;
+//	    			Item tempItem;
+//	    			for (int i = 0; i < height; i++) {
+//	    				for (int j = 0; j< width; j++) {
+//	    					tempID = GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j];
+//	    					tempInventory.getContainerArray()[i][j] = tempID;
+//	    					if (!tempID.equals(BigInteger.valueOf(-1))) {
+//	    						tempItemOld = GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(tempID);
+//		    					tempItem = Item.getItem(tempItemOld.getItemCode(), tempID, tempItemOld.getName(), tempItemOld.getCount(), tempItemOld.getCapacity(), tempItemOld.getItemEntity(), tempItemOld.getCreationTime(), tempItemOld.getStates());
+//	    						tempInventory.getItemList().put(tempID, tempItem);
+//	    					}
+//	    				}
+//	    			}
+	    			/** add item */
+//	    			ItemManager.get(takeItemId).setVisible(true);
 		    		Item restItem = GamePanel.gp.getPlayerEntity().getInventory().addItem(ItemManager.get(takeItemId)/*, GamePanel.gp.getPlayerEntity().getId()*/);
+		    		/** update server */
+//		    		containerUpdateSend(tempInventory);
+		    		containerUpdateSendBrutal(GamePanel.gp.getPlayerEntity().getInventory());
+		    		GameWindow.gw.getSendItemList().remove(takeItemId);
 		    		GameWindow.gw.send(ClientMessages.tookItem(takeItemId));
 		    		if (restItem != null) {
 	    				/** first send to server for the itemList */
-						GameWindow.gw.send(ClientMessages.addItem(restItem.getId(), restItem.getItemCode(), restItem.getCount(), restItem.getCapacity(), restItem.getItemEntity().getX(), restItem.getItemEntity().getY(), restItem.getItemEntity().getMX(), restItem.getItemEntity().getMY(), restItem.getName(), restItem.getItemEntity().getTileSet().getFileName(), restItem.getItemEntity().getName()));
+						GameWindow.gw.send(ClientMessages.addItem(restItem.getId(), restItem.getItemCode(), restItem.getCount(), restItem.getCapacity(), restItem.getItemEntity().getX(), restItem.getItemEntity().getY(), restItem.getItemEntity().getMX(), restItem.getItemEntity().getMY(), restItem.getName(), restItem.getItemEntity().getTileSet().getFileName(), restItem.getItemEntity().getName(), restItem.getStates()));
 						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 							try {
@@ -740,4 +1070,76 @@ public class ClientMessageHandler {
         
         return itemCode;
     }
+    
+    private static OBJECTCODE getObjectCode(ByteBuffer packet) 
+    {
+        byte objectByte = packet.get();
+        if ((objectByte < 0) || (objectByte > OBJECTCODE.values().length - 1)) {
+        	//TODO: exception is better
+        	System.out.println("Unknown es value: " + objectByte);
+//            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        OBJECTCODE objectCode = OBJECTCODE.values()[objectByte];
+        
+        return objectCode;
+    }
+    
+//    public static void containerUpdateSend(Container tempInventory) {
+//    	BigInteger itemID;
+//    	Item tempItem;
+////    	System.out.println("sending updates");
+//    	for (int i = 0; i < tempInventory.getHeight(); i++) {
+//    		for (int j = 0; j < tempInventory.getWidth(); j++) {
+//    			itemID = tempInventory.getContainerArray()[i][j];
+//    			/** if different ids */
+////    			System.out.println("ids: "+itemID+" "+GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j]);
+//    			if ( (!itemID.equals(GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j])) ) {
+//    				/** here we have to delete an item from a field */
+//    				if (GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+//    					GameWindow.gw.send(ClientMessages.clearContainerPosition(i, j));
+////    					System.out.println("clear position "+i+"/"+j);
+//    				}
+//    				/** here we got a new item on an empty field */
+//    				if (tempInventory.getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+//    					tempItem = GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j]);
+//    					GameWindow.gw.send(ClientMessages.addItemToContainer(tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getItemEntity().getX(), tempItem.getItemEntity().getY(), tempItem.getItemEntity().getMX(), tempItem.getItemEntity().getMY(), tempItem.getName(), tempItem.getItemEntity().getTileSet().getFileName(), tempItem.getItemEntity().getName(), tempItem.getStates(), i, j));
+////    					System.out.println("new item on position "+i+"/"+j +" ID="+tempItem.getId() );
+//    				}
+//    				
+//    			} else {
+//    				/** the id is the same, but... */
+//    				if (!itemID.equals(BigInteger.valueOf(-1))) {
+//	    				/** if different count */
+////    					System.out.println("old:"+tempInventory.getItemList().get(itemID).getCount()+" new:"+GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(itemID).getCount());
+//	    				if (tempInventory.getItemList().get(itemID).getCount() != GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(itemID).getCount()) {
+//	    					tempItem = GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j]);
+//	    					GameWindow.gw.send(ClientMessages.addItemToContainer(tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getItemEntity().getX(), tempItem.getItemEntity().getY(), tempItem.getItemEntity().getMX(), tempItem.getItemEntity().getMY(), tempItem.getName(), tempItem.getItemEntity().getTileSet().getFileName(), tempItem.getItemEntity().getName(), tempItem.getStates(), i, j));
+////	    					System.out.println("item count changed on position "+i+"/"+j +" ID="+tempItem.getId()+" count="+tempItem.getCount() );
+//	    				}
+//    				}
+//    			}
+//    			
+//    		}
+//    	}
+//    }
+    	
+    	
+	 public static void containerUpdateSendBrutal(Container inventory) {
+    	BigInteger itemID;
+    	Item tempItem;
+//    	    	System.out.println("sending updates");
+    	for (int i = 0; i < inventory.getHeight(); i++) {
+    		for (int j = 0; j < inventory.getWidth(); j++) {
+    			itemID = inventory.getContainerArray()[i][j];
+    			if (itemID.equals(BigInteger.valueOf(-1))) {
+    				GameWindow.gw.send(ClientMessages.clearContainerPosition(inventory.getContainerType(), i, j));
+    			} else {
+    				tempItem = inventory.getItemList().get(inventory.getContainerArray()[i][j]);
+					GameWindow.gw.send(ClientMessages.addItemToContainer(inventory.getContainerType(), tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getItemEntity().getX(), tempItem.getItemEntity().getY(), tempItem.getItemEntity().getMX(), tempItem.getItemEntity().getMY(), tempItem.getName(), tempItem.getItemEntity().getTileSet().getFileName(), tempItem.getItemEntity().getName(), tempItem.getStates(), i, j));
+    			}    	    			
+    		}
+    	}
+	 }
 }
+

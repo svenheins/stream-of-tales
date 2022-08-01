@@ -70,6 +70,8 @@ import de.svenheins.objects.Space;
 import de.svenheins.objects.Sprite;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldObject;
+import de.svenheins.objects.items.Container;
+import de.svenheins.objects.items.Item;
 
 /**
  * Represents a player in the {@link World} example MUD.
@@ -94,7 +96,8 @@ public class WorldPlayer
     /** is ready??*/
     private boolean ready;
     
-    private boolean initializing;
+    private boolean initializingEntities;
+    private boolean initializingItems;
     
     private boolean readyForNextMessage= true;
     
@@ -139,7 +142,8 @@ public class WorldPlayer
             dataMgr.setBinding(playerBinding, player);
         }
         player.setSession(session, channelRef);
-        player.setInitializing(false);
+        player.setInitializingEntities(false);
+        player.setInitializingItems(false);
 //        player.setId(id);
         
         String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
@@ -169,7 +173,8 @@ public class WorldPlayer
     protected WorldPlayer(String name) {
         super(name, "PlayerName", 0, 0);
         ready = false;
-        initializing= false;
+        initializingEntities= false;
+        initializingItems= false;
     }
 
     /**
@@ -341,11 +346,11 @@ public class WorldPlayer
 //				getSession().send(ServerMessages.sendObjectState(objCode, object_id, object_state));
 //				break;
 			case INITENTITIES:
-				if(!this.isInitializing()) {
+				if(!this.isInitializingEntities()) {
 					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
-					this.getRoom().addPlayerInitializing(this.getId());
+					this.getRoom().addPlayerInitializingEntities(this.getId());
 					
-					setInitializing(true);
+					setInitializingEntities(true);
 //					int countEntities = currentRoomRef.get().getCountEntities();
 //					int end = 0;
 //					Entity[] entityArray;
@@ -361,6 +366,16 @@ public class WorldPlayer
 					
 				}
 				break;
+			case INITITEMS:{
+				if(!this.isInitializingItems()) {
+					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
+					this.getRoom().addPlayerInitializingItems(this.getId());
+					
+					setInitializingItems(true);					
+				}
+				
+				break;
+			}
 			case INITSPACES:
 				this.initSpaces();
 				break;
@@ -631,7 +646,7 @@ public class WorldPlayer
 		    	this.getRoom().sendEditSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	
 				break;
-			case ADDITEM:
+			case ADDITEM: {
 				BigInteger addItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
 				ITEMCODE itemCode_ADDITEM = getItemCode(message); // 1 Byte
 				int count_ADDITEM = message.getInt(); // 4 Bytes
@@ -640,6 +655,8 @@ public class WorldPlayer
 				float y_ADDITEM= message.getFloat(); // 4
 				float mx_ADDITEM= message.getFloat(); // 4
 				float my_ADDITEM= message.getFloat(); // 4
+				int itemStatesLength_ADDITEM; // 4
+				float[] itemStates_ADDITEM; // 4*Length
 				
 				byte[] itemName_ADDITEM_Bytes = new byte[message.getInt()];
 				message.get(itemName_ADDITEM_Bytes);
@@ -659,8 +676,14 @@ public class WorldPlayer
 		        
 		        serverEntity_ADDITEM = new ServerEntity(serverSprite_ADDITEM, addItemID, spriteShortName_ADDITEM, spriteString_ADDITEM, x_ADDITEM, y_ADDITEM, mx_ADDITEM, my_ADDITEM);
 	        	
-				this.getRoom().addItem(addItemID, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM ));
-				break;
+		        itemStatesLength_ADDITEM = message.getInt();
+		        itemStates_ADDITEM = new float[itemStatesLength_ADDITEM];
+		        for (int i = 0; i < itemStatesLength_ADDITEM; i ++) {
+		        	itemStates_ADDITEM[i] = message.getFloat();
+		        }
+		        
+				this.getRoom().addItem(addItemID, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ));
+				break; }
 			case TAKEITEM:
 				BigInteger takeItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
 				if (this.getRoom().getItemList().get().containsKey(takeItemID)) {
@@ -679,6 +702,144 @@ public class WorldPlayer
 //	    	            new Object[] { tookItemID, thisPlayerName});
 				this.getRoom().removeItem(tookItemID);
 				break;
+				
+			case ADDITEMTOCONTAINER: {
+				OBJECTCODE containerType = getObjectCode(message); // 1
+				BigInteger addItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
+				ITEMCODE itemCode_ADDITEM = getItemCode(message); // 1 Byte
+				int count_ADDITEM = message.getInt(); // 4 Bytes
+				int capacity_ADDITEM = message.getInt(); // 4
+				float x_ADDITEM = message.getFloat(); // 4
+				float y_ADDITEM= message.getFloat(); // 4
+				float mx_ADDITEM= message.getFloat(); // 4
+				float my_ADDITEM= message.getFloat(); // 4
+				int itemStatesLength_ADDITEM; // 4
+				float[] itemStates_ADDITEM; // 4*Length
+				int containerXPos;
+				int containerYPos;
+				
+				byte[] itemName_ADDITEM_Bytes = new byte[message.getInt()];
+				message.get(itemName_ADDITEM_Bytes);
+				String itemName_ADDITEM = new String(itemName_ADDITEM_Bytes); // name
+
+				byte[] spriteString_ADDITEM_Bytes = new byte[message.getInt()];
+				message.get(spriteString_ADDITEM_Bytes);
+				String spriteString_ADDITEM = new String(spriteString_ADDITEM_Bytes); // name
+				
+				byte[] spriteShortName_ADDITEM_Bytes = new byte[message.getInt()];
+				message.get(spriteShortName_ADDITEM_Bytes);
+				String spriteShortName_ADDITEM = new String(spriteShortName_ADDITEM_Bytes); // name
+				
+		        Sprite sprite_ADDITEM = SpriteManager.manager.getSprite(spriteString_ADDITEM);
+		        ServerSprite serverSprite_ADDITEM = new ServerSprite(spriteString_ADDITEM, sprite_ADDITEM.getHeight(), sprite_ADDITEM.getWidth());
+		        ServerEntity serverEntity_ADDITEM;
+		        
+		        serverEntity_ADDITEM = new ServerEntity(serverSprite_ADDITEM, addItemID, spriteShortName_ADDITEM, spriteString_ADDITEM, x_ADDITEM, y_ADDITEM, mx_ADDITEM, my_ADDITEM);
+//		        System.out.println("x:"+x_ADDITEM+" y:"+y_ADDITEM);
+		        
+		        itemStatesLength_ADDITEM = message.getInt();
+		        itemStates_ADDITEM = new float[itemStatesLength_ADDITEM];
+		        for (int i = 0; i < itemStatesLength_ADDITEM; i ++) {
+		        	itemStates_ADDITEM[i] = message.getFloat();
+		        }
+		        
+		        containerXPos = message.getInt();
+		        containerYPos = message.getInt();
+		        
+				this.getRoom().addItemToContainer(thisPlayerName, containerType, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ), containerXPos, containerYPos);
+//				logger.log(Level.INFO, "added item {0} into the field ({1}|{2} of {3})",
+//	    	            new Object[] { addItemID, containerXPos, containerYPos, containerType});
+				break;}
+			case CLEARCONTAINERPOSITION:
+			{	
+				OBJECTCODE containerType = getObjectCode(message);
+				int containerXPos = message.getInt();
+				int containerYPos = message.getInt();
+				switch (containerType) {
+				case CONTAINER_MAIN:
+					BigInteger itemID = this.getRoom().getContainerList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getRoom().getContainerList().get().get(thisPlayerName).getForUpdate().removeItem(itemID);
+					break;
+				case CONTAINER_EQUIPMENT_BODY:
+					BigInteger itemIDBODY = this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDBODY);
+					break;
+				case CONTAINER_USE:
+					BigInteger itemIDUse = this.getRoom().getContainerUseList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getRoom().getContainerUseList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDUse);
+					break;
+				default:;
+				}
+				
+//				logger.log(Level.INFO, "deleted item {0} from the field ({1}|{2})",
+//	    	            new Object[] { itemID, containerXPos, containerYPos});
+				break;
+			}
+			case GET_NEXT_ITEM: {
+				BigInteger playerID = BigInteger.valueOf(message.getLong());
+				OBJECTCODE containerType = getObjectCode(message);
+				int fieldX = message.getInt();
+				int fieldY = message.getInt();
+				int tempFieldX=0;
+				int tempFieldY=0;
+				int nextFieldX=0;
+				int nextFieldY=0;
+				
+				ServerContainer playerContainer = null;
+				switch (containerType) {
+				case CONTAINER_MAIN:
+					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_BODY:
+					playerContainer = this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).get();
+//					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_USE:
+					playerContainer = this.getRoom().getContainerUseList().get().get(thisPlayerName).get();
+//					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+					break;
+				default:
+//					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+					
+				}
+//				ServerContainer playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+		        boolean foundItem = false;
+		        ManagedReference<ServerItem> itemRef = null;
+		        if (fieldX < playerContainer.getContainerWidth()-1) {
+		        	tempFieldX = fieldX +1;
+		        	tempFieldY = fieldY;
+		        } else {
+		        	if (fieldY < playerContainer.getContainerHeight()-1) {
+		        		tempFieldY = fieldY +1;
+		        		tempFieldX = 0;
+		        	} else {
+		        		// do nothing, because its the last element of the container
+		        		tempFieldX = fieldX+1;
+		        		tempFieldY = fieldY+1;
+		        	}
+		        }
+		        for(int i = tempFieldY; i <playerContainer.getContainerHeight(); i++) {
+		        	for (int j = tempFieldX; j < playerContainer.getContainerWidth(); j++) {
+		        		if (playerContainer.getItemList().get(playerContainer.getContainerArray()[i][j]) != null) {
+		        			foundItem = true;
+		        			itemRef = playerContainer.getItemList().get(playerContainer.getContainerArray()[i][j]);
+		        			nextFieldX = j;
+		        			nextFieldY = i;
+		        			break;
+		        		}
+		        	}
+		        	if (foundItem) break;
+		        }
+		        if (foundItem && itemRef != null) {
+		        	// send first found item
+//		        	System.out.println("send next item: x="+nextFieldX+" y="+nextFieldY);
+		        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+					getSession().send(ServerMessages.sendItemField(playerID, containerType, item, nextFieldX, nextFieldY));
+		        } else {
+		        	// nothing should be send to player
+		        }    
+				break;
+			}
 			case RESPAWN:
 	//		    int respawnId = packet.getInt();
 	//		    float respawnX = packet.getFloat();
@@ -765,12 +926,103 @@ public class WorldPlayer
 		float mx = s_player.getMX();
 		float my = s_player.getMY();
 		
-		ServerContainer inventory = s_player.getInventory().get();
+		ServerContainer serverInventory = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryUse = this.getRoom().getContainerUseList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqBody = this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).get();
+		//s_player.getInventory().get();
+//		Container inventory = new Container(serverInventory.getContainerWidth(), serverInventory.getContainerHeight(), serverInventory.getContainerType());
+//		inventory.setContainerArray(serverInventory.getContainerArray());
+//		
+//		HIER MUSS NOCH DIE itemList gezogen werden!!! (for-loop)
+//		inventory.setItemList(serverInventory.getItemList());
+//		Item item;
+//		for (ManagedReference<ServerItem> itemRef : serverInventory.getItemList().values()) {
+//			item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+//			inventory.getItemList().put(item.getId(), item);
+//		}
 		
 		BigInteger maxItemID = this.getRoom().getMaxItemIndex();
-		
-        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my, maxItemID, inventory));
-
+        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my, maxItemID));
+//      getSession().send(ServerMessages.sendContainer(playerId, inventory));
+        boolean foundItem;
+        int fieldX;
+        int fieldY;
+        ManagedReference<ServerItem> itemRef;
+        
+        
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventory.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventory.getContainerWidth(); j++) {
+        		if (serverInventory.getItemList().get(serverInventory.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventory.getItemList().get(serverInventory.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	// send first found item
+        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_MAIN, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }    
+        
+        /** NEXT CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryUse.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryUse.getContainerWidth(); j++) {
+        		if (serverInventoryUse.getItemList().get(serverInventoryUse.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryUse.getItemList().get(serverInventoryUse.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_USE, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        /** end container */
+        
+        
+        /** NEXT CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqBody.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqBody.getContainerWidth(); j++) {
+        		if (serverInventoryEqBody.getItemList().get(serverInventoryEqBody.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqBody.getItemList().get(serverInventoryEqBody.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_BODY, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
 	}
 	
 	public void sendPlayerData(BigInteger id) {
@@ -928,23 +1180,23 @@ public class WorldPlayer
         return itemCode;
     }
     
-//    /**
-//     * Get the OPCODE from the packet
-//     * @param packet
-//     * @return
-//     */
-//    private OBJECTCODE getObjectCode(ByteBuffer packet) 
-//    {
-//       // byte opbyte = packet.get();
-//        byte objbyte = packet.get(1);
-//        if ((objbyte < 0) || (objbyte > OBJECTCODE.values().length - 1)) {
-//            logger.severe("Unknown op value: " + objbyte);
-//            return null;
-//        }
-//        OBJECTCODE code = OBJECTCODE.values()[objbyte];
-//        
-//        return code;
-//    }
+    /**
+     * Get the OPCODE from the packet
+     * @param packet
+     * @return
+     */
+    private OBJECTCODE getObjectCode(ByteBuffer packet) 
+    {
+       // byte opbyte = packet.get();
+        byte objbyte = packet.get();
+        if ((objbyte < 0) || (objbyte > OBJECTCODE.values().length - 1)) {
+            logger.severe("Unknown op value: " + objbyte);
+            return null;
+        }
+        OBJECTCODE code = OBJECTCODE.values()[objbyte];
+        
+        return code;
+    }
     
     public boolean isReady() {
     	return ready;
@@ -954,12 +1206,20 @@ public class WorldPlayer
     	this.ready = bool;
     }
     
-    public boolean isInitializing() {
-    	return initializing;
+    public boolean isInitializingEntities() {
+    	return initializingEntities;
     }
     
-    public void setInitializing(boolean init) {
-    	this.initializing=init;
+    public void setInitializingEntities(boolean init) {
+    	this.initializingEntities=init;
+    }
+    
+    public boolean isInitializingItems() {
+    	return initializingItems;
+    }
+    
+    public void setInitializingItems(boolean init) {
+    	this.initializingItems=init;
     }
 
 	public void sendEditSpaceAddons(BigInteger id, String textureName, int[] rgb, float trans, int filled, float scale, float area) {

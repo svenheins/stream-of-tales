@@ -115,8 +115,12 @@ public class ClientMessages extends Messages{
      * @param id
      * @return 
      */
-    public static ByteBuffer addItem(BigInteger id, ITEMCODE itemCode_ADDITEM, int count_ADDITEM, int capacity_ADDITEM, float x_ADDITEM, float y_ADDITEM, float mx_ADDITEM, float my_ADDITEM, String itemName_ADDITEM, String spriteString_ADDITEM, String spriteShortName_ADDITEM) {
-        byte[] bytes = new byte[1 + 8 + 1 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + itemName_ADDITEM.length() + 4 + spriteString_ADDITEM.length() + 4 + spriteShortName_ADDITEM.length() ];
+    public static ByteBuffer addItem(BigInteger id, ITEMCODE itemCode_ADDITEM, int count_ADDITEM, int capacity_ADDITEM, float x_ADDITEM, float y_ADDITEM, float mx_ADDITEM, float my_ADDITEM, String itemName_ADDITEM, String spriteString_ADDITEM, String spriteShortName_ADDITEM, float[] itemStates_ADDITEM) {
+        int itemStatesLength = 0;
+    	if (itemStates_ADDITEM != null) {
+        	itemStatesLength = itemStates_ADDITEM.length;
+        }
+    	byte[] bytes = new byte[1 + 8 + 1 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + itemName_ADDITEM.length() + 4 + spriteString_ADDITEM.length() + 4 + spriteShortName_ADDITEM.length() + 4 + 4*itemStatesLength ];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.ADDITEM.ordinal());
         buffer.putLong(id.longValue()); // 8 Bytes
@@ -135,6 +139,71 @@ public class ClientMessages extends Messages{
 	    buffer.putInt(spriteShortName_ADDITEM.length()); // 4
 	    buffer.put(spriteShortName_ADDITEM.getBytes()); // spriteShortName_ADDITEM.length() 
         
+	    buffer.putInt(itemStatesLength);
+	    for (int i = 0; i < itemStatesLength; i++) {
+	    	buffer.putFloat(itemStates_ADDITEM[i]);
+	    }
+	    
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer addItemToContainer(OBJECTCODE containerType, BigInteger id, ITEMCODE itemCode_ADDITEM, int count_ADDITEM, int capacity_ADDITEM, float x_ADDITEM, float y_ADDITEM, float mx_ADDITEM, float my_ADDITEM, String itemName_ADDITEM, String spriteString_ADDITEM, String spriteShortName_ADDITEM, float[] itemStates_ADDITEM, int containerXPos, int containerYPos ) {
+        int itemStatesLength = 0;
+    	if (itemStates_ADDITEM != null) {
+        	itemStatesLength = itemStates_ADDITEM.length;
+        }
+    	byte[] bytes = new byte[1 + 1 + 8 + 1 + 4 + 4 + 4 + 4 + 4 + 4 + 4 + itemName_ADDITEM.length() + 4 + spriteString_ADDITEM.length() + 4 + spriteShortName_ADDITEM.length() + 4 + 4*itemStatesLength +4+4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.ADDITEMTOCONTAINER.ordinal());
+        buffer.put((byte) containerType.ordinal());
+        buffer.putLong(id.longValue()); // 8 Bytes
+        
+        buffer.put((byte) itemCode_ADDITEM.ordinal()); // 1
+		buffer.putInt(count_ADDITEM); // 4
+		buffer.putInt(capacity_ADDITEM); // 4
+		buffer.putFloat(x_ADDITEM); // 4
+		buffer.putFloat(y_ADDITEM); // 4
+		buffer.putFloat(mx_ADDITEM); // 4
+		buffer.putFloat(my_ADDITEM); // 4
+		buffer.putInt(itemName_ADDITEM.length()); // 4
+	    buffer.put(itemName_ADDITEM.getBytes()); // itemName_ADDITEM.length() 
+	    buffer.putInt(spriteString_ADDITEM.length()); // 4
+	    buffer.put(spriteString_ADDITEM.getBytes()); // spriteString_ADDITEM.length() 
+	    buffer.putInt(spriteShortName_ADDITEM.length()); // 4
+	    buffer.put(spriteShortName_ADDITEM.getBytes()); // spriteShortName_ADDITEM.length() 
+        
+	    buffer.putInt(itemStatesLength);
+	    for (int i = 0; i < itemStatesLength; i++) {
+	    	buffer.putFloat(itemStates_ADDITEM[i]);
+	    }
+	    
+	    buffer.putInt(containerXPos);
+	    buffer.putInt(containerYPos);
+	    
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer clearContainerPosition(OBJECTCODE containerType, int containerXPos, int containerYPos ) {
+        
+    	byte[] bytes = new byte[1 + 1 + 4 + 4 ];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.CLEARCONTAINERPOSITION.ordinal());
+        buffer.put((byte) containerType.ordinal());
+	    buffer.putInt(containerXPos);
+	    buffer.putInt(containerYPos);
+	    
         buffer.flip();
         return buffer;
     }
@@ -145,7 +214,9 @@ public class ClientMessages extends Messages{
      * @return 
      */
     public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, float x, float y, int count, float[] states) {
-        byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4];
+        int stateLength = 0;
+        if (states != null) stateLength = states.length;
+    	byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4 +4 +stateLength*4];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.ADDCOMPLETEITEM.ordinal()); // 1
         
@@ -156,6 +227,10 @@ public class ClientMessages extends Messages{
     	buffer.putFloat(x); // 4
     	buffer.putFloat(y); // 4
         buffer.putInt(count); // 4
+        buffer.putInt(stateLength);
+        for (int i = 0; i < stateLength; i++) {
+        	buffer.putFloat(states[i]);
+        }
         
         buffer.flip();
         return buffer;
@@ -194,6 +269,15 @@ public class ClientMessages extends Messages{
         byte[] bytes = new byte[1];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITENTITIES.ordinal());
+//        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer initItems() {
+        byte[] bytes = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITITEMS.ordinal());
 //        buffer.putInt(objCode.ordinal());
         buffer.flip();
         return buffer;
@@ -273,6 +357,23 @@ public class ClientMessages extends Messages{
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.PLAYERDATA.ordinal());
         buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer getNextItem(BigInteger playerID, OBJECTCODE containerType, int oldFieldX, int oldFieldY) {
+        byte[] bytes = new byte[1 + 8 +1 + 4 + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.GET_NEXT_ITEM.ordinal());
+        buffer.putLong(playerID.longValue());
+        buffer.put((byte) containerType.ordinal());
+        buffer.putInt(oldFieldX);
+        buffer.putInt(oldFieldY);
         buffer.flip();
         return buffer;
     }

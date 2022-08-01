@@ -5,14 +5,20 @@ import java.util.HashMap;
 
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.ItemManager;
+import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.ITEMCODE;
+import de.svenheins.messages.OBJECTCODE;
+import de.svenheins.objects.items.Item;
 
 public class Container {
 	private HashMap<BigInteger, Item> itemList = new HashMap<BigInteger, Item>();
 	private int width;
 	private int height;
 	private BigInteger[][] containerArray;
+	private OBJECTCODE containerType;
+	private ITEMCODE allowedItems;
 	
-	public Container(int width, int height) {
+	public Container(int width, int height, OBJECTCODE containerType, ITEMCODE allowedItems) {
 		this.setHeight(height);
 		this.setWidth(width);
 		containerArray = new BigInteger[height][width];
@@ -21,7 +27,9 @@ public class Container {
 				containerArray[i][j] = BigInteger.valueOf(-1);
 			}
 		}
-		
+		itemList = new HashMap<BigInteger, Item>();
+		this.setContainerType(containerType);
+		this.setAllowedItems(allowedItems);
 	}
 	
 	/** is there a free field??? */
@@ -88,7 +96,10 @@ public class Container {
 							try {
 								item.getItemEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
 								item.getItemEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
+								item.setX(item.getItemEntity().getX());
+								item.setY(item.getItemEntity().getY());
 								itemList.put(item.getId(), (Item) item.clone());
+								itemList.get(item.getId()).setVisible(true);
 							} catch (CloneNotSupportedException e) {
 								e.printStackTrace();
 							}
@@ -128,6 +139,8 @@ public class Container {
 	public void setItemList(HashMap<BigInteger, Item> itemList) {
 		this.itemList = itemList;
 	}
+	
+	
 	public int getWidth() {
 		return width;
 	}
@@ -147,5 +160,21 @@ public class Container {
 
 	public void setContainerArray(BigInteger[][] containerArray) {
 		this.containerArray = containerArray;
+	}
+
+	public OBJECTCODE getContainerType() {
+		return containerType;
+	}
+
+	public void setContainerType(OBJECTCODE containerType) {
+		this.containerType = containerType;
+	}
+
+	public ITEMCODE getAllowedItems() {
+		return allowedItems;
+	}
+
+	public void setAllowedItems(ITEMCODE allowedItems) {
+		this.allowedItems = allowedItems;
 	}
 }

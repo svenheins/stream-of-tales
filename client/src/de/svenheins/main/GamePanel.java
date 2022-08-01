@@ -19,6 +19,7 @@ import java.awt.image.Kernel;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -289,6 +290,19 @@ public class GamePanel extends JPanel {
 		playerEditorGUI.add(playerMeGUIButton);
 		PlayerListGUIManager.add(playerEditorGUI);
 		
+		this.initContainers();
+		
+		/** there is no item at the mouseCursor */
+		this.setMouseItem(null);
+		
+		/** init GUI elements */
+		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
+		connectButton.setAllXY(100, 50);
+	}
+	
+	public void initContainers() {
+		ContainerGUIManager.containerGUIList = new HashMap<String, ContainerGUI>();
+		ContainerGUIManager.idList = new ArrayList<String>();
 		/** inventory GUI */
 		int totalWidthInventory = GameStates.inventoryDistToFrameX*2 + (GameStates.inventorySlotDistX*2+GameStates.inventoryItemTileWidth)*getPlayerEntity().getInventory().getWidth();
 		int totalHeightInventory = GameStates.inventoryDistToFrameY*2 + (GameStates.inventorySlotDistY*2+GameStates.inventoryItemTileHeight+GameStates.inventoryFontDistanceY)*getPlayerEntity().getInventory().getHeight();
@@ -298,12 +312,26 @@ public class GamePanel extends JPanel {
 		
 		ContainerGUI playerInventoryGUI = new ContainerGUI(this.getPlayerEntity().getInventory(), "Player Inventory", GameStates.inventoryPlayerX, GameStates.inventoryPlayerY, "", 0, inventoryGUISpace);
 		ContainerGUIManager.add(playerInventoryGUI);
-		/** there is no item at the mouseCursor */
-		this.setMouseItem(null);
 		
-		/** init GUI elements */
-		connectButton = new Space("rechteckButton.svg", BigInteger.valueOf(0), "connect.png", 0.5f);
-		connectButton.setAllXY(100, 50);
+		/** use inventory GUI */
+		int totalWidthInventoryUse = GameStates.inventoryDistToFrameX*2 + (GameStates.inventorySlotDistX*2+GameStates.inventoryItemTileWidth)*getPlayerEntity().getInventoryUse().getWidth();
+		int totalHeightInventoryUse = GameStates.inventoryDistToFrameY*2 + (GameStates.inventorySlotDistY*2+GameStates.inventoryItemTileHeight+GameStates.inventoryFontDistanceY)*getPlayerEntity().getInventoryUse().getHeight();
+		ArrayList<Polygon> inventoryGUISpacePolygonUse = new ArrayList<Polygon>();
+		inventoryGUISpacePolygonUse.add((new Polygon(new int[]{0 , 0 , totalWidthInventoryUse, totalWidthInventoryUse}, new int[]{0 , totalHeightInventoryUse, totalHeightInventoryUse, 0}, 4) ));
+		Space inventoryGUISpaceUse = new Space(inventoryGUISpacePolygonUse, 0, 0, "inventoryGUISpace", BigInteger.valueOf(0), new int[]{0, 0, 0}, true, 0.6f, 1.0f, 1.0f, "empty");
+		
+		ContainerGUI playerInventoryUseGUI = new ContainerGUI(this.getPlayerEntity().getInventoryUse(), "Player Use Inventory", GameStates.inventoryUsePlayerX, GameStates.inventoryUsePlayerY, "", 0, inventoryGUISpaceUse);
+		ContainerGUIManager.add(playerInventoryUseGUI);
+		
+		/** body equipment GUI */
+		int totalWidthInventoryEqBody = GameStates.inventoryDistToFrameX*2 + (GameStates.inventorySlotDistX*2+GameStates.inventoryItemTileWidth)*getPlayerEntity().getEquipmentBody().getWidth();
+		int totalHeightInventoryEqBody = GameStates.inventoryDistToFrameY*2 + (GameStates.inventorySlotDistY*2+GameStates.inventoryItemTileHeight+GameStates.inventoryFontDistanceY)*getPlayerEntity().getEquipmentBody().getHeight();
+		ArrayList<Polygon> inventoryGUISpacePolygonEqBody = new ArrayList<Polygon>();
+		inventoryGUISpacePolygonEqBody.add((new Polygon(new int[]{0 , 0 , totalWidthInventoryEqBody, totalWidthInventoryEqBody}, new int[]{0 , totalHeightInventoryEqBody, totalHeightInventoryEqBody, 0}, 4) ));
+		Space inventoryGUISpaceEqBody = new Space(inventoryGUISpacePolygonEqBody, 0, 0, "inventoryGUISpace", BigInteger.valueOf(0), new int[]{0, 0, 0}, true, 0.6f, 1.0f, 1.0f, "empty");
+		
+		ContainerGUI playerInventoryEqBodyGUI = new ContainerGUI(this.getPlayerEntity().getEquipmentBody(), "Player EqBody Inventory", GameStates.inventoryEqBodyPlayerX, GameStates.inventoryEqBodyPlayerY, "", 0, inventoryGUISpaceEqBody);
+		ContainerGUIManager.add(playerInventoryEqBodyGUI);
 	}
 	
 	/** config can be started allways (also for reset) */
@@ -670,7 +698,7 @@ public class GamePanel extends JPanel {
 		List<BigInteger> idListTempItems = new ArrayList<BigInteger>(ItemManager.idList);
 		for (BigInteger i: idListTempItems) {
 			Item tempItem = ItemManager.get(i);
-			if (tempItem != null) {
+			if (tempItem != null && tempItem.isVisible()) {
 				Entity e= tempItem.getItemEntity();
 				if(e != null) {
 					if(e.getSprite().getImage() != null) {
@@ -1160,7 +1188,7 @@ public class GamePanel extends JPanel {
 		/** send the complete Item to all players of the channel */
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 			/** first send to server for the itemList */
-			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId(), mouseItem.getItemCode(), mouseItem.getCount(), mouseItem.getCapacity(), mouseItem.getItemEntity().getX(), mouseItem.getItemEntity().getY(), mouseItem.getItemEntity().getMX(), mouseItem.getItemEntity().getMY(), mouseItem.getName(), mouseItem.getItemEntity().getTileSet().getFileName(), mouseItem.getItemEntity().getName()));
+			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId(), mouseItem.getItemCode(), mouseItem.getCount(), mouseItem.getCapacity(), p.x, p.y, mouseItem.getItemEntity().getMX(), mouseItem.getItemEntity().getMY(), mouseItem.getName(), mouseItem.getItemEntity().getTileSet().getFileName(), mouseItem.getItemEntity().getName(), mouseItem.getStates()));
 			
 //			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId()));
 			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {

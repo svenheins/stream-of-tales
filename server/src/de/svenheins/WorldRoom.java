@@ -64,6 +64,7 @@ import de.svenheins.objects.Space;
 import de.svenheins.objects.Sprite;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldObject;
+import de.svenheins.objects.items.Item;
 
 /**
  * Represents a room in the {@link World} example MUD.
@@ -86,7 +87,8 @@ public class WorldRoom extends WorldObject
 //        new HashSet<ManagedReference<WorldObject>>();
     
     /** The set of entities in this room. */
-    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> entities;// =
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> entities;
+    // =
 //        new ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>>();
     
 //    private static List<ManagedReference<ServerEntity>> entitiesArray = null;
@@ -99,16 +101,21 @@ public class WorldRoom extends WorldObject
     private BigInteger maxItemIndex;
     
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerUseList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqBodyList;
     
 //    private static List<ManagedReference<ServerSpace>> spacesArray = null;
 
+
+	
 
 	/** The set of players in this room. */
     private final HashMap<BigInteger, ManagedReference<WorldPlayer>> players =
         new HashMap<BigInteger, ManagedReference<WorldPlayer>>();
     
     /** the set of players, that are just initializing */
-    private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializing = new HashMap<BigInteger, Iterator<BigInteger>>();
+    private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingEntities = new HashMap<BigInteger, Iterator<BigInteger>>();
+    private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingItems = new HashMap<BigInteger, Iterator<BigInteger>>();
     
     /** The set of corresponding player-entities in this room. */
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerPlayer>>> serverPlayers;// = new HashMap<BigInteger, ManagedReference<ServerPlayer>>();
@@ -152,6 +159,12 @@ public class WorldRoom extends WorldObject
         
         ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
         containerList = dm.createReference(tempContainerList);
+        
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerUseList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerUseList = dm.createReference(tempContainerUseList);
+        
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqBodyList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqBodyList = dm.createReference(tempContainerEqBodyList);
     }
 
 //    /**
@@ -206,6 +219,7 @@ public class WorldRoom extends WorldObject
         ManagedReference<ServerItem> tempServerItem = dataManager.createReference(serverItem);
         if (!itemList.get().containsKey(itemID)) {
         	itemList.getForUpdate().put(itemID, tempServerItem);
+        	System.out.println("itemlist size: "+itemList.get().size());
         }
     }
     
@@ -382,6 +396,10 @@ public class WorldRoom extends WorldObject
 //		       	s_player.setTileSetPathName(GameStates.standardTileNamePlayer);
 //		       	s_player.setTileSetName("shipTileName");
 		        this.addServerPlayer(s_player, playerName, refPlayer.getId());
+//		        ServerContainer playerContainer = new ServerContainer(GameStates.inventoryWidthPlayer, GameStates.inventoryHeightPlayer, OBJECTCODE.CONTAINER_MAIN);
+		        this.containerList.getForUpdate().put(playerName, s_player.getInventory());
+		        this.containerUseList.getForUpdate().put(playerName, s_player.getInventoryUse());
+		        this.containerEqBodyList.getForUpdate().put(playerName, s_player.getInventoryEqBody());
 		        
 		        TileSet tile = TileSetManager.manager.getTileSet(s_player.getTileSetName());
 		        playerEntity = new PlayerEntity(tile, playerName, player.getId(), player.getX(), player.getY(), GameStates.animationDelay);
@@ -393,6 +411,8 @@ public class WorldRoom extends WorldObject
 
 	        	TileSet tile = TileSetManager.manager.getTileSetByPath(s_player.getTileSetName(), s_player.getTileSetPathName());
 		        playerEntity = new PlayerEntity(tile, playerName, s_player.getId(), s_player.getX(), s_player.getY(), GameStates.animationDelay);
+//		        ServerContainer s_container = containerList.get().get(playerName).get();
+//		        playerEntity.setInventory(new Con);
 //		        System.out.println(s_player.getX());
 	        }
 //	        ServerPlayer serverPlayer = new ServerPlayer(sprite, playerID, millis, last, frames, duration)
@@ -505,7 +525,8 @@ public class WorldRoom extends WorldObject
 	        players.remove(player.getId());
 	        PlayerManager.remove(player.getId());
 	        this.updateSendLogout(player.getId());
-	        this.playerInitializing.remove(player.getId());
+	        this.playerInitializingEntities.remove(player.getId());
+	        this.playerInitializingItems.remove(player.getId());
 	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
 	        if (ServerTextureManager.manager.containsPlayer(playerName)) {
 	        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
@@ -638,6 +659,33 @@ public class WorldRoom extends WorldObject
     	return objectListTemp;    	
     }
     
+    /** return next count Entities*/
+    public Item[] getNextCountItems(int count, Iterator<BigInteger> itKeys) {
+    	Item[] objectListTemp = new Item[count];
+    	int objectCounter = 0;
+    	/** for each entity add the corresponding id to the intList */
+		Item realItem;
+		BigInteger actualID;
+    	for (int i = 0; i<count; i++) {
+    		if (itKeys.hasNext()) {
+    			actualID = itKeys.next();
+				ServerItem item = itemList.get().get(actualID).get();
+				System.out.println("got item id "+item.getId());
+//				TileSet tileSet = TileSetManager.manager.getTileSetByPath(item.getItemEntity().get().getTileSetName(), item.getItemEntity().get().getTileSetPathName());
+				realItem = Item.getItem(item.getItemCode(), item.getId(), item.getName(), item.getCount(), item.getCapacity(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
+				objectListTemp[objectCounter] = realItem;
+				objectCounter++;
+    		} else {
+    			Item[] objectList = new Item[objectCounter];
+    			for (int j = 0; j < objectCounter; j++){
+    				objectList[j] = objectListTemp[j];
+    			}
+    			return objectList;
+    		}
+		}
+    	return objectListTemp;    	
+    }
+    
     public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> getEntities() {
     	return entities;
     }
@@ -692,6 +740,40 @@ public class WorldRoom extends WorldObject
 	//    		} else {
 	//    			logger.log(Level.INFO, "Overwrite error - space is not existent!");
 	//    		}
+			}
+    	}
+    	
+    }
+    
+    /**
+     * Updates all objects in the WorldRoom
+     * @param delta: time that passed until the last update-process
+     */
+    public void updateItems(int begin, int end, Iterator<BigInteger> itKeys) {
+    	long timestamp;
+//		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
+//    	Iterator<BigInteger> itKeys = entities.get().keySet().iterator();
+    	BigInteger actualID;
+//    	for(int i = 0; i< begin; i++) {
+//    		actualID = itKeys.next();
+//    	}
+    	
+//		Entity realEntity;
+//		for (BigInteger entId : entities.get().keySet()) {
+		for (int i = begin; i < end; i++ ) {
+			if (itKeys.hasNext()) {
+				actualID = itKeys.next();
+	//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
+				ServerItem si = itemList.get().get(actualID).getForUpdate(); 
+	//					EntityManager.get(EntityManager.idList.get(i)); 
+	//    		ServerEntity se = entity.getForUpdate();
+	    		
+	    		timestamp = System.currentTimeMillis();
+	    		if (timestamp - si.getCreationTime() > GameStates.maximumLifeDurationItems) {
+	    			System.out.println("difference: " + (timestamp - si.getCreationTime()));
+	    			removeItem(si.getId());
+	    		}
+	    		
 			}
     	}
     	
@@ -891,40 +973,115 @@ public class WorldRoom extends WorldObject
 		return serverPlayers.get().get(name).get();
 	}
 
-	public HashMap<BigInteger, Iterator<BigInteger>> getPlayerInitializing() {
-		return playerInitializing;
-	}
+//	public HashMap<BigInteger, Iterator<BigInteger>> getPlayerInitializingEntities() {
+//		return playerInitializingEntities;
+//	}
 	
-	public void addPlayerInitializing(BigInteger playerID) {
-		if (!this.playerInitializing.containsKey(playerID)) {
-			this.playerInitializing.put(playerID, this.getEntities().get().keySet().iterator());
+	public void addPlayerInitializingEntities(BigInteger playerID) {
+		if (!this.playerInitializingEntities.containsKey(playerID)) {
+			this.playerInitializingEntities.put(playerID, this.getEntities().get().keySet().iterator());
 		}
 	}
 	
-	public void removePlayerInitializing(BigInteger playerID) {
-		if (this.playerInitializing.containsKey(playerID)) {
-			this.playerInitializing.remove(this.players.get(playerID));
+	public void removePlayerInitializingEntities(BigInteger playerID) {
+		if (this.playerInitializingEntities.containsKey(playerID)) {
+			this.playerInitializingEntities.remove(this.players.get(playerID));
 		}
 	}
 	
 	/** send count next entities to player, who need init */
-	public void initializePlayers() {
+	public void initializePlayersEntities() {
 		Entity[] entityArray;
-		for (BigInteger playerIds : playerInitializing.keySet()) {
+		for (BigInteger playerIds : playerInitializingEntities.keySet()) {
 			/*** check if player does exist */
 			if (players.get(playerIds) != null) {
-				Iterator<BigInteger> itKeys = playerInitializing.get(playerIds);
+				Iterator<BigInteger> itKeys = playerInitializingEntities.get(playerIds);
 				entityArray = getNextCountEntities(20, itKeys);
 				this.players.get(playerIds).get().getSession().send(ServerMessages.sendEntities(entityArray));
 				if (itKeys.hasNext()) { 
-					this.playerInitializing.put(playerIds, itKeys);
+					this.playerInitializingEntities.put(playerIds, itKeys);
 				} else {
-					this.playerInitializing.remove(playerIds);
+					this.playerInitializingEntities.remove(playerIds);
 					this.players.get(playerIds).get().setReady(true);
-					this.players.get(playerIds).get().setInitializing(false);
+					this.players.get(playerIds).get().setInitializingEntities(false);
 				}
 			} else {
-				this.playerInitializing.remove(playerIds);
+				this.playerInitializingEntities.remove(playerIds);
+			}
+		}
+		
+	}
+	
+	public HashMap<BigInteger, Iterator<BigInteger>> getPlayerInitializingItems() {
+		return playerInitializingItems;
+	}
+	
+	public void addPlayerInitializingItems(BigInteger playerID) {
+		if (!this.playerInitializingItems.containsKey(playerID)) {
+			this.playerInitializingItems.put(playerID, this.getItemList().get().keySet().iterator());
+		}
+	}
+	
+	public void removePlayerInitializingItems(BigInteger playerID) {
+		if (this.playerInitializingItems.containsKey(playerID)) {
+			this.playerInitializingItems.remove(this.players.get(playerID));
+		}
+	}
+	
+	/** send count next entities to player, who need init */
+	public void initializePlayersItems() {
+		Item[] itemArray;
+//		System.out.println("sending");
+		for (BigInteger playerIds : playerInitializingItems.keySet()) {
+//			System.out.println("ID: "+playerIds);
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+//				System.out.println("got player!");
+				Iterator<BigInteger> itKeys = playerInitializingItems.get(playerIds);
+				
+//				System.out.println("itKeys has next ? : "+itKeys.hasNext());
+				itemArray = getNextCountItems(10, itKeys);
+				int realLength = 0;
+				for (int i = 0; i < itemArray.length; i++) {
+					if ( itemArray[i] == null) {
+						realLength = i;
+						break;
+					}
+					realLength = i+1;
+				}
+				System.out.println("realLength = "+realLength);
+				Item[] realItems = new Item[realLength];
+				for (int i = 0; i <realLength; i++) {
+					realItems[i] = itemArray[i];
+				}
+				
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendItems(realItems));
+				if (itKeys.hasNext()) { 
+					this.playerInitializingItems.put(playerIds, itKeys);
+				} else {
+					this.playerInitializingItems.remove(playerIds);
+					this.players.get(playerIds).get().setReady(true);
+					this.players.get(playerIds).get().setInitializingItems(false);
+				}				
+				
+//				Item singleItem = null;
+//				if (itemArray != null && itemArray.length>= 1) {
+//					singleItem = itemArray[0];
+//					System.out.println("got item!");
+//				}
+//				if (singleItem != null) {
+//					System.out.println("itemID: "+singleItem.getId());
+//					this.players.get(playerIds).get().getSession().send(ServerMessages.addCompleteItem(singleItem.getItemCode(), singleItem.getId(), singleItem.getName(), singleItem.getItemEntity().getX(), singleItem.getItemEntity().getY(), singleItem.getCount(), singleItem.getStates()));
+//					if (itKeys.hasNext()) { 
+//						this.playerInitializingItems.put(playerIds, itKeys);
+//					} else {
+//						this.playerInitializingItems.remove(playerIds);
+//						this.players.get(playerIds).get().setReady(true);
+//						this.players.get(playerIds).get().setInitializingItems(false);
+//					}
+//				}
+			} else {
+				this.playerInitializingItems.remove(playerIds);
 			}
 		}
 		
@@ -944,8 +1101,45 @@ public class WorldRoom extends WorldObject
 	}
 	
 	/** add an item to the player Container */
-	public void addItemToContainer(String playerName, ServerItem serverItem, int i, int j) {
-		this.containerList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
-		this.containerList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+	public void addItemToContainer(String playerName, OBJECTCODE containerType, ServerItem serverItem, int i, int j) {
+		switch (containerType) {
+		case CONTAINER_MAIN:
+			if (this.containerList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_BODY:
+			if (this.containerEqBodyList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqBodyList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqBodyList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqBodyList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqBodyList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_USE:
+			if (this.containerUseList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerUseList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerUseList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerUseList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerUseList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		default:
+				;
+		}
+		
+//		System.out.println("worldroom-update: x:"+serverItem.getItemEntity().get().getX()+" y:"+serverItem.getItemEntity().get().getY());
+	}
+	
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerList() {
+		return containerList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerUseList() {
+		return containerUseList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqBodyList() {
+		return containerEqBodyList;
 	}
 }

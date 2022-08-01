@@ -10,6 +10,8 @@ import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.items.Container;
+import de.svenheins.objects.items.Item;
 
 /** Message from the server TO the client */
 public class ServerMessages extends Messages{
@@ -118,6 +120,101 @@ public class ServerMessages extends Messages{
     		
         return buffer;
     }
+    
+    
+    /** send all entityObjects */
+    public static ByteBuffer sendItems(Item[] localObjects) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+        int stateLength = 0;
+        int itemNamesLength = 0;
+        int itemCodeLength = localObjects.length*1;
+        int IDLength = localObjects.length*8;
+        int xyLength = localObjects.length*(4+4);
+        int countLength = localObjects.length*(4); 
+        for (int i = 0; i<localObjects.length; i++) {
+    		Item e = localObjects[i];
+    		if (e.getStates() != null) stateLength += 4 + (e.getStates().length*4); 
+    		else {
+    			stateLength += 4; 
+    		}
+    		itemNamesLength += 4+e.getName().length();
+    	}
+    	bytes = new byte[1 + 4 + itemCodeLength + IDLength + itemNamesLength + xyLength + countLength +stateLength];
+        buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITITEMS.ordinal()); // 1
+        buffer.putInt(localObjects.length); // 4
+        
+        /** now put the items in the buffer */
+        for (int i = 0; i<localObjects.length; i++) {
+    		Item e = localObjects[i];
+        	BigInteger id = e.getId();
+        	
+        	buffer.put((byte) e.getItemCode().ordinal()); // 1
+            buffer.putLong(id.longValue()); // 8 Bytes
+            buffer.putInt(e.getName().length()); // 4
+        	buffer.put(e.getName().getBytes()); // playerName.length() 
+        	buffer.putFloat(e.getX()); // 4
+        	buffer.putFloat(e.getY()); // 4
+            buffer.putInt(e.getCount()); // 4
+    		if (e.getStates() != null) {
+    			buffer.putInt(e.getStates().length);
+    			for (int j = 0; j < e.getStates().length; j++) {
+                	buffer.putFloat(e.getStates()[j]);
+                }
+    		}
+    		else {
+    			buffer.putInt(0);
+    		}
+    	}
+//        
+//        buffer.put((byte) itemCode.ordinal()); // 1
+//        buffer.putLong(id.longValue()); // 8 Bytes
+//        buffer.putInt(name.length()); // 4
+//    	buffer.put(name.getBytes()); // playerName.length() 
+//    	buffer.putFloat(x); // 4
+//    	buffer.putFloat(y); // 4
+//        buffer.putInt(count); // 4
+//        buffer.putInt(stateLength);
+//        for (int i = 0; i < stateLength; i++) {
+//        	buffer.putFloat(states[i]);
+//        }
+        
+        
+        
+        buffer.flip();	
+        return buffer;
+    }
+    
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, float x, float y, int count, float[] states) {
+        int stateLength = 0;
+        if (states != null) stateLength = states.length;
+    	byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4 +4 +stateLength*4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.ADDCOMPLETEITEM.ordinal()); // 1
+        
+        buffer.put((byte) itemCode.ordinal()); // 1
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // playerName.length() 
+    	buffer.putFloat(x); // 4
+    	buffer.putFloat(y); // 4
+        buffer.putInt(count); // 4
+        buffer.putInt(stateLength);
+        for (int i = 0; i < stateLength; i++) {
+        	buffer.putFloat(states[i]);
+        }
+        buffer.flip();
+        return buffer;
+    }
+    
+    
     
     /** here we only send known spaces 
      * those which are not yet known by clients should be handled separately
@@ -276,26 +373,11 @@ public class ServerMessages extends Messages{
         return buffer;
     }
     
-    public static ByteBuffer sendMe(BigInteger id, String tileName, String tilePathName, String groupName, long firstServerLogin, int experience, String country, float x, float y, float mx, float my, BigInteger maxItemID, ServerContainer inventory) {
-    	byte[] bytes;
-    	ByteBuffer buffer = null;
-    	/** get the length of Bytes that must be reserved for the names */
-		int inventoryHeight = inventory.;
-		int inventoryWidth = 0;
-		int tileFileNameLength = 0;
-    	
-		for (int i = 0; i<localObjects.length; i++) {
-			namesLength += localObjects[i].getName().length();
-			tileNameLength += localObjects[i].getTileSet().getName().length();
-			tileFileNameLength += localObjects[i].getTileSet().getFileName().length();
-		}
+    public static ByteBuffer sendMe(BigInteger id, String tileName, String tilePathName, String groupName, long firstServerLogin, int experience, String country, float x, float y, float mx, float my, BigInteger maxItemID) {
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 36*localObjects.length + namesLength + tileNameLength + tileFileNameLength];
-    	buffer = ByteBuffer.wrap(bytes);
-        buffer.put((byte) OPCODE.INITPLAYERS.ordinal()); 
-    	
     	byte[] bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4 + 8];
+//    	bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4 + 8 ];
     	ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITME.ordinal()); // 1
  
@@ -314,8 +396,192 @@ public class ServerMessages extends Messages{
     	buffer.putFloat(y); // + 4 
     	buffer.putFloat(mx); // + 4 
     	buffer.putFloat(my); // + 4
-    	buffer.putLong(maxItemID.longValue()); // + 8 
+    	buffer.putLong(maxItemID.longValue()); // + 8         
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer sendContainer(BigInteger id, Container inventory) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+    	/** get the length of Bytes that must be reserved for the names */
+		int inventoryHeight = inventory.getHeight();
+		int inventoryWidth = inventory.getWidth();
+//		BigInteger[][] containerArray = inventory.getContainerArray();
+    	
+		int itemEntityIDLength = 0;
+		int itemEntityNameLength = 0; // string
+		int itemEntityTileNameLength = 0; // string
+		int itemEntityTileFileNameLength = 0; //string
+		int itemNameLength = 0; // String
+		int itemStatesLength = 0; // float[]
+		int containerArraySize = 8 * inventoryHeight * inventoryWidth;
+		
+		int itemCountLength = 0;
+		int itemCapacityLength = 0;
+		int itemCodeLength = 0;
+		int itemCreationTimeCodeLength = 0;
+		int itemXLength = 0;
+		int itemYLength = 0;
+		
+		Item item;
+		for (int i = 0; i < inventoryHeight; i++) {
+			for (int j = 0; j < inventoryWidth; j++) {
+				/** only add item stuff if there is an item in the field */
+				if (inventory.getItemList().containsKey(inventory.getContainerArray()[i][j])) {
+					item = inventory.getItemList().get(inventory.getContainerArray()[i][j]);
+					/** get the item id and the corresponding item */
+					itemCountLength += 4;
+					itemCapacityLength += 4;
+					itemNameLength += 4 + item.getName().length();
+					itemCodeLength += 1;
+					itemCreationTimeCodeLength += 8;
+					itemXLength += 4;
+					itemYLength += 4;
+					// entity
+					itemEntityIDLength += 8;
+					itemEntityNameLength += 4 + item.getItemEntity().getName().length();
+					itemEntityTileNameLength += 4 + item.getItemEntity().getTileSet().getName().length();
+					itemEntityTileFileNameLength += 4 + item.getItemEntity().getTileSet().getFileName().length();
+					itemStatesLength += 4;
+					if (item.getStates() != null) itemStatesLength += 4*item.getStates().length;
+				} else {
+					/** there is no item in this field */
+				}
+			}
+		}
+		
+		
+		
+		/** use Object-specific send-routine */
+		/** init bytes */
+		bytes = new byte[1 + 8 + 1 +1+/**inventory*/ 4 + 4 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemStatesLength+ containerArraySize+ itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.SENDCONTAINER.ordinal()); // 1
+        buffer.putLong(id.longValue()); // + 8 
+        buffer.put((byte) inventory.getContainerType().ordinal()); // 1
+        buffer.put((byte) inventory.getAllowedItems().ordinal()); // 1
+        buffer.putInt(inventoryWidth);
+        buffer.putInt(inventoryHeight);
         
+        /** now put all container stuff into buffer */
+    	for (int i = 0; i < inventoryHeight; i++) {
+    		for(int j = 0 ; j< inventoryWidth; j++) {
+    			buffer.putLong(inventory.getContainerArray()[i][j].longValue()); // 8 = ID for every array element
+    			/** only add item stuff if there is an item in the field */
+				if (inventory.getItemList().containsKey(inventory.getContainerArray()[i][j])) {
+					item = inventory.getItemList().get(inventory.getContainerArray()[i][j]);
+					/** get the item id and the corresponding item */
+					buffer.putInt(item.getCount()); // 4
+					buffer.putInt(item.getCapacity()); // 4
+					buffer.putInt(item.getName().length()); // 4
+			    	buffer.put(item.getName().getBytes()); // name.length
+					buffer.put((byte) item.getItemCode().ordinal()); // 1
+					buffer.putLong(item.getCreationTime());
+					/** entity stuff */
+					buffer.putLong(item.getItemEntity().getId().longValue()); // 8
+					buffer.putInt(item.getItemEntity().getName().length()); // 4
+			    	buffer.put(item.getItemEntity().getName().getBytes()); // name.length
+			    	buffer.putInt(item.getItemEntity().getTileSet().getName().length()); // 4
+			    	buffer.put(item.getItemEntity().getTileSet().getName().getBytes()); // name.length
+			    	buffer.putInt(item.getItemEntity().getTileSet().getFileName().length()); // 4
+			    	buffer.put(item.getItemEntity().getTileSet().getFileName().getBytes()); // name.length
+			    	buffer.putFloat(item.getItemEntity().getX()); // 4
+			    	buffer.putFloat(item.getItemEntity().getY()); // 4
+//			    	System.out.println("Sending initial x: "+item.getItemEntity().getX()+" and y: "+item.getItemEntity().getY());
+			    	/** item states */
+			    	if (item.getStates() != null) {
+						buffer.putInt(item.getStates().length);
+						for (int k = 0; k< item.getStates().length; k++) {
+							buffer.putFloat(item.getStates()[k]);
+						}
+			    	} else {
+			    		// if there is no really itemStates
+			    		buffer.putInt(0);
+			    	}
+				} else {
+					/** there is no item in this field */
+				}
+    		}
+    	}
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer sendItemField(BigInteger playerID, OBJECTCODE containerType , Item item, int fieldX, int fieldY) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+    	/** get the length of Bytes that must be reserved for the names */
+    	
+		int itemEntityIDLength = 8;
+		int itemEntityNameLength = 4 + item.getItemEntity().getName().length(); // string
+		int itemEntityTileNameLength = 4 + item.getItemEntity().getTileSet().getName().length(); // string
+		int itemEntityTileFileNameLength = 4 + item.getItemEntity().getTileSet().getFileName().length(); //string
+		int itemNameLength = 4 + item.getName().length(); // String
+		int itemStatesLength = 4; // float[]
+		if (item.getStates() != null) itemStatesLength += 4*item.getStates().length;
+		
+		int itemCountLength = 4;
+		int itemCapacityLength = 4;
+		int itemCodeLength = 1;
+		int itemCreationTimeCodeLength = 8;
+		int itemXLength = 4;
+		int itemYLength = 4;
+		
+		/** use Object-specific send-routine */
+		/** init bytes */
+		bytes = new byte[1 +8+ 1 +/**inventory*/ 8 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemStatesLength+  itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength+4+4];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.SENDITEMFIELD.ordinal()); // 1
+        buffer.putLong(playerID.longValue());
+        buffer.put((byte) containerType.ordinal()); // 1
+        
+		buffer.putLong(item.getId().longValue()); // 8 = ID for every array element
+		/** get the item id and the corresponding item */
+		buffer.putInt(item.getCount()); // 4
+		buffer.putInt(item.getCapacity()); // 4
+		buffer.putInt(item.getName().length()); // 4
+    	buffer.put(item.getName().getBytes()); // name.length
+		buffer.put((byte) item.getItemCode().ordinal()); // 1
+		buffer.putLong(item.getCreationTime());
+		/** entity stuff */
+		buffer.putLong(item.getItemEntity().getId().longValue()); // 8
+		buffer.putInt(item.getItemEntity().getName().length()); // 4
+    	buffer.put(item.getItemEntity().getName().getBytes()); // name.length
+    	buffer.putInt(item.getItemEntity().getTileSet().getName().length()); // 4
+    	buffer.put(item.getItemEntity().getTileSet().getName().getBytes()); // name.length
+    	buffer.putInt(item.getItemEntity().getTileSet().getFileName().length()); // 4
+    	buffer.put(item.getItemEntity().getTileSet().getFileName().getBytes()); // name.length
+    	buffer.putFloat(item.getItemEntity().getX()); // 4
+    	buffer.putFloat(item.getItemEntity().getY()); // 4
+    	/** item states */
+    	if (item.getStates() != null) {
+			buffer.putInt(item.getStates().length);
+			for (int k = 0; k< item.getStates().length; k++) {
+				buffer.putFloat(item.getStates()[k]);
+			}
+    	} else {
+    		// if there is no really itemStates
+    		buffer.putInt(0);
+    	}
+    	buffer.putInt(fieldX);
+    	buffer.putInt(fieldY);
+        buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer sendItemEmptyField(BigInteger playerID, OBJECTCODE containerType , int fieldX, int fieldY) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+		/** use Object-specific send-routine */
+		/** init bytes */
+		bytes = new byte[1 +8+ 1 +/**inventory*/ +4+4];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.SEND_EMPTY_ITEM_FIELD.ordinal()); // 1
+        buffer.putLong(playerID.longValue());
+        buffer.put((byte) containerType.ordinal()); // 1
+    	buffer.putInt(fieldX);
+    	buffer.putInt(fieldY);
         buffer.flip();
         return buffer;
     }

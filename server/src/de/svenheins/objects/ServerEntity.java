@@ -122,13 +122,13 @@ public class ServerEntity extends WorldObject{
 		return r1.contains(p);
 	}
 	
-	@Override
+
 	public float getHeight() {
 		return this.getSprite().getHeight();
 	}
 	
 	
-	@Override
+
 	public float getWidth() {
 		return this.getSprite().getWidth();
 	}
@@ -196,4 +196,6 @@ public class ServerEntity extends WorldObject{
 	public void setState(EntityStates state) {
 		this.state = state;
 	}
+	
+
 }

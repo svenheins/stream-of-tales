@@ -3,6 +3,8 @@ package de.svenheins.objects;
 import java.math.BigInteger;
 
 import de.svenheins.main.GameStates;
+import de.svenheins.messages.ITEMCODE;
+import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.objects.items.Container;
 
 public class PlayerEntity extends Entity {
@@ -14,6 +16,8 @@ public class PlayerEntity extends Entity {
 	private long lastSeen;
 	private boolean visible;
 	private Container inventory;
+	private Container inventoryUse;
+	private Container equipmentBody;
 	
 	/** TileSet-Constructor */
 	public PlayerEntity(TileSet tileSet, String name, BigInteger id, float x,
@@ -26,7 +30,9 @@ public class PlayerEntity extends Entity {
 		this.lastSeen = System.currentTimeMillis();
 		this.setVisible(false);
 		System.out.println("created "+name);
-		this.inventory = new Container(GameStates.inventoryWidthPlayer, GameStates.inventoryHeightPlayer);
+		this.inventory = new Container(GameStates.inventoryWidthPlayer, GameStates.inventoryHeightPlayer, OBJECTCODE.CONTAINER_MAIN, ITEMCODE.ALL);
+		this.inventoryUse = new Container(GameStates.inventoryUseWidthPlayer, GameStates.inventoryUseHeightPlayer, OBJECTCODE.CONTAINER_USE, ITEMCODE.ALL);
+		this.equipmentBody = new Container(1, 1, OBJECTCODE.CONTAINER_EQUIPMENT_BODY, ITEMCODE.BODY);
 	}
 
 
@@ -97,6 +103,26 @@ public class PlayerEntity extends Entity {
 
 	public void setInventory(Container inventory) {
 		this.inventory = inventory;
+	}
+
+
+	public Container getInventoryUse() {
+		return inventoryUse;
+	}
+
+
+	public void setInventoryUse(Container inventoryUse) {
+		this.inventoryUse = inventoryUse;
+	}
+
+
+	public Container getEquipmentBody() {
+		return equipmentBody;
+	}
+
+
+	public void setEquipmentBody(Container equipmentBody) {
+		this.equipmentBody = equipmentBody;
 	}
 	
 	

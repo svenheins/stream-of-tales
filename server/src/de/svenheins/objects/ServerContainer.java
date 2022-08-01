@@ -7,19 +7,23 @@ import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.ManagedReference;
 
 import de.svenheins.main.GameStates;
+import de.svenheins.messages.ITEMCODE;
+import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.objects.items.Stackable;
 
 public class ServerContainer extends WorldObject {
 	private static final long serialVersionUID = 1L;
 	
 	private HashMap<BigInteger, ManagedReference<ServerItem>> itemList;
-	private int width;
-	private int height;
+	private int containerWidth;
+	private int containerHeight;
 	private BigInteger[][] containerArray;
+	private OBJECTCODE containerType;
+	private ITEMCODE allowedItems;
 	
-	public ServerContainer(int width, int height) {
-		this.setHeight(height);
-		this.setWidth(width);
+	public ServerContainer(int width, int height, OBJECTCODE containerType, ITEMCODE allowedItems) {
+		this.setContainerHeight(height);
+		this.setContainerWidth(width);
 		itemList = new HashMap<BigInteger, ManagedReference<ServerItem>>();
 		containerArray = new BigInteger[height][width];
 		for (int i = 0; i < height; i ++) {
@@ -27,7 +31,8 @@ public class ServerContainer extends WorldObject {
 				containerArray[i][j] = BigInteger.valueOf(-1);
 			}
 		}
-		
+		this.setContainerType(containerType);
+		this.setAllowedItems(allowedItems);
 	}
 	
 	/** is there a free field??? */
@@ -48,7 +53,7 @@ public class ServerContainer extends WorldObject {
 	
 	/** is there a free field??? */
 	public boolean hasEmptyField() {
-		if (itemList.values().size() < width*height) {
+		if (itemList.values().size() < containerWidth*containerHeight) {
 			return true;
 		} else {
 			return false;
@@ -86,8 +91,8 @@ public class ServerContainer extends WorldObject {
 		item.setCount(tempCount);
 		if (item.getCount() > 0) {
 			if (this.hasEmptyField()) {
-				for (int i = 0; i < height; i ++) {
-					for (int j = 0; j < width; j ++) {
+				for (int i = 0; i < containerHeight; i ++) {
+					for (int j = 0; j < containerWidth; j ++) {
 						if (containerArray[i][j].equals(BigInteger.valueOf(-1)) && item.getCount() > 0) {
 //							System.out.println("put into row = "+i+" | col =  "+j);
 //							BigInteger newItemID = ItemManager.getMaxID().add(addBigInteger);
@@ -95,7 +100,7 @@ public class ServerContainer extends WorldObject {
 //							try {
 								item.getItemEntity().getForUpdate().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
 								item.getItemEntity().getForUpdate().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);	
-								itemList.put(item.getId(), AppContext.getDataManager().createReference(new ServerItem(item.getId(), item.getItemCode(), item.getName(), item.getItemEntity().get(), item.getCount(), item.getCapacity())));
+								itemList.put(item.getId(), AppContext.getDataManager().createReference(new ServerItem(item.getId(), item.getItemCode(), item.getName(), item.getItemEntity().get(), item.getCount(), item.getCapacity(), item.getStates())));
 //							} catch (CloneNotSupportedException e) {
 //								e.printStackTrace();
 //							}
@@ -119,8 +124,8 @@ public class ServerContainer extends WorldObject {
 	public boolean removeItem(BigInteger id) {
 		if ( itemList.containsKey(id)) {
 			itemList.remove(id);
-			for (int i = 0; i < height; i ++) {
-				for (int j = 0; j < width; j ++) {
+			for (int i = 0; i < containerHeight; i ++) {
+				for (int j = 0; j < containerWidth; j ++) {
 					if (containerArray[i][j].equals(id))
 					containerArray[i][j] = BigInteger.valueOf(-1);
 				}
@@ -142,5 +147,37 @@ public class ServerContainer extends WorldObject {
 
 	public void setContainerArray(BigInteger[][] containerArray) {
 		this.containerArray = containerArray;
+	}
+	
+	public int getContainerWidth() {
+		return containerWidth;
+	}
+
+	public void setContainerWidth(int containerWidth) {
+		this.containerWidth = containerWidth;
+	}
+
+	public int getContainerHeight() {
+		return containerHeight;
+	}
+
+	public void setContainerHeight(int containerHeight) {
+		this.containerHeight = containerHeight;
+	}
+
+	public OBJECTCODE getContainerType() {
+		return containerType;
+	}
+
+	public void setContainerType(OBJECTCODE containerType) {
+		this.containerType = containerType;
+	}
+
+	public ITEMCODE getAllowedItems() {
+		return allowedItems;
+	}
+
+	public void setAllowedItems(ITEMCODE allowedItems) {
+		this.allowedItems = allowedItems;
 	}
 }

@@ -6,20 +6,26 @@ import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.image.ImageObserver;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.sun.sgs.client.ClientChannel;
+
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.managers.ItemManager;
+import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.items.equipment.bodyarmors.Cloak;
 
 public class ContextMenuGUI {
 	public HashMap<BigInteger, Button> buttonList = new HashMap<BigInteger, Button>();
@@ -63,6 +69,12 @@ public class ContextMenuGUI {
 				Button animationButton = standardButton(BigInteger.valueOf(20), "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "go to bed");
 				if (this.add(animationButton)) ; else System.out.println("couldn't add");
 				guiHeight += animationButton.getHeight() + GameStates.contextMenuButtonDistY;
+				
+				/** add next button */
+				Button cloakButton = standardButton(BigInteger.valueOf(21), "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "drop cloak");
+				if (this.add(cloakButton)) ; else System.out.println("couldn't add");
+				guiHeight += cloakButton.getHeight() + GameStates.contextMenuButtonDistY;
+				
 			}
 			this.setLocalObject(localObject);
 			contextMenuSpacePolygon.add((new Polygon(new int[]{0 , 0 , GameStates.contextMenuButtonWidth + GameStates.contextMenuButtonDistX *2, GameStates.contextMenuButtonWidth+ GameStates.contextMenuButtonDistX *2}, new int[]{0 ,  guiHeight, guiHeight, 0}, 4) ));
@@ -154,6 +166,55 @@ public class ContextMenuGUI {
 			GamePanel.gp.getPlayerEntity().setContinuousState(EntityStates.SLEEPING);
 			GamePanel.gp.getPlayerEntity().setChangedStates(true);
 //			System.out.println(get(id).getStrValue());
+		}
+		
+		if (get(id).getText().equals("drop cloak")) {
+			BigInteger itemId = ItemManager.getMaxIDValue().add(GamePanel.gp.getPlayerEntity().getId());
+			
+			int putX = 0;
+			int putY = 0;
+			switch (GamePanel.gp.getPlayerEntity().getOrientation()) {
+			case RIGHT:
+				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 + GameStates.dropDistance);
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - GameStates.inventoryItemTileHeight/2);
+				break;
+			case LEFT:
+				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - (GameStates.dropDistance+GameStates.inventoryItemTileWidth));
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 -GamePanel.gp.getMouseItem().getItemEntity().getHeight()/2);
+				break;
+			case UP:
+				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2- GameStates.inventoryItemTileWidth/2);
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - (GameStates.dropDistance+GamePanel.gp.getMouseItem().getItemEntity().getHeight()));
+				break;
+			case DOWN:
+				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - GameStates.inventoryItemTileWidth/2);
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 + (GameStates.dropDistance));
+			}
+				
+			Cloak cloak = new Cloak(itemId, putX, putY, new float[]{1.3f, 0.5f, 30.45f});
+			System.out.println("added new cloak object: "+itemId);
+//			Wood item = new Wood();
+//			TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", "WoodPileTileSet", GameStates.itemTileWidth, GameStates.itemTileHeight);
+//			Entity itemEntity = new Entity(woodTileSet, "wood", itemId, p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)), GameStates.animationDelayItems);
+//			WorldItem wood = new WorldItem(itemId, item, itemEntity);
+//			WorldItemManager.add(wood);
+			
+			/** send the complete Item to all players of the channel */
+			if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
+				/** first send to server for the itemList */
+				GameWindow.gw.send(ClientMessages.addItem(cloak.getId(), cloak.getItemCode(), cloak.getCount(), cloak.getCapacity(), cloak.getItemEntity().getX(), cloak.getItemEntity().getY(), cloak.getItemEntity().getMX(), cloak.getItemEntity().getMY(), cloak.getName(), cloak.getItemEntity().getTileSet().getFileName(), cloak.getItemEntity().getName(), cloak.getStates()));
+				
+//				GameWindow.gw.send(ClientMessages.addItem(itemId));
+				
+				for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+					ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+					try {
+						channel.send(ClientMessages.addCompleteItem(cloak.getItemCode(), cloak.getId(), cloak.getName(), cloak.getX(), cloak.getY(), cloak.getCount(), cloak.getStates()));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}	
+				}
+			}
 		}
 	}
 	

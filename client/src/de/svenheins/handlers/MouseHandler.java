@@ -7,6 +7,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 
 import javax.swing.SwingUtilities;
 
@@ -14,11 +15,15 @@ import com.sun.sgs.client.ClientChannel;
 
 
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.InteractionArea;
+import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.Tile;
 import de.svenheins.objects.TileSet;
-import de.svenheins.objects.items.materials.Wood;
+import de.svenheins.objects.WorldPosition;
+import de.svenheins.objects.items.Item;
+//import de.svenheins.objects.items.materials.Wood;
 
 import de.svenheins.animation.SpaceDisappear;
 
@@ -31,11 +36,14 @@ import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.main.StatPanel;
+import de.svenheins.main.TileDimensions;
+import de.svenheins.main.TileType;
 import de.svenheins.main.gui.ContainerGUI;
 import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.InteractionManager;
 import de.svenheins.managers.ItemManager;
 import de.svenheins.managers.MapManager;
 import de.svenheins.managers.ObjectMapManager;
@@ -309,7 +317,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		}
 		boolean clickedOnAnyContainer = false;
 		for (ContainerGUI congui : ContainerGUIManager.containerGUIList.values()) {
-			if (congui.getBackgroundSpace().contains(point)) {
+			if (congui.getBackgroundSpace().contains(point) && congui.isVisible()) {
 //				System.out.println("clicked on inventory");
 				congui.mouseClick(point);
 				clickedOnGUI = true;
@@ -322,32 +330,68 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			switch (GamePanel.gp.getPlayerEntity().getOrientation()) {
 			case RIGHT:
 				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 + GameStates.dropDistance);
-				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - GamePanel.gp.getMouseItem().getItemEntity().getHeight()/2);
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - GamePanel.gp.getMouseItem().getEntity().getHeight()/2);
 				break;
 			case LEFT:
-				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - (GameStates.dropDistance+GamePanel.gp.getMouseItem().getItemEntity().getWidth()));
-				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 -GamePanel.gp.getMouseItem().getItemEntity().getHeight()/2);
+				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - (GameStates.dropDistance+GamePanel.gp.getMouseItem().getEntity().getWidth()));
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 -GamePanel.gp.getMouseItem().getEntity().getHeight()/2);
 				break;
 			case UP:
-				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2- GamePanel.gp.getMouseItem().getItemEntity().getWidth()/2);
-				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - (GameStates.dropDistance+GamePanel.gp.getMouseItem().getItemEntity().getHeight()));
+				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2- GamePanel.gp.getMouseItem().getEntity().getWidth()/2);
+				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 - (GameStates.dropDistance+GamePanel.gp.getMouseItem().getEntity().getHeight()));
 				break;
 			case DOWN:
-				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - GamePanel.gp.getMouseItem().getItemEntity().getWidth()/2);
+				putX = (int) (GamePanel.gp.getPlayerEntity().getX() + GamePanel.gp.getPlayerEntity().getWidth()/2 - GamePanel.gp.getMouseItem().getEntity().getWidth()/2);
 				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 + (GameStates.dropDistance));
 				break;
 				
 			default: ;
 			}
-
 			GamePanel.gp.dropMouseItem(new Point(putX, putY));
 			clickedOnGUI = true;
 		}
 		
 		/** only paint tiles if no Editor icon was hit*/
 		if (!clickedOnGUI) {
-			GamePanel.gp.setDeleteModus(false);
-			paintTiles(point);
+			/** only paint if we are the GameMaster (else the changes wouldn't effect the map anyways) */
+			if (GameWindow.gw.isGameMaster()) {
+				GamePanel.gp.setDeleteModus(false);
+				paintTiles(point);
+			} else {
+				/** interact with actual interactionItem */
+				ObjectMapManager objectMapManagerTree1 = GameWindow.gw.getObjectMapManagers().get("tree1");
+				ObjectMapManager objectMapManagerTree2 = GameWindow.gw.getObjectMapManagers().get("tree2");
+//				WorldPosition position = new WorldPosition(GamePanel.gp.getPlayerEntity().getX()-16, GamePanel.gp.getPlayerEntity().getY()+16);
+				WorldPosition position = new WorldPosition(GamePanel.gp.getPlayerEntity().getX()-32, GamePanel.gp.getPlayerEntity().getY());
+				int[] values = new int[TileType.values().length];
+				values[TileType.TREE.ordinal()] = 30;
+				values[TileType.STONE.ordinal()] = 15;
+				InteractionArea iArea = new InteractionArea(position, values, 96, 96);
+				ArrayList<InteractionTile> overflowTile1 = objectMapManagerTree1.interact(iArea);
+				ArrayList<InteractionTile> overflowTile2 = objectMapManagerTree2.interact(iArea);
+				if (overflowTile1 != null) {
+//					System.out.println("overflowTile1 != null");
+					if (overflowTile1.size() > 0) {
+//						System.out.println("overflowTile1.size() = "+overflowTile1.size());
+						for (InteractionTile iTile : overflowTile1) {
+//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
+							GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
+							InteractionManager.remove(iTile.getPosition());
+						}
+					}
+				}
+				if ( overflowTile2 != null) {
+//					System.out.println("overflowTile2 != null");
+					if (overflowTile2.size() > 0) {
+//						System.out.println("overflowTile2.size() = "+overflowTile2.size());
+						for (InteractionTile iTile : overflowTile2) {
+//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
+							GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree2", "overlayTree2"));
+							InteractionManager.remove(iTile.getPosition());
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -389,7 +433,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			clickedOnGUI = true;
 		}
 		for (ContainerGUI congui : ContainerGUIManager.containerGUIList.values()) {
-			if (congui.getBackgroundSpace().contains(point)) {
+			if (congui.getBackgroundSpace().contains(point) && congui.isVisible()) {
 //				System.out.println("clicked on inventory");
 //				congui.mouseClick(point);
 				clickedOnGUI = true;
@@ -437,22 +481,15 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 				if (SpaceManager.get(i).getPolygon().get(j).contains(correctedPoint))
 				inside = true;
 			}
-//			 if (inside) {
-//					SpaceManager.get(i).setTrans(1.0f);
-//				} else {
-//					SpaceManager.get(i).setTrans(0.5f);
-//				}
 		}
-		
-		
 		/** update contextGUI Menu */
 		if (StatPanel.sp.contextMenu.isVisible()) {
 			StatPanel.sp.contextMenu.mouseOver(point);
 		}
 		
 		if (GamePanel.gp.getMouseItem() != null) {
-			GamePanel.gp.getMouseItem().getItemEntity().setX(point.x);
-			GamePanel.gp.getMouseItem().getItemEntity().setY(point.y);
+			GamePanel.gp.getMouseItem().getEntity().setX(point.x);
+			GamePanel.gp.getMouseItem().getEntity().setY(point.y);
 		}
 		
 		determineAnimation(GamePanel.gp.getPlayerEntity(), correctedPoint);
@@ -482,7 +519,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 				}
 			}
 			for (ContainerGUI congui : ContainerGUIManager.containerGUIList.values()) {
-				if (congui.getBackgroundSpace().contains(point)) {
+				if (congui.getBackgroundSpace().contains(point) && congui.isVisible()) {
 //					System.out.println("dragged on inventory");
 //					congui.mouseClick(point);
 					draggedOnGUI = true;
@@ -491,7 +528,10 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			
 			/** only paint tiles if no Editor icon was hit*/
 			if (!draggedOnGUI) {
-				paintTiles(point);
+				if (GameWindow.gw.isGameMaster()) {
+					paintTiles(point);
+				}
+				
 			}
 		}
 	//		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
@@ -523,8 +563,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	
 	/** painting on point with the actual paintLayer on the corresponding paintType */
 	public void paintTiles(Point point) {
-		/** only paint if we are the GameMaster (else the changes wouldn't effect the map anyways) */
-		if (GameWindow.gw.isGameMaster()) {
+		
 			Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
 			point = correctedPoint;
 			
@@ -670,39 +709,32 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 								objectMapManager.get(p).setDl(localX, localY, 0);
 								objectMapManager.get(p).setDr(localX, localY, 0);
 								objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
-								objectMapManager.adjustSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+								objectMapManager.adjustSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType(), TileDimensions.RowCol2x3);
 								
 								overlayMapManager.get(p).setUl(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
 								overlayMapManager.get(p).setUr(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
 								overlayMapManager.get(p).setDl(localX, localY, 0);
 								overlayMapManager.get(p).setDr(localX, localY, 0);
 								overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
-								overlayMapManager.adjustSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+								overlayMapManager.adjustSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2, TileDimensions.RowCol2x3);
 							} else {
 								//MapManager.get(p).setTile(localX, localY, null);
 								if (objectMapManager.get(p).getLocalMap()[localX][localY] != 0) {
+									System.out.println("mouse: localX/Y = "+localX+"/"+localY);
 									// create drop 
 									BigInteger itemId = ItemManager.getMaxIDValue().add(GamePanel.gp.getPlayerEntity().getId());
-									Wood woodItem = new Wood(itemId, p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)));
-									woodItem.setCount(49);
+									Item woodItem = Item.getItem(ITEMCODE.WOOD, itemId, "wood", (int) (Math.random()*20+20), 0, p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)), System.currentTimeMillis(), new float[0]);
+									
 									System.out.println("added new wood object: "+itemId);
-//									Wood item = new Wood();
-//									TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", "WoodPileTileSet", GameStates.itemTileWidth, GameStates.itemTileHeight);
-//									Entity itemEntity = new Entity(woodTileSet, "wood", itemId, p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)), GameStates.animationDelayItems);
-//									WorldItem wood = new WorldItem(itemId, item, itemEntity);
-//									WorldItemManager.add(wood);
 									
 									/** send the complete Item to all players of the channel */
 									if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 										/** first send to server for the itemList */
-										GameWindow.gw.send(ClientMessages.addItem(woodItem.getId(), woodItem.getItemCode(), woodItem.getCount(), woodItem.getCapacity(), woodItem.getItemEntity().getX(), woodItem.getItemEntity().getY(), woodItem.getItemEntity().getMX(), woodItem.getItemEntity().getMY(), woodItem.getName(), woodItem.getItemEntity().getTileSet().getFileName(), woodItem.getItemEntity().getName(), woodItem.getStates()));
-										
-//										GameWindow.gw.send(ClientMessages.addItem(itemId));
-										
+										GameWindow.gw.send(ClientMessages.addItem(woodItem.getId(), woodItem.getItemCode(), woodItem.getCount(), woodItem.getCapacity(), woodItem.getEntity().getX(), woodItem.getEntity().getY(), woodItem.getEntity().getMX(), woodItem.getEntity().getMY(), woodItem.getName(), woodItem.getEntity().getTileSet().getFileName(), woodItem.getEntity().getName(), woodItem.getStates()));
 										for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 											ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 											try {
-												channel.send(ClientMessages.addCompleteItem(woodItem.getItemCode(), woodItem.getId(), woodItem.getName(), woodItem.getItemEntity().getX(), woodItem.getItemEntity().getY(), woodItem.getCount(), woodItem.getStates()));
+												channel.send(ClientMessages.addCompleteItem(woodItem.getItemCode(), woodItem.getId(), woodItem.getName(), woodItem.getEntity().getX(), woodItem.getEntity().getY(), woodItem.getCount(), woodItem.getStates()));
 											} catch (IOException e) {
 												e.printStackTrace();
 											}	
@@ -714,14 +746,14 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 								objectMapManager.get(p).setDl(localX, localY, 0);
 								objectMapManager.get(p).setDr(localX, localY, 0);
 								objectMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType());
-								objectMapManager.deleteSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType());
+								objectMapManager.deleteSurrounding(objectMapManager.get(p), localX, localY, GamePanel.gp.getPaintType(), TileDimensions.RowCol2x3);
 								
 								overlayMapManager.get(p).setUl(localX, localY, 0);
 								overlayMapManager.get(p).setUr(localX, localY, 0);
 								overlayMapManager.get(p).setDl(localX, localY, 0);
 								overlayMapManager.get(p).setDr(localX, localY, 0);
 								overlayMapManager.get(p).setIdByCornersObject(localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
-								overlayMapManager.deleteSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
+								overlayMapManager.deleteSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2, TileDimensions.RowCol2x3);
 								//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
 							}
 							/** register lattice Point for save - and send procedure */
@@ -849,7 +881,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 					GameWindow.gw.gameInfoConsole.appendInfo("outside of paint area");
 				}
 			}
-		}
+		
 	}
 	
 	public void determineAnimation(PlayerEntity entity, Point p) {

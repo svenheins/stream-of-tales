@@ -14,6 +14,7 @@ import de.svenheins.main.StatPanel;
 import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUIManager;
+import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ItemManager;
@@ -59,10 +60,25 @@ public class AnimationThread implements Runnable {
 					}
 				}
 				
+				for (int i = AgentManager.size()-1; i >= 0; i--) {
+					Entity entity = null;
+					try {
+						entity = AgentManager.get(AgentManager.idList.get(i));
+					} catch (IndexOutOfBoundsException exception){
+						System.out.println(exception);
+					} catch (java.lang.NullPointerException e) {
+						System.out.println(e);
+					}
+					if(entity != null) {
+						determineAnimation(entity);
+						entity.updateSprite();
+					}
+				}
+				
 				for (int i = ItemManager.size()-1; i >= 0; i--) {
 					Entity entity = null;
 					try {
-						entity = ItemManager.get(ItemManager.idList.get(i)).getItemEntity();
+						entity = ItemManager.get(ItemManager.idList.get(i)).getEntity();
 					} catch (IndexOutOfBoundsException exception){
 						System.out.println(exception);
 					} catch (java.lang.NullPointerException e) {
@@ -120,7 +136,11 @@ public class AnimationThread implements Runnable {
 					}
 					for (String inventoryName : ContainerGUIManager.idList) {
 						for (Item item: ContainerGUIManager.get(inventoryName).getContainer().getItemList().values()) {
-							item.getItemEntity().updateSprite();
+							if(item.getEntity() != null) {
+								determineAnimation(item.getEntity());
+								item.getEntity().updateSprite();
+							}
+//							item.getEntity().updateSprite();
 						}
 					}
 				} catch(java.util.ConcurrentModificationException error) {
@@ -225,6 +245,29 @@ public class AnimationThread implements Runnable {
 				}
 				break;
 	
+			case INVENTORY_DESTROYED:
+				entity.setAnimation(AnimationManager.manager.getAnimation("inventory_destroyed", entity.getTileSet(), GameStates.ani_inventory_destroyed_start, GameStates.ani_inventory_destroyed_end, entity.getAnimation().getTimeBetweenAnimation()));
+				break;
+			case INVENTORY_DAMAGED:
+				entity.setAnimation(AnimationManager.manager.getAnimation("inventory_damaged", entity.getTileSet(), GameStates.ani_inventory_damaged_start, GameStates.ani_inventory_damaged_end, entity.getAnimation().getTimeBetweenAnimation()));
+				
+				break;
+			case INVENTORY_SIMPLE:
+				entity.setAnimation(AnimationManager.manager.getAnimation("inventory_simple", entity.getTileSet(), GameStates.ani_inventory_simple_start, GameStates.ani_inventory_simple_end, entity.getAnimation().getTimeBetweenAnimation()));
+				
+				break;
+			case INVENTORY_GOOD:
+				entity.setAnimation(AnimationManager.manager.getAnimation("inventory_good", entity.getTileSet(), GameStates.ani_inventory_good_start, GameStates.ani_inventory_good_end, entity.getAnimation().getTimeBetweenAnimation()));
+				
+				break;
+			case INVENTORY_PERFECT:
+				entity.setAnimation(AnimationManager.manager.getAnimation("inventory_perfect", entity.getTileSet(), GameStates.ani_inventory_perfect_start, GameStates.ani_inventory_perfect_end, entity.getAnimation().getTimeBetweenAnimation()));
+				
+				break;
+			case INVENTORY_MAGIC:
+				entity.setAnimation(AnimationManager.manager.getAnimation("inventory_magic", entity.getTileSet(), GameStates.ani_inventory_magic_start, GameStates.ani_inventory_magic_end, entity.getAnimation().getTimeBetweenAnimation()));
+				
+				break;
 			default: ;
 					
 			}

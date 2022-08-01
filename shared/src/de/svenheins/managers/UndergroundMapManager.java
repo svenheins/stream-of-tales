@@ -34,10 +34,12 @@ public class UndergroundMapManager {
 	public List<Point> pointList = new ArrayList<Point>();
 	public String paintLayer;
 	public ArrayList<Point> changedList = new ArrayList<Point>();
+	public ArrayList<Point> stayList = new ArrayList<Point>();
 	
 	public UndergroundMapManager(String paintLayer) {
 		this.paintLayer = paintLayer;
 		changedList = new ArrayList<Point>();
+		stayList = new ArrayList<Point>();
 	}
 	
 	public void remove(Point point) {
@@ -1204,6 +1206,26 @@ public class UndergroundMapManager {
 	
 	public void emptyChangedList() {
 		changedList = new ArrayList<Point>();
+	}
+	
+	public void emptyStayList() {
+		stayList = new ArrayList<Point>();
+	}
+	
+	public void addStayList(Point p) {
+		if (!stayList.contains(p)) this.stayList.add(p);
+	}
+	
+	public void removeStayList(Point p) {
+		if (stayList.contains(p)) this.stayList.remove(p);
+	}
+	
+	public void setStayList(  ArrayList<Point> stayList) {
+		this.stayList = stayList;
+	}
+	
+	public ArrayList<Point> getStayList() {
+		return stayList;
 	}
 	
 	public void initLocalUndergroundMapFileList(String playerName) {

@@ -34,6 +34,7 @@ import de.svenheins.main.gui.EditorGUI;
 import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUI;
 import de.svenheins.main.gui.PlayerListGUIManager;
+import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
@@ -58,14 +59,20 @@ import de.svenheins.objects.Player;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.WorldPosition;
+import de.svenheins.objects.agents.Agent;
+import de.svenheins.objects.agents.SimpleAgent;
+import de.svenheins.objects.agents.goals.Goal;
 import de.svenheins.objects.items.Item;
 
+import de.svenheins.threads.AgentThread;
 import de.svenheins.threads.AnimationThread;
 import de.svenheins.threads.ChannelUpdateMapsThread;
 import de.svenheins.threads.ChannelUpdateThread;
 import de.svenheins.threads.CollisionThread;
 import de.svenheins.threads.GraphicThread;
 import de.svenheins.threads.InputThread;
+import de.svenheins.threads.InteractionThread;
 import de.svenheins.threads.LightThread;
 import de.svenheins.threads.MapUpdateThread;
 import de.svenheins.threads.MoveThread;
@@ -104,6 +111,8 @@ public class GamePanel extends JPanel {
 	private ChannelUpdateMapsThread channelUpdateMapsThread;
 	private MapUpdateThread mapUpdateThread;
 	private LightThread lightThread;
+	private AgentThread agentThread;
+	private InteractionThread interactionThread;
 	public static GamePanel gp;
 //	public static String resourcePath = "/resources/";
 //	public static String svgPath = "/resources/svg/";
@@ -169,7 +178,8 @@ public class GamePanel extends JPanel {
 		new Thread(mapUpdateThread).start();
 		new Thread(channelUpdateMapsThread).start();
 		new Thread(lightThread).start();
-		
+		new Thread(agentThread).start();
+		new Thread(interactionThread).start();
 	}
 	
 	/**
@@ -221,6 +231,8 @@ public class GamePanel extends JPanel {
 		mapUpdateThread = new MapUpdateThread();
 		channelUpdateMapsThread = new ChannelUpdateMapsThread();
 		lightThread = new LightThread();
+		agentThread = new AgentThread();
+		interactionThread = new InteractionThread();
 	}
 	
 	public void config() {		
@@ -264,12 +276,12 @@ public class GamePanel extends JPanel {
 		TileSet tileSetTreeButton = new TileSet("tilesets/buttons/treeButton.png", "treeButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
 		TileSet tileSetSnowTreeButton = new TileSet("tilesets/buttons/snowTreeButton.png", "snowTreeButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
 		TileSet tileSetUndergroundGrassButton = new TileSet("tilesets/buttons/undergroundGrassButton.png", "undergroundGrassButton", GameStates.tileSetWidth, GameStates.tileSetHeight);
-		Button cobbleButtonGUI = new Button(tileSetCobbleButton, "cobbleButton", BigInteger.valueOf(0), GameStates.width - 208, 25, GameStates.animationDelay, "cobble", 110, "");
-		Button grassButtonGUI = new Button(tileSetGrassButton, "grassButton", BigInteger.valueOf(1), GameStates.width - 172, 25, GameStates.animationDelay, "grass", 558, "");
-		Button snowButtonGUI = new Button(tileSetSnowButton, "snowButton", BigInteger.valueOf(2), GameStates.width-100 , 25, GameStates.animationDelay, "snow", 654, "");
-		Button treeButtonGUI = new Button(tileSetTreeButton, "treeButton", BigInteger.valueOf(3), GameStates.width- 136, 25, GameStates.animationDelay, "tree", 501, "");
-		Button snowTreeButtonGUI = new Button(tileSetSnowTreeButton, "snowTreeButton", BigInteger.valueOf(4), GameStates.width - 64, 25, GameStates.animationDelay, "tree", 391, "");
-		Button undergroundGrassButtonGUI = new Button(tileSetUndergroundGrassButton, "undergroundGrassButton", BigInteger.valueOf(5), GameStates.width - 244, 25, GameStates.animationDelay, "underground", 10, "");
+		Button cobbleButtonGUI = new Button(tileSetCobbleButton, "cobbleButton", BigInteger.valueOf(0), GameStates.width - 208, 25, GameStates.animationDelay, "cobble", GameStates.cobbleTile, "");
+		Button grassButtonGUI = new Button(tileSetGrassButton, "grassButton", BigInteger.valueOf(1), GameStates.width - 172, 25, GameStates.animationDelay, "grass", GameStates.grassTile, "");
+		Button snowButtonGUI = new Button(tileSetSnowButton, "snowButton", BigInteger.valueOf(2), GameStates.width-100 , 25, GameStates.animationDelay, "snow", GameStates.snowTile, "");
+		Button treeButtonGUI = new Button(tileSetTreeButton, "treeButton", BigInteger.valueOf(3), GameStates.width- 136, 25, GameStates.animationDelay, "tree", GameStates.treeTile, "");
+		Button snowTreeButtonGUI = new Button(tileSetSnowTreeButton, "snowTreeButton", BigInteger.valueOf(4), GameStates.width - 64, 25, GameStates.animationDelay, "tree", GameStates.snowTreeTile, "");
+		Button undergroundGrassButtonGUI = new Button(tileSetUndergroundGrassButton, "undergroundGrassButton", BigInteger.valueOf(5), GameStates.width - 244, 25, GameStates.animationDelay, "underground", GameStates.undergroundGrassTile, "");
 				
 		ArrayList<Polygon> editorGUISpacePolygon = new ArrayList<Polygon>();
 		editorGUISpacePolygon.add((new Polygon(new int[]{GameStates.width -250 , GameStates.width -250 ,GameStates.width -25, GameStates.width -25}, new int[]{25-5 , 25+GameStates.tileSetHeight+5 ,25+GameStates.tileSetHeight+5, 25-5}, 4) ));
@@ -369,6 +381,20 @@ public class GamePanel extends JPanel {
 		LightManager.add(light4);
 		Light light3 = new Light(BigInteger.valueOf(4), standardLight, new Point(200,1000));
 		LightManager.add(light3);
+		
+		/** add some agents to the Agentmanager */
+		SimpleAgent agent;
+		BigInteger runningID = BigInteger.valueOf(0);
+		TileSet tileSet_SA = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
+		for (int i = 0; i < 100; i++ ){
+			float x = (float) Math.random()*1000 - 500; 
+			float y = (float) Math.random()*1000 - 500;
+			agent = new SimpleAgent(tileSet_SA, "simpleAgent", runningID, x, y, GameStates.animationDelay);
+			Goal goal = new Goal(new WorldPosition(600, 600), playerEntity.getId(), playerEntity);
+			agent.setActualGoal(goal);
+			runningID = runningID.add(BigInteger.valueOf(1));
+			AgentManager.add(agent);
+		}
 		
 		
 		/** add standard background texture */
@@ -506,6 +532,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!undergroundManager.getStayList().contains(p))
 					undergroundManager.remove(p);
 				}
 			}
@@ -532,6 +560,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!cobbleManager.getStayList().contains(p))
 					cobbleManager.remove(p);
 				}
 			}
@@ -556,6 +586,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!grassManager.getStayList().contains(p))
 					grassManager.remove(p);
 				}
 			}
@@ -579,6 +611,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!desertManager.getStayList().contains(p))
 					desertManager.remove(p);
 				}
 			}
@@ -602,6 +636,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!snowManager.getStayList().contains(p))
 					snowManager.remove(p);
 				}
 			}
@@ -639,7 +675,10 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!tree1MapManager.getStayList().contains(p))
 					tree1MapManager.remove(p);
+					if (!tree2MapManager.getStayList().contains(p))
 					tree2MapManager.remove(p);
 				}
 			}
@@ -657,6 +696,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!tree1MapManager.getStayList().contains(p))
 					tree1MapManager.remove(p);
 				}
 			} else if(localMap2 != null) {
@@ -673,6 +714,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!tree2MapManager.getStayList().contains(p))
 					tree2MapManager.remove(p);
 				}
 			}
@@ -693,13 +736,13 @@ public class GamePanel extends JPanel {
 			GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
 		}
 		
-		/** Paint Server-Entities */
+		/** Paint Items */
 		g.setPaintMode();
 		List<BigInteger> idListTempItems = new ArrayList<BigInteger>(ItemManager.idList);
 		for (BigInteger i: idListTempItems) {
 			Item tempItem = ItemManager.get(i);
 			if (tempItem != null && tempItem.isVisible()) {
-				Entity e= tempItem.getItemEntity();
+				Entity e= tempItem.getEntity();
 				if(e != null) {
 					if(e.getSprite().getImage() != null) {
 						g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
@@ -709,6 +752,25 @@ public class GamePanel extends JPanel {
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Entity");
 			} else {
 				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Item");
+			}
+		}
+		
+		/** Paint Agents */
+		g.setPaintMode();
+		List<BigInteger> idListTempAgents = new ArrayList<BigInteger>(AgentManager.idList);
+		for (BigInteger i: idListTempAgents) {
+			Agent tempAgent = AgentManager.get(i);
+			if (tempAgent != null && tempAgent.isVisible()) {
+				Entity e= tempAgent;
+				if(e != null) {
+					if(e.getSprite().getImage() != null) {
+						g.drawImage(e.getSprite().getImage(), (int) (e.getX()-viewPointX), (int) (e.getY()-viewPointY), this);
+					}
+				}
+				else
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Agent");
+			} else {
+				GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Agent");
 			}
 		}
 		
@@ -776,7 +838,11 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!overlayTree1MapManager.getStayList().contains(p))
 					overlayTree1MapManager.remove(p);
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!overlayTree2MapManager.getStayList().contains(p))
 					overlayTree2MapManager.remove(p);
 					
 				}
@@ -795,6 +861,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!overlayTree1MapManager.getStayList().contains(p))
 					overlayTree1MapManager.remove(p);
 				}
 			} else if(localMap2 != null) {
@@ -811,6 +879,8 @@ public class GamePanel extends JPanel {
 					}
 				} else {
 					/** remove if too far away */
+					/** but only if the localMap is not on the stayList (which is used for distant maps) */
+					if (!overlayTree2MapManager.getStayList().contains(p))
 					overlayTree2MapManager.remove(p);
 				}
 			}
@@ -1188,7 +1258,7 @@ public class GamePanel extends JPanel {
 		/** send the complete Item to all players of the channel */
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 			/** first send to server for the itemList */
-			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId(), mouseItem.getItemCode(), mouseItem.getCount(), mouseItem.getCapacity(), p.x, p.y, mouseItem.getItemEntity().getMX(), mouseItem.getItemEntity().getMY(), mouseItem.getName(), mouseItem.getItemEntity().getTileSet().getFileName(), mouseItem.getItemEntity().getName(), mouseItem.getStates()));
+			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId(), mouseItem.getItemCode(), mouseItem.getCount(), mouseItem.getCapacity(), p.x, p.y, mouseItem.getEntity().getMX(), mouseItem.getEntity().getMY(), mouseItem.getName(), mouseItem.getEntity().getTileSet().getFileName(), mouseItem.getEntity().getName(), mouseItem.getStates()));
 			
 //			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId()));
 			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {

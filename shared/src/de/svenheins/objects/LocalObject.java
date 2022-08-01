@@ -8,6 +8,7 @@ public class LocalObject {
 	protected float height, width;
 	protected float mx;
 	protected float my;
+	protected float maxSpeed;
 	protected BigInteger id;
 	protected String name;
 
@@ -48,17 +49,26 @@ public class LocalObject {
 		this.my = my;
 	}
 	
-	public float getHorizontalMovement() {
-		return mx;
+	public void normalizeMovement() {
+		float tempVelocity = (float) Math.sqrt((mx*mx) + (my*my));
+		if ( tempVelocity > maxSpeed) {
+			this.setMovement(maxSpeed*(mx/tempVelocity), maxSpeed*(my/tempVelocity));
+		} else {
+			// not too fast
+		}
 	}
+//	
+//	public float getHorizontalMovement() {
+//		return mx;
+//	}
 	
 	public float getMX() {
 		return mx;
 	}
 	
-	public float getVerticalMovement() {
-		return my;
-	}
+//	public float getVerticalMovement() {
+//		return my;
+//	}
 	
 	public float getMY() {
 		return my;
@@ -95,5 +105,13 @@ public class LocalObject {
 	
 	public String getName() {
 		return this.name;
+	}
+
+	public float getMaxSpeed() {
+		return maxSpeed;
+	}
+
+	public void setMaxSpeed(float maxSpeed) {
+		this.maxSpeed = maxSpeed;
 	}
 }

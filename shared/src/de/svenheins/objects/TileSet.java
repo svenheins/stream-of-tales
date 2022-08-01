@@ -50,11 +50,12 @@ public class TileSet
 		this.tileSetFileName=fileName;
 		try {
 			BufferedImage picTileSet=ImageIO.read(this.getClass().getResource(GameStates.resourcePath+"images/"+fileName));
+//			int countJ = 0;
 			for(int i = 0; i < x.length; i++) {
-				for(int j = 0; j < y.length; j++) {
-					BufferedImage tileImage=picTileSet.getSubimage(x[i], y[j], width[i], height[j]);
+//				for(int j = 0; j < yLimit[i]; j++) {
+					BufferedImage tileImage=picTileSet.getSubimage(x[i], y[i], width[i], height[i]);
 					this.tileSet.add(tileImage);
-				}
+//				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

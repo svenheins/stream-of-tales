@@ -3,6 +3,7 @@ package de.svenheins.objects.items;
 import java.math.BigInteger;
 import java.util.HashMap;
 
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.ItemManager;
 import de.svenheins.messages.ClientMessages;
@@ -94,10 +95,11 @@ public class Container {
 //							BigInteger newItemID = ItemManager.getMaxID().add(addBigInteger);
 //							System.out.println("new id: "+newItemID);
 							try {
-								item.getItemEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
-								item.getItemEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
-								item.setX(item.getItemEntity().getX());
-								item.setY(item.getItemEntity().getY());
+								item.getEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
+								item.getEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
+								item.setX(item.getEntity().getX());
+								item.setY(item.getEntity().getY());
+								item.getEntity().setContinuousState(EntityStates.INVENTORY_SIMPLE);
 								itemList.put(item.getId(), (Item) item.clone());
 								itemList.get(item.getId()).setVisible(true);
 							} catch (CloneNotSupportedException e) {

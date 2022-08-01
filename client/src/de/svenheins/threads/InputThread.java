@@ -1,7 +1,4 @@
 package de.svenheins.threads;
-import java.io.IOException;
-
-import com.sun.sgs.client.ClientChannel;
 
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
@@ -9,13 +6,8 @@ import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
-import de.svenheins.main.gui.ContainerGUI;
 import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.managers.AnimationManager;
-import de.svenheins.managers.PlayerManager;
-import de.svenheins.messages.ClientMessages;
-import de.svenheins.messages.OBJECTCODE;
-import de.svenheins.animation.Animation;
 import de.svenheins.handlers.InputHandler;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Player;
@@ -71,32 +63,34 @@ public class InputThread implements Runnable{
 //				s.setVerticalMovement(0);
 //				if ( PlayerManager.contains(s)){
 					if (input.down && !input.up){
-						playerEntity.setMY(GameStates.DEFAULT_MOVEMENT_ON_Y);
+						playerEntity.setMY(playerEntity.getMaxSpeed());
 						determineWalkingAnimation(playerEntity);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()+20);
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //						System.out.println("down");
 					}
 					if (input.up && !input.down){
-						playerEntity.setMY(-GameStates.DEFAULT_MOVEMENT_ON_Y);
+						playerEntity.setMY(-playerEntity.getMaxSpeed());
 						determineWalkingAnimation(playerEntity);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()-20);
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //						System.out.println("up with "+GameStates.DEFAULT_MOVEMENT_ON_Y);
 					}
 					if (input.left && !input.right){
-						playerEntity.setMX(-GameStates.DEFAULT_MOVEMENT_ON_X);
+						playerEntity.setMX(-playerEntity.getMaxSpeed());
 						determineWalkingAnimation(playerEntity);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()-20, GamePanel.gp.getViewPointY());
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 					}
 					if (input.right && !input.left){
-						playerEntity.setMX(GameStates.DEFAULT_MOVEMENT_ON_X);
+						playerEntity.setMX(playerEntity.getMaxSpeed());
 						determineWalkingAnimation(playerEntity);
 //						System.out.println("right with " +-GameStates.DEFAULT_MOVEMENT_ON_X);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+20, GamePanel.gp.getViewPointY());
 						
 					}
+					playerEntity.normalizeMovement();
+					
 					if ( playerEntity.getMX() == 0 && playerEntity.getMY()== 0) {
 						if (playerEntity.getContinuousState() == EntityStates.WALKING) {
 							playerEntity.setContinuousState(EntityStates.STANDING);
@@ -133,6 +127,7 @@ public class InputThread implements Runnable{
 					}
 					if (input.inventory ){
 						ContainerGUIManager.get("Player Inventory").setVisible(!ContainerGUIManager.get("Player Inventory").isVisible());
+						ContainerGUIManager.get("Player EqBody Inventory").setVisible(!ContainerGUIManager.get("Player EqBody Inventory").isVisible());
 //						GamePanel.gp.setMenu(!GamePanel.gp.isMenu());
 						input.inventory = false;
 					}

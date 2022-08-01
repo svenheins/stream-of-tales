@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import de.svenheins.managers.ServerTextureManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.items.Container;
@@ -72,6 +73,36 @@ public class ServerMessages extends Messages{
         buffer.putLong(id.longValue()); // 8 Bytes
         buffer.flip();
         return buffer;
+    }
+    
+    public static ByteBuffer sendDeleteMapObject(InteractionTile iTile, String objectMapName, String objectOverlayMapName) {
+        int tileValuesLength = 4 + iTile.getValues().length*4;
+        int tileValuesPositionName = iTile.getPosition().getRoom().length() + 4;
+        int objectMapNameLength = objectMapName.length() + 4;
+        int objectOverlayMapNameLength = objectOverlayMapName.length() + 4;
+    	byte[] bytes = new byte[1 + 4 + 4 + 4 + 4  + tileValuesPositionName + objectMapNameLength+ objectOverlayMapNameLength+ tileValuesLength  ];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.DELETE_MAPOBJECT.ordinal());
+	    buffer.putInt(iTile.getPosition().getLocalX()); // 4
+	    buffer.putInt(iTile.getPosition().getLocalY()); // 4
+	    buffer.putInt(iTile.getPosition().getMapCoordinates().x); // 4
+	    buffer.putInt(iTile.getPosition().getMapCoordinates().y); // 4
+	    
+	    buffer.putInt(iTile.getPosition().getRoom().length()); // 4
+    	buffer.put(iTile.getPosition().getRoom().getBytes()); // iTile.getPosition().getRoom().length()
+    	buffer.putInt(objectMapName.length()); // 4
+    	buffer.put(objectMapName.getBytes()); // objectMapName.length()
+    	buffer.putInt(objectOverlayMapName.length()); // 4
+    	buffer.put(objectOverlayMapName.getBytes()); // objectOverlayMapName.length()
+    	
+    	/** values */
+    	buffer.putInt(iTile.getValues().length); // 4
+    	for ( int i =0; i < iTile.getValues().length; i++) {
+    		buffer.putInt(iTile.getValues()[i]); // 4
+    	}
+    	
+    	buffer.flip();
+    	return buffer;
     }
     
 //    /** get object name */
@@ -440,9 +471,9 @@ public class ServerMessages extends Messages{
 					itemYLength += 4;
 					// entity
 					itemEntityIDLength += 8;
-					itemEntityNameLength += 4 + item.getItemEntity().getName().length();
-					itemEntityTileNameLength += 4 + item.getItemEntity().getTileSet().getName().length();
-					itemEntityTileFileNameLength += 4 + item.getItemEntity().getTileSet().getFileName().length();
+					itemEntityNameLength += 4 + item.getEntity().getName().length();
+					itemEntityTileNameLength += 4 + item.getEntity().getTileSet().getName().length();
+					itemEntityTileFileNameLength += 4 + item.getEntity().getTileSet().getFileName().length();
 					itemStatesLength += 4;
 					if (item.getStates() != null) itemStatesLength += 4*item.getStates().length;
 				} else {
@@ -479,16 +510,16 @@ public class ServerMessages extends Messages{
 					buffer.put((byte) item.getItemCode().ordinal()); // 1
 					buffer.putLong(item.getCreationTime());
 					/** entity stuff */
-					buffer.putLong(item.getItemEntity().getId().longValue()); // 8
-					buffer.putInt(item.getItemEntity().getName().length()); // 4
-			    	buffer.put(item.getItemEntity().getName().getBytes()); // name.length
-			    	buffer.putInt(item.getItemEntity().getTileSet().getName().length()); // 4
-			    	buffer.put(item.getItemEntity().getTileSet().getName().getBytes()); // name.length
-			    	buffer.putInt(item.getItemEntity().getTileSet().getFileName().length()); // 4
-			    	buffer.put(item.getItemEntity().getTileSet().getFileName().getBytes()); // name.length
-			    	buffer.putFloat(item.getItemEntity().getX()); // 4
-			    	buffer.putFloat(item.getItemEntity().getY()); // 4
-//			    	System.out.println("Sending initial x: "+item.getItemEntity().getX()+" and y: "+item.getItemEntity().getY());
+					buffer.putLong(item.getEntity().getId().longValue()); // 8
+					buffer.putInt(item.getEntity().getName().length()); // 4
+			    	buffer.put(item.getEntity().getName().getBytes()); // name.length
+			    	buffer.putInt(item.getEntity().getTileSet().getName().length()); // 4
+			    	buffer.put(item.getEntity().getTileSet().getName().getBytes()); // name.length
+			    	buffer.putInt(item.getEntity().getTileSet().getFileName().length()); // 4
+			    	buffer.put(item.getEntity().getTileSet().getFileName().getBytes()); // name.length
+			    	buffer.putFloat(item.getEntity().getX()); // 4
+			    	buffer.putFloat(item.getEntity().getY()); // 4
+//			    	System.out.println("Sending initial x: "+item.getEntity().getX()+" and y: "+item.getEntity().getY());
 			    	/** item states */
 			    	if (item.getStates() != null) {
 						buffer.putInt(item.getStates().length);
@@ -514,9 +545,9 @@ public class ServerMessages extends Messages{
     	/** get the length of Bytes that must be reserved for the names */
     	
 		int itemEntityIDLength = 8;
-		int itemEntityNameLength = 4 + item.getItemEntity().getName().length(); // string
-		int itemEntityTileNameLength = 4 + item.getItemEntity().getTileSet().getName().length(); // string
-		int itemEntityTileFileNameLength = 4 + item.getItemEntity().getTileSet().getFileName().length(); //string
+		int itemEntityNameLength = 4 + item.getEntity().getName().length(); // string
+		int itemEntityTileNameLength = 4 + item.getEntity().getTileSet().getName().length(); // string
+		int itemEntityTileFileNameLength = 4 + item.getEntity().getTileSet().getFileName().length(); //string
 		int itemNameLength = 4 + item.getName().length(); // String
 		int itemStatesLength = 4; // float[]
 		if (item.getStates() != null) itemStatesLength += 4*item.getStates().length;
@@ -545,15 +576,15 @@ public class ServerMessages extends Messages{
 		buffer.put((byte) item.getItemCode().ordinal()); // 1
 		buffer.putLong(item.getCreationTime());
 		/** entity stuff */
-		buffer.putLong(item.getItemEntity().getId().longValue()); // 8
-		buffer.putInt(item.getItemEntity().getName().length()); // 4
-    	buffer.put(item.getItemEntity().getName().getBytes()); // name.length
-    	buffer.putInt(item.getItemEntity().getTileSet().getName().length()); // 4
-    	buffer.put(item.getItemEntity().getTileSet().getName().getBytes()); // name.length
-    	buffer.putInt(item.getItemEntity().getTileSet().getFileName().length()); // 4
-    	buffer.put(item.getItemEntity().getTileSet().getFileName().getBytes()); // name.length
-    	buffer.putFloat(item.getItemEntity().getX()); // 4
-    	buffer.putFloat(item.getItemEntity().getY()); // 4
+		buffer.putLong(item.getEntity().getId().longValue()); // 8
+		buffer.putInt(item.getEntity().getName().length()); // 4
+    	buffer.put(item.getEntity().getName().getBytes()); // name.length
+    	buffer.putInt(item.getEntity().getTileSet().getName().length()); // 4
+    	buffer.put(item.getEntity().getTileSet().getName().getBytes()); // name.length
+    	buffer.putInt(item.getEntity().getTileSet().getFileName().length()); // 4
+    	buffer.put(item.getEntity().getTileSet().getFileName().getBytes()); // name.length
+    	buffer.putFloat(item.getEntity().getX()); // 4
+    	buffer.putFloat(item.getEntity().getY()); // 4
     	/** item states */
     	if (item.getStates() != null) {
 			buffer.putInt(item.getStates().length);

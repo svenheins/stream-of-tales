@@ -107,6 +107,7 @@ public class MapUpdateThread implements Runnable {
 					
 					/** do not instantly send maps but create the sendQueue */
 					GameWindow.gw.addSendMapListEntry(mapFileName);
+					mapManager.removeStayList(p);
 				}
 				else
 					GameWindow.gw.gameInfoConsole.appendInfo("Couldn't write Map");
@@ -124,6 +125,7 @@ public class MapUpdateThread implements Runnable {
 					String mapFileName = mapManager.getPaintLayer()+"_"+p.x+"_"+p.y+".map";
 					mapManager.save(localMap, GameStates.standardMapFolder+GameWindow.gw.getPlayerName()+"/"+mapFileName);
 					GameWindow.gw.addSendMapListEntry(mapFileName);
+					mapManager.removeStayList(p);
 				}
 				else
 					GameWindow.gw.gameInfoConsole.appendInfo("Couldn't write Map");
@@ -141,6 +143,7 @@ public class MapUpdateThread implements Runnable {
 					String mapFileName = mapManager.getPaintLayer()+"_"+p.x+"_"+p.y+".map";
 					mapManager.save(localMap, GameStates.standardMapFolder+GameWindow.gw.getPlayerName()+"/"+mapFileName);
 					GameWindow.gw.addSendMapListEntry(mapFileName);
+					mapManager.removeStayList(p);
 				}
 				else
 					GameWindow.gw.gameInfoConsole.appendInfo("Couldn't write Map");

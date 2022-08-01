@@ -1,19 +1,13 @@
 package de.svenheins.messages;
 
 import java.awt.Polygon;
-import java.awt.TexturePaint;
-import java.awt.image.BufferedImage;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-import de.svenheins.animation.SpaceAnimation;
 import de.svenheins.main.EntityStates;
-import de.svenheins.main.GameStates;
-import de.svenheins.objects.Entity;
+import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.Space;
-import de.svenheins.objects.TileSet;
-import de.svenheins.objects.items.materials.Wood;
 
 
 /** Message from the client TO the server */
@@ -630,6 +624,44 @@ public class ClientMessages extends Messages{
     	buffer.putInt(sendListSize); // 4
     	
     	/** buffer is ready */
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer deleteMapObject(InteractionTile iTile, String gameMasterName, BigInteger gameMasterID, String objectMapName, String objectOverlayMapName) {
+    	int GMlength = 4+gameMasterName.length();
+        int tileValuesLength = 4 + iTile.getValues().length*4;
+        int tileValuesPositionName = iTile.getPosition().getRoom().length() + 4;
+        int objectMapNameLength = 4 + objectMapName.length();
+        int objectOverlayMapNameLength = 4 + objectOverlayMapName.length();
+    	byte[] bytes = new byte[1 + 4 + 4 + 4 + 4 + 8 + tileValuesPositionName + tileValuesLength + +objectMapNameLength + objectOverlayMapNameLength + GMlength ];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.DELETE_MAPOBJECT.ordinal());
+	    buffer.putInt(iTile.getPosition().getLocalX()); // 4
+	    buffer.putInt(iTile.getPosition().getLocalY()); // 4
+	    buffer.putInt(iTile.getPosition().getMapCoordinates().x); // 4
+	    buffer.putInt(iTile.getPosition().getMapCoordinates().y); // 4
+	    buffer.putLong(gameMasterID.longValue()); // 8
+	    buffer.putInt(iTile.getPosition().getRoom().length()); // 4
+    	buffer.put(iTile.getPosition().getRoom().getBytes()); // iTile.getPosition().getRoom().length()
+    	buffer.putInt(gameMasterName.length()); // 4
+    	buffer.put(gameMasterName.getBytes());
+    	buffer.putInt(objectMapName.length()); // 4
+    	buffer.put(objectMapName.getBytes()); 
+    	buffer.putInt(objectOverlayMapName.length()); // 4
+    	buffer.put(objectOverlayMapName.getBytes()); 
+    	
+    	/** values */
+    	buffer.putInt(iTile.getValues().length);
+    	for ( int i =0; i < iTile.getValues().length; i++) {
+    		buffer.putInt(iTile.getValues()[i]);
+    	}
+    	
         buffer.flip();
         return buffer;
     }

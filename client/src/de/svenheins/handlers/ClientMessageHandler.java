@@ -2,8 +2,6 @@ package de.svenheins.handlers;
 
 import java.awt.Point;
 import java.awt.Polygon;
-import java.awt.Rectangle;
-import java.awt.TexturePaint;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -12,28 +10,23 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
-
-import javax.swing.JComboBox;
 
 import com.sun.sgs.client.ClientChannel;
 
 import de.svenheins.main.EntityStates;
-import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.main.LoadingStates;
+import de.svenheins.main.TileDimensions;
 import de.svenheins.main.gui.Button;
-import de.svenheins.main.gui.ContainerGUI;
-import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.PlayerListGUI;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ItemManager;
+import de.svenheins.managers.ObjectMapManager;
 import de.svenheins.managers.PlayerManager;
-import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.TileSetManager;
 //import de.svenheins.managers.TextureManager;
@@ -41,15 +34,15 @@ import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.ITEMCODE;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
-import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.InteractionTile;
+import de.svenheins.objects.LocalMap;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
+import de.svenheins.objects.WorldLatticePosition;
 import de.svenheins.objects.items.Container;
 import de.svenheins.objects.items.Item;
-import de.svenheins.objects.items.equipment.bodyarmors.Cloak;
-import de.svenheins.objects.items.materials.Wood;
 
 public class ClientMessageHandler {
 	/* {@inheritDoc} */
@@ -427,18 +420,18 @@ public class ClientMessageHandler {
     		    		entityNameBytes_SC = new byte[packet.getInt()];
     		    		packet.get(entityNameBytes_SC);
     		    		entityName_SC = new String(entityNameBytes_SC);
-//    					buffer.putInt(item.getItemEntity().getName().length()); // 4
-//    			    	buffer.put(item.getItemEntity().getName().getBytes()); // name.length
+//    					buffer.putInt(item.getEntity().getName().length()); // 4
+//    			    	buffer.put(item.getEntity().getName().getBytes()); // name.length
     		    		entityTileSetNameBytes_SC = new byte[packet.getInt()];
     		    		packet.get(entityTileSetNameBytes_SC);
     		    		entityTileSetName_SC = new String(entityTileSetNameBytes_SC);
-//    			    	buffer.putInt(item.getItemEntity().getTileSet().getName().length()); // 4
-//    			    	buffer.put(item.getItemEntity().getTileSet().getName().getBytes()); // name.length
+//    			    	buffer.putInt(item.getEntity().getTileSet().getName().length()); // 4
+//    			    	buffer.put(item.getEntity().getTileSet().getName().getBytes()); // name.length
     		    		entityTileSetFileNameBytes_SC = new byte[packet.getInt()];
     		    		packet.get(entityTileSetFileNameBytes_SC);
     		    		entityTileSetFileName_SC = new String(entityTileSetFileNameBytes_SC);
-//    			    	buffer.putInt(item.getItemEntity().getTileSet().getFileName().length()); // 4
-//    			    	buffer.put(item.getItemEntity().getTileSet().getFileName().getBytes()); // name.length
+//    			    	buffer.putInt(item.getEntity().getTileSet().getFileName().length()); // 4
+//    			    	buffer.put(item.getEntity().getTileSet().getFileName().getBytes()); // name.length
     			    	/** item states */
     		    		itemX_SC = packet.getFloat();
     		    		itemY_SC = packet.getFloat();  
@@ -545,8 +538,10 @@ public class ClientMessageHandler {
 			
 			/** prepare item*/
 			itemEntity_SC = new Entity(new TileSet(entityTileSetFileName_SC, entityTileSetName_SC, Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight), entityName_SC, entityID_SC, itemX_SC, itemY_SC, GameStates.animationDelayItems);
+			
 			item_SC = Item.getItem(itemCode_SC,itemID_SC , itemName_SC, count_SC, capacity_SC, itemEntity_SC.getX(), itemEntity_SC.getY(), creationTime_SC, itemStates_SC);
-
+			item_SC.getEntity().setContinuousState(EntityStates.INVENTORY_SIMPLE);
+			
     		if (myId_SC.equals(GamePanel.gp.getPlayerEntity().getId())) {
     			switch (containerType_SC) {
     			case CONTAINER_MAIN:
@@ -748,31 +743,27 @@ public class ClientMessageHandler {
 				states[i] = packet.getFloat();
 			}
 			
-    		switch(itemCode) {
-    		case WOOD:
-    			Wood wood = new Wood(addCompleteItemId, addCompleteItemX, addCompleteItemY);
-    			wood.setCount(addCompleteItemCount);
-    			if(ItemManager.add(wood)) {
-//    				System.out.println("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
-    				GameWindow.gw.gameInfoConsole.appendInfo("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
-    			} else {
-//    				System.out.println("failed inserting item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
-    				GameWindow.gw.gameInfoConsole.appendInfo("got the item "+addCompleteItemName+" with ID: "+addCompleteItemId+" already!");
-    			}
-    			break;
-    		case STONE:
-    			break;
-    		case BODY:
-    			if (addCompleteItemName.equals("Cloak")) {
-    				Cloak cloak = new Cloak(addCompleteItemId, addCompleteItemX, addCompleteItemY, states);
-        			cloak.setCount(addCompleteItemCount);
-        			ItemManager.add(cloak);
-    			}
-    			
-    			break;
-    		default:
-    				;
-    		}
+			Item addCompleteItem = Item.getItem(itemCode, addCompleteItemId, addCompleteItemName, addCompleteItemCount, 1, addCompleteItemX, addCompleteItemY, System.currentTimeMillis(), states);
+			ItemManager.add(addCompleteItem);
+			
+//			switch(itemCode) {
+//    		case WOOD:
+//    			Wood wood = new Wood(addCompleteItemId, addCompleteItemX, addCompleteItemY);
+//    			wood.setCount(addCompleteItemCount);
+//    			break;
+//    		case STONE:
+//    			break;
+//    		case BODY:
+//    			if (addCompleteItemName.equals("Cloak")) {
+//    				Cloak cloak = new Cloak(addCompleteItemId, addCompleteItemX, addCompleteItemY, states);
+//        			cloak.setCount(addCompleteItemCount);
+//        			ItemManager.add(cloak);
+//    			}
+//    			
+//    			break;
+//    		default:
+//    				;
+//    		}
     		break;}
     	case INITITEMS: {
     		int itemCount = packet.getInt();
@@ -793,36 +784,36 @@ public class ClientMessageHandler {
     				states[i] = packet.getFloat();
     			}
     			
-        		switch(itemCode) {
-        		case WOOD:
-        			Wood wood = new Wood(addCompleteItemId, addCompleteItemX, addCompleteItemY);
-        			wood.setCount(addCompleteItemCount);
-        			if(ItemManager.add(wood)) {
-//        				System.out.println("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
-        				GameWindow.gw.gameInfoConsole.appendInfo("successfully got spawned item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
-        			} else {
-//        				System.out.println("failed inserting item: "+addCompleteItemName + " with ID: "+addCompleteItemId);
-        				GameWindow.gw.gameInfoConsole.appendInfo("got the item "+addCompleteItemName+" with ID: "+addCompleteItemId+" already!");
-        			}
-        			break;
-        		case STONE:
-        			break;
-        		case BODY:
-        			if (addCompleteItemName.equals("Cloak")) {
-        				Cloak cloak = new Cloak(addCompleteItemId, addCompleteItemX, addCompleteItemY, states);
-            			cloak.setCount(addCompleteItemCount);
-            			ItemManager.add(cloak);
-        			}
-        			
-        			break;
-        		default:
-        				;
+    			Item itemInit = Item.getItem(itemCode, addCompleteItemId, addCompleteItemName, addCompleteItemCount, 1, addCompleteItemX, addCompleteItemY, System.currentTimeMillis(), states);
+        		if (ItemManager.add(itemInit)) {
+        			System.out.println("Successfully added item");
+        		} else {
+        			System.out.println("Could not added item");
         		}
-    			
-    			
+//    			switch(itemCode) {
+//        		case WOOD:
+//        			Wood wood = new Wood(addCompleteItemId, addCompleteItemX, addCompleteItemY);
+//        			wood.setCount(addCompleteItemCount);
+//        			ItemManager.add(wood);
+//        			break;
+//        		case STONE:
+//        			break;
+//        		case BODY:
+//        			if (addCompleteItemName.equals("Cloak")) {
+//        				Cloak cloak = new Cloak(addCompleteItemId, addCompleteItemX, addCompleteItemY, states);
+//            			cloak.setCount(addCompleteItemCount);
+//            			ItemManager.add(cloak);
+//        			}
+//        			
+//        			break;
+//        		default:
+//        				;
+//        		}
+//    			
+//    			
+//    		}
+    		
     		}
-    		
-    		
     		break;}
     	case TAKEITEM:
 //    		GameWindow.gw.gameConsole.appendInfo("taking item");
@@ -846,7 +837,7 @@ public class ClientMessageHandler {
 //	    					tempInventory.getContainerArray()[i][j] = tempID;
 //	    					if (!tempID.equals(BigInteger.valueOf(-1))) {
 //	    						tempItemOld = GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(tempID);
-//		    					tempItem = Item.getItem(tempItemOld.getItemCode(), tempID, tempItemOld.getName(), tempItemOld.getCount(), tempItemOld.getCapacity(), tempItemOld.getItemEntity(), tempItemOld.getCreationTime(), tempItemOld.getStates());
+//		    					tempItem = Item.getItem(tempItemOld.getItemCode(), tempID, tempItemOld.getName(), tempItemOld.getCount(), tempItemOld.getCapacity(), tempItemOld.getEntity(), tempItemOld.getCreationTime(), tempItemOld.getStates());
 //	    						tempInventory.getItemList().put(tempID, tempItem);
 //	    					}
 //	    				}
@@ -861,11 +852,11 @@ public class ClientMessageHandler {
 		    		GameWindow.gw.send(ClientMessages.tookItem(takeItemId));
 		    		if (restItem != null) {
 	    				/** first send to server for the itemList */
-						GameWindow.gw.send(ClientMessages.addItem(restItem.getId(), restItem.getItemCode(), restItem.getCount(), restItem.getCapacity(), restItem.getItemEntity().getX(), restItem.getItemEntity().getY(), restItem.getItemEntity().getMX(), restItem.getItemEntity().getMY(), restItem.getName(), restItem.getItemEntity().getTileSet().getFileName(), restItem.getItemEntity().getName(), restItem.getStates()));
+						GameWindow.gw.send(ClientMessages.addItem(restItem.getId(), restItem.getItemCode(), restItem.getCount(), restItem.getCapacity(), restItem.getEntity().getX(), restItem.getEntity().getY(), restItem.getEntity().getMX(), restItem.getEntity().getMY(), restItem.getName(), restItem.getEntity().getTileSet().getFileName(), restItem.getEntity().getName(), restItem.getStates()));
 						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 							try {
-								channel.send(ClientMessages.addCompleteItem(restItem.getItemCode(), takeItemId, restItem.getName(), restItem.getItemEntity().getX(), restItem.getItemEntity().getY(), restItem.getCount(), new float[1]));
+								channel.send(ClientMessages.addCompleteItem(restItem.getItemCode(), takeItemId, restItem.getName(), restItem.getEntity().getX(), restItem.getEntity().getY(), restItem.getCount(), new float[1]));
 							} catch (IOException e) {
 								e.printStackTrace();
 							}	
@@ -996,6 +987,207 @@ public class ClientMessageHandler {
 			}
 			
     		break;
+    	case DELETE_MAPOBJECT: {
+    		int localX = packet.getInt();
+			int localY = packet.getInt();
+			int mapX = packet.getInt();
+			int mapY = packet.getInt();
+			byte[] roomName_Bytes = new byte[packet.getInt()];
+			packet.get(roomName_Bytes);
+			String roomName = new String(roomName_Bytes); // name
+			byte[] objectMapName_Bytes = new byte[packet.getInt()];
+			packet.get(objectMapName_Bytes);
+			String objectMapName = new String(objectMapName_Bytes); // name
+			byte[] objectOverlayMapName_Bytes = new byte[packet.getInt()];
+			packet.get(objectOverlayMapName_Bytes);
+			String objectOverlayMapName = new String(objectOverlayMapName_Bytes); // name
+			
+			int valueLength = packet.getInt();
+			int[] values = new int[valueLength];
+			for (int i = 0; i< valueLength; i++) {
+				values[i] = packet.getInt();
+			}
+				
+			InteractionTile iTile = new InteractionTile(new WorldLatticePosition(new Point(mapX, mapY), localX, localY));
+			iTile.setValues(values);
+			iTile.getPosition().setRoom(roomName);
+			
+			ObjectMapManager objectMapManager = GameWindow.gw.getObjectMapManagers().get(objectMapName);
+			ObjectMapManager overlayMapManager = GameWindow.gw.getObjectMapManagers().get(objectOverlayMapName);
+			LocalMap localMap = objectMapManager.get(new Point(mapX, mapY));
+			LocalMap localOverlayMap = overlayMapManager.get(new Point(mapX, mapY));
+			
+			boolean distantMapCoordinates = false;
+			if (localMap == null) {
+				// get the map from filesystem
+				objectMapManager.addStayList(new Point(mapX, mapY));
+				objectMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(), mapX, mapY);
+				localMap = objectMapManager.get(new Point(mapX, mapY));
+				distantMapCoordinates = true;
+			}
+			if (localOverlayMap == null ) {
+				// get the map from filesystem
+				overlayMapManager.addStayList(new Point(mapX, mapY));
+				overlayMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(), mapX, mapY);
+				localOverlayMap = overlayMapManager.get(new Point(mapX, mapY));
+				distantMapCoordinates = true;
+			}
+			int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
+			int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
+			
+			if (distantMapCoordinates == true) {
+				if ((localX == 0) && (localY == 0)) {
+					// ul
+					Point p2 = new Point(mapX-localWidth, mapY-localHeight);
+					objectMapManager.addStayList(p2);
+					overlayMapManager.addStayList(p2);
+					objectMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+					overlayMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+				} 
+				if ( (localX == GameStates.mapWidth-1) && (localY == 0)) {
+					// ur
+					Point p2 = new Point(mapX+localWidth, mapY-localHeight);
+					objectMapManager.addStayList(p2);
+					overlayMapManager.addStayList(p2);
+					objectMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+					overlayMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+				}
+				if (localY == 0) {
+					// u
+					Point p2 = new Point(mapX, mapY-localHeight);
+					objectMapManager.addStayList(p2);
+					overlayMapManager.addStayList(p2);
+					objectMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+					overlayMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+				} 
+				if ( (localX == 0) && (localY == GameStates.mapHeight-1)) {
+					// dl
+					// no need to create because trees dont have a dl tile
+				}
+				if ( (localX == 0)) {
+					// l
+					Point p2 = new Point(mapX-localWidth, mapY);
+					objectMapManager.addStayList(p2);
+					overlayMapManager.addStayList(p2);
+					objectMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+					overlayMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+				}
+				if ( (localX == GameStates.mapWidth-1) && (localY == GameStates.mapHeight-1) ) {
+					// dr
+					// no need to create because trees dont have a dr tile
+				}
+				if ( (localX == GameStates.mapWidth-1) ) {
+					// r
+					Point p2 = new Point(mapX+localWidth, mapY);
+					objectMapManager.addStayList(p2);
+					overlayMapManager.addStayList(p2);
+					objectMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+					overlayMapManager.loadFromFileSystem(GameWindow.gw.getPlayerName(),p2.x, p2.y);
+				}
+				if (localY == GameStates.mapHeight-1) {
+					// d
+					// no need to create because trees dont have a d tile
+				}
+			}
+
+			if ( localX % 2 == 0 && localY % 2 == 0) {
+				/** determine here the relevant paintLayer */
+				int paintType = LocalMap.getPaintType(localMap.getLocalMap()[localX][localY]);
+				ITEMCODE itemCode = LocalMap.getItemCode(paintType);
+					
+				if (localMap.getLocalMap()[localX][localY] != 0) {
+					BigInteger itemId = ItemManager.getMaxIDValue().add(GamePanel.gp.getPlayerEntity().getId());
+//					Item dropItem = Item.getItem(ITEMCODE.WOOD, itemId, "wood",(int) (Math.random()*20+20), 0, mapX+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), mapY+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)), System.currentTimeMillis(), new float[0]);
+					Item dropItem = Item.createItem(itemCode,itemId, mapX+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), mapY+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)));
+					
+					
+					
+					/** send the complete Item to all players of the channel */
+					if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
+						/** first send to server for the itemList */
+						GameWindow.gw.send(ClientMessages.addItem(dropItem.getId(), dropItem.getItemCode(), dropItem.getCount(), dropItem.getCapacity(), dropItem.getEntity().getX(), dropItem.getEntity().getY(), dropItem.getEntity().getMX(), dropItem.getEntity().getMY(), dropItem.getName(), dropItem.getEntity().getTileSet().getFileName(), dropItem.getEntity().getName(), dropItem.getStates()));
+						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+							try {
+								channel.send(ClientMessages.addCompleteItem(dropItem.getItemCode(), dropItem.getId(), dropItem.getName(), dropItem.getEntity().getX(), dropItem.getEntity().getY(), dropItem.getCount(), dropItem.getStates()));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}	
+						}
+					}
+					localMap.setUl(localX, localY, 0);
+					localMap.setUr(localX, localY, 0);
+					localMap.setDl(localX, localY, 0);
+					localMap.setDr(localX, localY, 0);
+//					localMap.setIdByCornersObject(localX, localY, localMap.getLocalMap()[localX][localY]);
+//					objectMapManager.deleteSurrounding(localMap, localX, localY, localMap.getLocalMap()[localX][localY]);
+					localMap.setIdByCornersObject(localX, localY, paintType);
+					objectMapManager.deleteSurrounding(localMap, localX, localY, paintType, TileDimensions.RowCol2x3);
+	
+					localOverlayMap.setUl(localX, localY, 0);
+					localOverlayMap.setUr(localX, localY, 0);
+					localOverlayMap.setDl(localX, localY, 0);
+					localOverlayMap.setDr(localX, localY, 0);
+					localOverlayMap.setIdByCornersObject(localX, localY, paintType-GameStates.mapTileSetWidth*2);
+					overlayMapManager.deleteSurrounding(localOverlayMap, localX, localY, paintType-GameStates.mapTileSetWidth*2, TileDimensions.RowCol2x3);
+//					localOverlayMap.setIdByCornersObject(localX, localY, localMap.getLocalMap()[localX][localY]-GameStates.mapTileSetWidth*2);
+//					overlayMapManager.deleteSurrounding(localOverlayMap, localX, localY, localMap.getLocalMap()[localX][localY]-GameStates.mapTileSetWidth*2);
+							//MapManager.adjustSurrounding(MapManager.get(p), localX, localY);
+					/** register lattice Point for save - and send procedure */
+					objectMapManager.addChangedList(new Point(mapX, mapY));
+					overlayMapManager.addChangedList(new Point(mapX, mapY));
+					/** now check the corners */
+//					if (distantMapCoordinates == false) {
+						if ((localX == 0) && (localY == 0)) {
+							// ul
+							Point p2 = new Point(mapX-localWidth, mapY-localHeight);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						} 
+						if ( (localX == GameStates.mapWidth-1) && (localY == 0)) {
+							// ur
+							Point p2 = new Point(mapX+localWidth, mapY-localHeight);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						}
+						if (localY == 0) {
+							// u
+							Point p2 = new Point(mapX, mapY-localHeight);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						} 
+						if ( (localX == 0) && (localY == GameStates.mapHeight-1)) {
+							// dl
+							// no need to create because trees dont have a dl tile
+						}
+						if ( (localX == 0)) {
+							// l
+							Point p2 = new Point(mapX-localWidth, mapY);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						}
+						if ( (localX == GameStates.mapWidth-1) && (localY == GameStates.mapHeight-1) ) {
+							// dr
+							// no need to create because trees dont have a dr tile
+						}
+						if ( (localX == GameStates.mapWidth-1) ) {
+							// r
+							Point p2 = new Point(mapX+localWidth, mapY);
+							objectMapManager.addChangedList(p2);
+							overlayMapManager.addChangedList(p2);
+						}
+						if (localY == GameStates.mapHeight-1) {
+							// d
+							// no need to create because trees dont have a d tile
+						}
+//					}
+				}
+			}
+			
+//			this.getRoom().deleteMapObject(gmID, iTile);
+	    	
+			break;
+    	}
     	case CHAT:
     		byte[] chatStringBytes = new byte[packet.getInt()];
 			packet.get(chatStringBytes);
@@ -1103,7 +1295,7 @@ public class ClientMessageHandler {
 //    				/** here we got a new item on an empty field */
 //    				if (tempInventory.getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
 //    					tempItem = GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j]);
-//    					GameWindow.gw.send(ClientMessages.addItemToContainer(tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getItemEntity().getX(), tempItem.getItemEntity().getY(), tempItem.getItemEntity().getMX(), tempItem.getItemEntity().getMY(), tempItem.getName(), tempItem.getItemEntity().getTileSet().getFileName(), tempItem.getItemEntity().getName(), tempItem.getStates(), i, j));
+//    					GameWindow.gw.send(ClientMessages.addItemToContainer(tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getEntity().getX(), tempItem.getEntity().getY(), tempItem.getEntity().getMX(), tempItem.getEntity().getMY(), tempItem.getName(), tempItem.getEntity().getTileSet().getFileName(), tempItem.getEntity().getName(), tempItem.getStates(), i, j));
 ////    					System.out.println("new item on position "+i+"/"+j +" ID="+tempItem.getId() );
 //    				}
 //    				
@@ -1114,7 +1306,7 @@ public class ClientMessageHandler {
 ////    					System.out.println("old:"+tempInventory.getItemList().get(itemID).getCount()+" new:"+GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(itemID).getCount());
 //	    				if (tempInventory.getItemList().get(itemID).getCount() != GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(itemID).getCount()) {
 //	    					tempItem = GamePanel.gp.getPlayerEntity().getInventory().getItemList().get(GamePanel.gp.getPlayerEntity().getInventory().getContainerArray()[i][j]);
-//	    					GameWindow.gw.send(ClientMessages.addItemToContainer(tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getItemEntity().getX(), tempItem.getItemEntity().getY(), tempItem.getItemEntity().getMX(), tempItem.getItemEntity().getMY(), tempItem.getName(), tempItem.getItemEntity().getTileSet().getFileName(), tempItem.getItemEntity().getName(), tempItem.getStates(), i, j));
+//	    					GameWindow.gw.send(ClientMessages.addItemToContainer(tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getEntity().getX(), tempItem.getEntity().getY(), tempItem.getEntity().getMX(), tempItem.getEntity().getMY(), tempItem.getName(), tempItem.getEntity().getTileSet().getFileName(), tempItem.getEntity().getName(), tempItem.getStates(), i, j));
 ////	    					System.out.println("item count changed on position "+i+"/"+j +" ID="+tempItem.getId()+" count="+tempItem.getCount() );
 //	    				}
 //    				}
@@ -1136,7 +1328,7 @@ public class ClientMessageHandler {
     				GameWindow.gw.send(ClientMessages.clearContainerPosition(inventory.getContainerType(), i, j));
     			} else {
     				tempItem = inventory.getItemList().get(inventory.getContainerArray()[i][j]);
-					GameWindow.gw.send(ClientMessages.addItemToContainer(inventory.getContainerType(), tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getItemEntity().getX(), tempItem.getItemEntity().getY(), tempItem.getItemEntity().getMX(), tempItem.getItemEntity().getMY(), tempItem.getName(), tempItem.getItemEntity().getTileSet().getFileName(), tempItem.getItemEntity().getName(), tempItem.getStates(), i, j));
+					GameWindow.gw.send(ClientMessages.addItemToContainer(inventory.getContainerType(), tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getEntity().getX(), tempItem.getEntity().getY(), tempItem.getEntity().getMX(), tempItem.getEntity().getMY(), tempItem.getName(), tempItem.getEntity().getTileSet().getFileName(), tempItem.getEntity().getName(), tempItem.getStates(), i, j));
     			}    	    			
     		}
     	}

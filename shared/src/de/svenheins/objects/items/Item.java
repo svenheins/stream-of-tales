@@ -9,17 +9,17 @@ import de.svenheins.objects.items.equipment.bodyarmors.Cloak;
 import de.svenheins.objects.items.materials.Wood;
 
 public abstract class Item implements Cloneable {
-	public static final int[] tileSetX = new int[]{0,0,0,0, GameStates.itemTileWidth, GameStates.itemTileWidth, GameStates.itemTileWidth, GameStates.itemTileWidth};
-	public static final int[] tileSetY = new int[]{0,GameStates.itemTileHeight,GameStates.itemTileHeight*2,GameStates.itemTileHeight*3, 0,GameStates.itemTileHeight,GameStates.itemTileHeight*2,GameStates.itemTileHeight*3};
-	public static final int[] tileSetWidth = new int[]{GameStates.itemTileWidth,GameStates.itemTileWidth,GameStates.itemTileWidth,GameStates.itemTileWidth,GameStates.itemTileWidth, GameStates.itemTileWidth, GameStates.itemTileWidth, GameStates.itemTileWidth};
-	public static final int[] tileSetHeight = new int[]{GameStates.itemTileHeight,GameStates.itemTileHeight,GameStates.itemTileHeight,GameStates.itemTileHeight,GameStates.itemTileHeight, GameStates.itemTileHeight, GameStates.itemTileHeight, GameStates.itemTileHeight};
+	public static final int[] tileSetX = new int[]{0,0,0,0, GameStates.itemTileWidth, GameStates.itemTileWidth, 2*GameStates.itemTileWidth, 2*GameStates.itemTileWidth};
+	public static final int[] tileSetY = new int[]{0,GameStates.itemTileHeight,GameStates.itemTileHeight*2,GameStates.itemTileHeight*3, 0,GameStates.itemTileHeight*2,0,GameStates.itemTileHeight*2};
+	public static final int[] tileSetWidth = new int[]{GameStates.itemTileWidth,GameStates.itemTileWidth,GameStates.itemTileWidth,GameStates.itemTileWidth,GameStates.itemTileWidth*2, GameStates.itemTileWidth*2, GameStates.itemTileWidth*2, GameStates.itemTileWidth*2};
+	public static final int[] tileSetHeight = new int[]{GameStates.itemTileHeight,GameStates.itemTileHeight,GameStates.itemTileHeight,GameStates.itemTileHeight,GameStates.itemTileHeight*2, GameStates.itemTileHeight*2, GameStates.itemTileHeight*2, GameStates.itemTileHeight*2};
 	
 	private int count;
 	private int capacity;
 	private String name;
 	private BigInteger id;
 	private ITEMCODE itemCode;
-	private Entity itemEntity;
+	private Entity entity;
 	private long creationTime;
 	private float[] states;
 	protected float x;
@@ -68,12 +68,12 @@ public abstract class Item implements Cloneable {
 		this.itemCode = itemCode;
 	}
 
-	public Entity getItemEntity() {
-		return itemEntity;
+	public Entity getEntity() {
+		return entity;
 	}
 
-	public void setItemEntity(Entity itemEntity) {
-		this.itemEntity = itemEntity;
+	public void setEntity(Entity entity) {
+		this.entity = entity;
 	}
 
 	public long getCreationTime() {
@@ -108,6 +108,28 @@ public abstract class Item implements Cloneable {
 				retItem = new Cloak(id, x, y, states);
 				retItem.setCount(count);
 			}
+			break;
+		default: ;
+		}
+		return retItem;
+	}
+	
+	public static Item createItem(ITEMCODE itemCode, BigInteger id, float x, float y) {
+		Item retItem = null;
+		switch (itemCode) {
+		case WOOD:
+			retItem = new Wood(id, x, y);
+			retItem.setCount((int) (Math.random()*20)+20);
+			break;
+		case STONE:
+			retItem = null;
+			break;
+			
+		case BODY:
+//			if (name.equals("Cloak")) {
+				retItem = new Cloak(id, x, y);
+				retItem.setCount(1);
+//			}
 			break;
 		default: ;
 		}

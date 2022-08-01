@@ -93,6 +93,8 @@ public class WorldRoom extends WorldObject
     private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerSpace>>> spaces;// =
 //        new HashMap<BigInteger, ManagedReference<ServerSpace>>();
     
+    private ArrayList<BigInteger> itemList = new ArrayList<BigInteger>();
+    
 //    private static List<ManagedReference<ServerSpace>> spacesArray = null;
 
     /** The set of players in this room. */
@@ -104,6 +106,9 @@ public class WorldRoom extends WorldObject
     
     /** The set of corresponding player-entities in this room. */
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerPlayer>>> serverPlayers;// = new HashMap<BigInteger, ManagedReference<ServerPlayer>>();
+    
+    
+    
     
 
     private long duration, last; 
@@ -133,27 +138,29 @@ public class WorldRoom extends WorldObject
         
         ScalableHashMap<String, ManagedReference<ServerPlayer>> tempPlayers = new ScalableHashMap<String, ManagedReference<ServerPlayer>>();
         serverPlayers = dm.createReference(tempPlayers);
+        
+        itemList = new ArrayList<BigInteger>();
     }
 
-    /**
-     * Adds an item to this room.
-     * 
-     * @param item the item to add to this room.
-     * @return {@code true} if the item was added to the room
-     */
-    public boolean addItem(WorldObject item) {
-        logger.log(Level.INFO, "{0} placed in {1}",
-            new Object[] { item, this });
-
-        // NOTE: we can't directly save the item in the list, or
-        // we'll end up with a local copy of the item. Instead, we
-        // must save a ManagedReference to the item.
-
-        DataManager dataManager = AppContext.getDataManager();
-        dataManager.markForUpdate(this);
-
-        return items.add(dataManager.createReference(item));
-    }
+//    /**
+//     * Adds an item to this room.
+//     * 
+//     * @param item the item to add to this room.
+//     * @return {@code true} if the item was added to the room
+//     */
+//    public boolean addItem(WorldObject item) {
+//        logger.log(Level.INFO, "{0} placed in {1}",
+//            new Object[] { item, this });
+//
+//        // NOTE: we can't directly save the item in the list, or
+//        // we'll end up with a local copy of the item. Instead, we
+//        // must save a ManagedReference to the item.
+//
+//        DataManager dataManager = AppContext.getDataManager();
+//        dataManager.markForUpdate(this);
+//
+//        return items.add(dataManager.createReference(item));
+//    }
     
     
     /**
@@ -883,5 +890,28 @@ public class WorldRoom extends WorldObject
 			}
 		}
 		
+	}
+
+	public ArrayList<BigInteger> getItemList() {
+		return itemList;
+	}
+	
+	public void addItem(BigInteger itemID) {
+		if (!itemList.contains(itemID))
+		this.itemList.add(itemID);
+	}
+	
+	public void removeItem(BigInteger itemID) {
+		this.itemList.remove(itemID);
+		for (BigInteger playerIds : players.keySet()) {
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+				logger.log(Level.INFO, "deleting message for item {0} send to player {1}",
+	    	            new Object[] { itemID, playerIds});
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.ITEM, itemID));
+			} else {
+				// player does not exist
+			}
+		}
 	}
 }

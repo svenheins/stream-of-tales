@@ -13,7 +13,8 @@ public class GameStates {
 	public static String svgPath = "/resources/svg/";
 	public static String externalImagesPath = "./ressources/images/";
 	public static String standardTilePathPlayers = "tilesets/entities/";
-	public static String standardTileNamePlayer = standardTilePathPlayers+"playerTile.png";
+	public static String standardTilePathItems = "tilesets/items/";
+	public static String standardTileNamePlayer = standardTilePathPlayers+"player_normal_richguy.png";
 	public static String standardTilePathMaps = "tilesets/maps/";
 	public static String tileSetFile = standardTilePathMaps + "tileSet2.png";
 	public static String tileSetFileUnderground = standardTilePathMaps + "tileSetUnderground_128.png";
@@ -39,12 +40,20 @@ public class GameStates {
 	public static int playerTileWidth = 32;
 	public static int playerTileHeight = 64;
 	
+	/** values for item entities */
+	public static int itemTileWidth = 16;
+	public static int itemTileHeight = 16;
+	
 	/** movement properties */
 	public static int DEFAULT_MOVEMENT_ON_X = 100;
 	public static int DEFAULT_MOVEMENT_ON_Y = 100;
 	
+	/** take distance */
+	public static int takeDistance = 16;
+	
 	/** animation stuff */
 	public static int animationDelay = 200;
+	public static int animationDelayItems = 200;
 	public static int ani_standard_start = 0;
 	public static int ani_standard_end = 3;
 	public static int ani_l_start = 28;
@@ -63,6 +72,44 @@ public class GameStates {
 	public static int ani_u_end = 7;
 	public static int ani_d_start = 20;
 	public static int ani_d_end = 23;
+	
+	/** new animation setup */
+	public static int ani_standing_l_start = 44;
+	public static int ani_standing_l_end = 47;
+	public static int ani_standing_r_start = 40;
+	public static int ani_standing_r_end = 43;
+	public static int ani_standing_u_start = 36;
+	public static int ani_standing_u_end = 39;
+	public static int ani_standing_d_start = 0;
+	public static int ani_standing_d_end = 3;
+	public static int ani_walking_l_start = 28;
+	public static int ani_walking_l_end = 31;
+	public static int ani_walking_r_start = 12;
+	public static int ani_walking_r_end = 14;
+	public static int ani_walking_u_start = 32;
+	public static int ani_walking_u_end = 35;
+	public static int ani_walking_d_start = 15;
+	public static int ani_walking_d_end = 18;
+	
+	/** sleeping **/
+	public static int ani_sleeping_l_start = 16;
+	public static int ani_sleeping_l_end = 19;
+	public static int ani_sleeping_r_start = 20;
+	public static int ani_sleeping_r_end = 23;
+	public static int ani_sleeping_u_start = 24;
+	public static int ani_sleeping_u_end = 27;
+	public static int ani_sleeping_d_start = 28;
+	public static int ani_sleeping_d_end = 31;
+	/** attacking **/
+	public static int ani_attacking_l_start = 16;
+	public static int ani_attacking_l_end = 19;
+	public static int ani_attacking_r_start = 20;
+	public static int ani_attacking_r_end = 23;
+	public static int ani_attacking_u_start = 24;
+	public static int ani_attacking_u_end = 27;
+	public static int ani_attacking_d_start = 28;
+	public static int ani_attacking_d_end = 31;
+	
 	
 	/** button animation */
 	public static int button_inactive_start = 0;

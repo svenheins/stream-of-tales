@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
@@ -25,10 +26,6 @@ public class PlayerManager{
 			return false;
 		}
 	}
-	
-//	public static void remove(Entity entity) {
-//		playerList.remove(entity);
-//	}
 	
 	public static boolean add(PlayerEntity entity){
 		if (playerList.containsKey(entity.getId()) ) {
@@ -76,10 +73,6 @@ public class PlayerManager{
 				PlayerManager.playerList.put(objectId, entity);
 			}
 		} 
-//		else
-//		{
-//			PlayerManager.add(new Entity("ship.png", objectId, objectX, objectY, objectMX, objectMY));
-//		}
 	}
 	
 	public static boolean overwrite(PlayerEntity entity){
@@ -104,15 +97,11 @@ public class PlayerManager{
 				TileSet tileSet = TileSetManager.manager.getTileSet(tilePathName);
 		    	
 		    	PlayerEntity playerEntity = new PlayerEntity(tileSet, playerName, objectId, 0, 0, GameStates.animationDelay);
-//		    	playerEntity.setTileSetName(tileName_add);
-//		    	playerEntity.setTileSetPathName(tilePathName);
 		    	playerEntity.setWidth(width);
 		    	playerEntity.setHeight(height);
 		    	playerEntity.setCountry(country);
 		    	playerEntity.setGroupName(groupName);
-		    	playerEntity.setExperience(experience);
-//		    	PlayerManager.overwrite(playerEntity_overwrite);
-				
+		    	playerEntity.setExperience(experience);				
 		    	System.out.println("updated player");
 				
 				PlayerManager.playerList.put(objectId, playerEntity);
@@ -121,10 +110,28 @@ public class PlayerManager{
 		else {
 			System.out.println("didnt find it!");
 		}
-//		else
-//		{
-//			PlayerManager.add(new Entity("ship.png", objectId, objectX, objectY, objectMX, objectMY));
-//		}
+	}
+	
+	/** update the Entity with the ID objectId */
+	public static void updatePlayerState(BigInteger objectId, EntityStates orientation, EntityStates singleState, EntityStates continuousState) {
+		if (PlayerManager.playerList.containsKey(objectId)) {
+			PlayerEntity entity = PlayerManager.playerList.get(objectId);
+			entity.setLastSeen(System.currentTimeMillis());
+			if (entity != null) {
+				/** update states of entity */
+				entity.setOrientation(orientation);
+				entity.setSingleState(singleState);
+				entity.setContinuousState(continuousState);
+				entity.setChangedStates(true);
+				/** determine animation for the new states */ 
+				determineAnimation(entity);
+				/** replace the entity */
+				playerList.put(objectId, entity);
+			}
+		} 
+		else {
+//			System.out.println("didnt find it!");
+		}
 	}
 	
 	public static int size(){
@@ -153,5 +160,93 @@ public class PlayerManager{
 		playerList = new HashMap<BigInteger, PlayerEntity>();
 //		sortedEntityList = new ArrayList<Entity>();
 		idList = new ArrayList<BigInteger>();
+	}
+	
+	/** determine animation 
+	 * priority has the singleState, which is responsible for the short singleAnimation
+	 * after this one ends, the standard continuous animation is triggered
+	 * */
+	public static void determineAnimation(PlayerEntity entity) {
+		if (entity.getSingleState() != EntityStates.EMPTY) {
+			switch(entity.getSingleState()) {
+			case ATTACKING:
+				switch(entity.getOrientation()) {
+				case LEFT:
+					entity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_l", entity.getTileSet(), GameStates.ani_attacking_l_start, GameStates.ani_attacking_l_end, entity.getAnimation().getTimeBetweenAnimation()));
+					entity.getSingleAnimation().start();
+					break;
+				case RIGHT:
+					entity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_r", entity.getTileSet(), GameStates.ani_attacking_r_start, GameStates.ani_attacking_r_end, entity.getAnimation().getTimeBetweenAnimation()));
+					entity.getSingleAnimation().start();
+					break;
+				case UP:
+					entity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_u", entity.getTileSet(), GameStates.ani_attacking_u_start, GameStates.ani_attacking_u_end, entity.getAnimation().getTimeBetweenAnimation()));
+					entity.getSingleAnimation().start();
+					break;
+				case DOWN:
+					entity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_d", entity.getTileSet(), GameStates.ani_attacking_d_start, GameStates.ani_attacking_d_end, entity.getAnimation().getTimeBetweenAnimation()));
+					entity.getSingleAnimation().start();
+					break;
+				default: ;
+				}
+				break;
+			}
+		} else {
+			switch(entity.getContinuousState()) {
+			case STANDING:
+				switch(entity.getOrientation()) {
+				case LEFT:
+					entity.setAnimation(AnimationManager.manager.getAnimation("standing_l", entity.getTileSet(), GameStates.ani_standing_l_start, GameStates.ani_standing_l_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case RIGHT:
+					entity.setAnimation(AnimationManager.manager.getAnimation("standing_r", entity.getTileSet(), GameStates.ani_standing_r_start, GameStates.ani_standing_r_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case UP:
+					entity.setAnimation(AnimationManager.manager.getAnimation("standing_u", entity.getTileSet(), GameStates.ani_standing_u_start, GameStates.ani_standing_u_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case DOWN:
+					entity.setAnimation(AnimationManager.manager.getAnimation("standing_d", entity.getTileSet(), GameStates.ani_standing_d_start, GameStates.ani_standing_d_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				default: ;
+				}
+				break;
+			case WALKING:
+				switch(entity.getOrientation()) {
+				case LEFT:
+					entity.setAnimation(AnimationManager.manager.getAnimation("walking_l", entity.getTileSet(), GameStates.ani_walking_l_start, GameStates.ani_walking_l_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case RIGHT:
+					entity.setAnimation(AnimationManager.manager.getAnimation("walking_r", entity.getTileSet(), GameStates.ani_walking_r_start, GameStates.ani_walking_r_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case UP:
+					entity.setAnimation(AnimationManager.manager.getAnimation("walking_u", entity.getTileSet(), GameStates.ani_walking_u_start, GameStates.ani_walking_u_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case DOWN:
+					entity.setAnimation(AnimationManager.manager.getAnimation("walking_d", entity.getTileSet(), GameStates.ani_walking_d_start, GameStates.ani_walking_d_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				default: ;
+				}
+				break;
+			case SLEEPING:
+				switch(entity.getOrientation()) {
+				case LEFT:
+					entity.setAnimation(AnimationManager.manager.getAnimation("sleeping_l", entity.getTileSet(), GameStates.ani_sleeping_l_start, GameStates.ani_sleeping_l_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case RIGHT:
+					entity.setAnimation(AnimationManager.manager.getAnimation("sleeping_r", entity.getTileSet(), GameStates.ani_sleeping_r_start, GameStates.ani_sleeping_r_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case UP:
+					entity.setAnimation(AnimationManager.manager.getAnimation("sleeping_u", entity.getTileSet(), GameStates.ani_sleeping_u_start, GameStates.ani_sleeping_u_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				case DOWN:
+					entity.setAnimation(AnimationManager.manager.getAnimation("sleeping_d", entity.getTileSet(), GameStates.ani_sleeping_d_start, GameStates.ani_sleeping_d_end, entity.getAnimation().getTimeBetweenAnimation()));
+					break;
+				default: ;
+				}
+				break;
+			default: ;
+					
+			}
+		}
 	}
 }

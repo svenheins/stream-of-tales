@@ -3,6 +3,7 @@ package de.svenheins.managers;
 import java.awt.Point;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -1092,18 +1093,23 @@ public class ObjectMapManager {
 			FileInputStream datei=new FileInputStream(fileName);
 			BufferedInputStream buf=new BufferedInputStream(datei);
 			ObjectInputStream readStream = new ObjectInputStream(buf);
-			int[][] localMap = (int[][]) readStream.readObject();
-			int[][] ulArray = (int[][]) readStream.readObject();
-			int[][] urArray = (int[][]) readStream.readObject();
-			int[][] dlArray = (int[][]) readStream.readObject();
-			int[][] drArray = (int[][]) readStream.readObject();
-			Point origin = (Point) readStream.readObject();
-//			String tileSetFileName = (String) readStream.readObject();
-			String paintLayer = (String) readStream.readObject();
-			readStream.close();
-			
-//			System.out.println(origin.x +" "+origin.y);
-			return new LocalMap(localMap, ulArray, urArray, dlArray, drArray,origin, paintLayer);
+			try {
+				int[][] localMap = (int[][]) readStream.readObject();
+				int[][] ulArray = (int[][]) readStream.readObject();
+				int[][] urArray = (int[][]) readStream.readObject();
+				int[][] dlArray = (int[][]) readStream.readObject();
+				int[][] drArray = (int[][]) readStream.readObject();
+				Point origin = (Point) readStream.readObject();
+//				String tileSetFileName = (String) readStream.readObject();
+				String paintLayer = (String) readStream.readObject();
+				readStream.close();
+				
+//				System.out.println(origin.x +" "+origin.y);
+				return new LocalMap(localMap, ulArray, urArray, dlArray, drArray,origin, paintLayer);
+			} catch (EOFException e) {
+				e.printStackTrace();
+				return null;
+			}	
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -1111,7 +1117,8 @@ public class ObjectMapManager {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 			return null;
-		}	
+		} 	
+		
 			
 	}
 	

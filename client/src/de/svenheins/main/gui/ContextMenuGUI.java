@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import de.svenheins.main.EntityStates;
+import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.objects.PlayerEntity;
@@ -47,7 +49,7 @@ public class ContextMenuGUI {
 			int guiHeight = GameStates.contextMenuButtonDistY;
 			if (localObject instanceof PlayerEntity) {
 				/** add one button */
-				System.out.println(((PlayerEntity) localObject).getName());
+//				System.out.println(((PlayerEntity) localObject).getName());
 				Button gmButton = standardButton(BigInteger.valueOf(0), localObject.getName(), 0, GameStates.contextMenuButtonDistX, guiHeight, "Gamemaster");
 				if (this.add(gmButton)) ; else System.out.println("couldn't add");
 				guiHeight += gmButton.getHeight() + GameStates.contextMenuButtonDistY;
@@ -55,6 +57,12 @@ public class ContextMenuGUI {
 //				Button secondButton = standardButton(BigInteger.valueOf(1), "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "Button2");
 //				if (this.add(secondButton)) ; else System.out.println("couldn't add");
 //				guiHeight += secondButton.getHeight() + GameStates.contextMenuButtonDistY;
+				
+				/** if its me */
+				/** add next button */
+				Button animationButton = standardButton(BigInteger.valueOf(20), "abc", 0, GameStates.contextMenuButtonDistX, guiHeight, "go to bed");
+				if (this.add(animationButton)) ; else System.out.println("couldn't add");
+				guiHeight += animationButton.getHeight() + GameStates.contextMenuButtonDistY;
 			}
 			this.setLocalObject(localObject);
 			contextMenuSpacePolygon.add((new Polygon(new int[]{0 , 0 , GameStates.contextMenuButtonWidth + GameStates.contextMenuButtonDistX *2, GameStates.contextMenuButtonWidth+ GameStates.contextMenuButtonDistX *2}, new int[]{0 ,  guiHeight, guiHeight, 0}, 4) ));
@@ -137,6 +145,14 @@ public class ContextMenuGUI {
 		/** click the gameMaster-button */
 		if (get(id).getText().equals("Gamemaster")){
 			GameWindow.gw.setGameMaster(get(id).getStrValue());
+//			System.out.println(get(id).getStrValue());
+		}
+		
+		/** click animation  */
+		if (get(id).getText().equals("go to bed")){
+			GameWindow.gw.gameInfoConsole.appendInfo("go to bed");
+			GamePanel.gp.getPlayerEntity().setContinuousState(EntityStates.SLEEPING);
+			GamePanel.gp.getPlayerEntity().setChangedStates(true);
 //			System.out.println(get(id).getStrValue());
 		}
 	}

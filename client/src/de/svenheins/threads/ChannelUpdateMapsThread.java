@@ -60,6 +60,7 @@ public class ChannelUpdateMapsThread implements Runnable {
 		
 	}
 	
+	/** send a single map-file to all channels, that i'm a member of */
 	public void channelSendUpdateMapsRun(String mapFileName) {
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 			byte[] sendMapFileByte = getMapFromFileName(mapFileName);

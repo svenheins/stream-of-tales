@@ -3,14 +3,17 @@ import java.io.IOException;
 
 import com.sun.sgs.client.ClientChannel;
 
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.OBJECTCODE;
+import de.svenheins.animation.Animation;
 import de.svenheins.handlers.InputHandler;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.Player;
@@ -61,43 +64,50 @@ public class InputThread implements Runnable{
 				playerEntity = GamePanel.gp.getPlayerEntity();
 				playerEntity.setMovement(0, 0);
 //				GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
-//				p.setLastAttack(p.getLastAttack()+duration);
+				p.setLastAttack(p.getLastAttack()+duration);
 //				s.setHorizontalMovement(0);
 //				s.setVerticalMovement(0);
 //				if ( PlayerManager.contains(s)){
 					if (input.down && !input.up){
 						playerEntity.setMY(GameStates.DEFAULT_MOVEMENT_ON_Y);
+						determineWalkingAnimation(playerEntity);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()+20);
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //						System.out.println("down");
 					}
 					if (input.up && !input.down){
 						playerEntity.setMY(-GameStates.DEFAULT_MOVEMENT_ON_Y);
+						determineWalkingAnimation(playerEntity);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX(), GamePanel.gp.getViewPointY()-20);
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 //						System.out.println("up with "+GameStates.DEFAULT_MOVEMENT_ON_Y);
 					}
 					if (input.left && !input.right){
 						playerEntity.setMX(-GameStates.DEFAULT_MOVEMENT_ON_X);
+						determineWalkingAnimation(playerEntity);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()-20, GamePanel.gp.getViewPointY());
 //						GamePanel.gp.setViewPoint((int)playerEntity.getX()-(GameStates.getWidth()/2), (int) playerEntity.getY()-(GameStates.getHeight()/2));
 					}
 					if (input.right && !input.left){
 						playerEntity.setMX(GameStates.DEFAULT_MOVEMENT_ON_X);
+						determineWalkingAnimation(playerEntity);
 //						System.out.println("right with " +-GameStates.DEFAULT_MOVEMENT_ON_X);
 //						GamePanel.gp.setViewPoint(GamePanel.gp.getViewPointX()+20, GamePanel.gp.getViewPointY());
 						
 					}
+					if ( playerEntity.getMX() == 0 && playerEntity.getMY()== 0) {
+						if (playerEntity.getContinuousState() == EntityStates.WALKING) {
+							playerEntity.setContinuousState(EntityStates.STANDING);
+							playerEntity.setChangedStates(true);
+						}
+					}
 					if (input.attack && p.getLastAttack() > p.getTimebetweenAttacks() && !GamePanel.gp.isPaused()){
-//						ShotEntity shot = new ShotEntity("shot3.png", s.getX()+s.getSprite().getWidth()/2-12, s.getY()-20);
-//						shot.setHorizontalMovement(0);
-//						shot.setVerticalMovement(-150);
-//						PlayerManager.add(shot);
-//						// Add Animation sequence
-//						String[] shotAni = {"ship_shoot1.png","ship_shoot2.png","ship_shoot2.png","ship_shoot1.png"};
-//						s.runAnimationOnce(shotAni, 50, System.currentTimeMillis());
-//						
-//						p.setLastAttack(0);
+						/** activate singleState, the waitingForSingleAnimation is changed in the channelUpdateThread */
+						playerEntity.setSingleState(EntityStates.ATTACKING);
+						playerEntity.setChangedStates(true);
+						playerEntity.setWaitingForSingleAnimation(false);
+						determineAttackingAnimation(playerEntity);
+						p.setLastAttack(0);
 					}
 					if (input.pause ){
 						GamePanel.gp.setPause(!GamePanel.gp.isPaused());
@@ -139,4 +149,33 @@ public class InputThread implements Runnable{
 		
 	}
 
+	public void determineWalkingAnimation(Entity entity) {
+			if (entity.getContinuousState() != EntityStates.WALKING) {
+				entity.setContinuousState(EntityStates.WALKING);
+				entity.setChangedStates(true);
+			}
+	}
+	
+	public void determineAttackingAnimation(Entity entity) {
+		switch(entity.getOrientation()) {
+		case LEFT:
+			playerEntity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_l", playerEntity.getTileSet(), GameStates.ani_attacking_l_start, GameStates.ani_attacking_l_end, playerEntity.getAnimation().getTimeBetweenAnimation()));
+			playerEntity.getSingleAnimation().start();
+			break;
+		case RIGHT:
+			playerEntity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_r", playerEntity.getTileSet(), GameStates.ani_attacking_r_start, GameStates.ani_attacking_r_end, playerEntity.getAnimation().getTimeBetweenAnimation()));
+			playerEntity.getSingleAnimation().start();
+			break;
+		case UP:
+			playerEntity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_u", playerEntity.getTileSet(), GameStates.ani_attacking_u_start, GameStates.ani_attacking_u_end, playerEntity.getAnimation().getTimeBetweenAnimation()));
+			playerEntity.getSingleAnimation().start();
+			break;
+		case DOWN:
+			playerEntity.setSingleAnimation(AnimationManager.manager.getAnimation("attacking_d", playerEntity.getTileSet(), GameStates.ani_attacking_d_start, GameStates.ani_attacking_d_end, playerEntity.getAnimation().getTimeBetweenAnimation()));
+			playerEntity.getSingleAnimation().start();
+			break;
+			
+		default: ;
+		}
+	}
 }

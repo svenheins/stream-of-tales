@@ -8,7 +8,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import de.svenheins.animation.SpaceAnimation;
+import de.svenheins.main.EntityStates;
+import de.svenheins.main.GameStates;
+import de.svenheins.managers.WorldItemManager;
+import de.svenheins.objects.Entity;
 import de.svenheins.objects.Space;
+import de.svenheins.objects.TileSet;
+import de.svenheins.objects.items.WorldItem;
+import de.svenheins.objects.items.materials.Wood;
 
 
 /** Message from the client TO the server */
@@ -73,6 +80,70 @@ public class ClientMessages extends Messages{
         buffer.put((byte) OPCODE.OBJECTSTATE.ordinal());
         buffer.putInt(objCode.ordinal());
         buffer.putInt(id);
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer takeItem(BigInteger id) {
+        byte[] bytes = new byte[1 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.TAKEITEM.ordinal());
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer tookItem(BigInteger id) {
+        byte[] bytes = new byte[1 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.TOOKITEM.ordinal());
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer addItem(BigInteger id) {
+        byte[] bytes = new byte[1 + 8];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.ADDITEM.ordinal());
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** 
+     * 
+     * @param id
+     * @return 
+     */
+    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, int x, int y, int count, float[] states) {
+        byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.ADDCOMPLETEITEM.ordinal()); // 1
+        
+        buffer.put((byte) itemCode.ordinal()); // 1
+        buffer.putLong(id.longValue()); // 8 Bytes
+        buffer.putInt(name.length()); // 4
+    	buffer.put(name.getBytes()); // playerName.length() 
+    	buffer.putInt(x); // 4
+    	buffer.putInt(y); // 4
+        buffer.putInt(count); // 4
+        
         buffer.flip();
         return buffer;
     }
@@ -215,6 +286,21 @@ public class ClientMessages extends Messages{
     	buffer.put(groupName.getBytes()); // groupName.length() 
     	buffer.putInt(experience); // 4
         
+        buffer.flip();
+        return buffer;
+    }
+    
+    /** edit player-addons */
+    public static ByteBuffer editPlayerStates(BigInteger id, EntityStates orientation, EntityStates singleState, EntityStates continuousState) {
+        byte[] bytes = new byte[1 + 8 + 1 + 1 + 1];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.EDIT_PLAYER_STATES.ordinal());
+        /** ID */
+        buffer.putLong(id.longValue()); // 8 Bytes
+        /** put the states here */
+        buffer.put((byte) orientation.ordinal());
+        buffer.put((byte) singleState.ordinal());
+        buffer.put((byte) continuousState.ordinal());
         buffer.flip();
         return buffer;
     }

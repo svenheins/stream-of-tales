@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.sun.sgs.client.ClientChannel;
 
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
@@ -60,12 +61,26 @@ public class ChannelUpdateThread implements Runnable {
 	public void channelUpdateRun() {
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 			playerEntity = GamePanel.gp.getPlayerEntity();
-			if (playerEntity.getMX() != 0 || playerOldMX != 0 || playerEntity.getMY() != 0 || playerOldMY != 0) {
+			if (playerEntity.getMX() != 0 || playerOldMX != 0 || playerEntity.getMY() != 0 || playerOldMY != 0 || playerEntity.hasChangedStates()) {
 				for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 					ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 					try {
 						channel.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY()}));
-	//					System.out.println("ID send: "+playerEntity.getId());
+						/** now send the updated animation if necessary */
+						if (GamePanel.gp.getPlayerEntity().hasChangedStates()) {
+							/** if we don't have to wait for a singleAnimation, send the new animation */
+							if (!playerEntity.isWaitingForSingleAnimation()) {
+								GamePanel.gp.getPlayerEntity().startAnimation();
+								/** here we got another singleAnimation, that is going to interrupt the actual singleAnimation */
+								if  (playerEntity.getSingleState() != EntityStates.EMPTY) {
+									playerEntity.setWaitingForSingleAnimation(true);
+								}
+								/** send legal animation change to the channel */
+								channel.send(ClientMessages.editPlayerStates(playerEntity.getId(), playerEntity.getOrientation(), playerEntity.getSingleState(), playerEntity.getContinuousState()));
+								GamePanel.gp.getPlayerEntity().setChangedStates(false);
+							}
+						}
+//						System.out.println("ID send: "+playerEntity.getId());
 					} catch (IOException e) {
 						e.printStackTrace();
 					}	
@@ -80,43 +95,40 @@ public class ChannelUpdateThread implements Runnable {
 	public void channelUpdateRunStandingStill() {
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 			playerEntity = GamePanel.gp.getPlayerEntity();
-//			if (playerEntity.getMX() != 0 || playerOldMX != 0 || playerEntity.getMY() != 0 || playerOldMY != 0) {
-				for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
-					ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
-					try {
-						channel.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY()}));
-	//					System.out.println("ID send: "+playerEntity.getId());
-					} catch (IOException e) {
-						e.printStackTrace();
-					}	
-				}
-				
-				/** check if inside space */
-				List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
-				boolean playerInsideSpace;
-				for (BigInteger i : idListTempSpaces) {
-					Space space= SpaceManager.get(i);
-					if(space != null) {
-						playerInsideSpace = false;
-						PlayerEntity playerEnt = GamePanel.gp.getPlayerEntity();
-						for (int j = 0; j < space.getPolygon().size(); j++) {
-							if (space.getPolygon().get(j).contains(playerEnt.getX()+ playerEnt.getWidth()/2, playerEnt.getY()+playerEnt.getHeight()/2) )
-									playerInsideSpace = true;
+			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+				ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+				try {
+					channel.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY()}));
+//					System.out.println("ID send: "+playerEntity.getId());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}	
+			}
+			
+			/** check if inside space */
+			List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
+			boolean playerInsideSpace;
+			for (BigInteger i : idListTempSpaces) {
+				Space space= SpaceManager.get(i);
+				if(space != null) {
+					playerInsideSpace = false;
+					PlayerEntity playerEnt = GamePanel.gp.getPlayerEntity();
+					for (int j = 0; j < space.getPolygon().size(); j++) {
+						if (space.getPolygon().get(j).contains(playerEnt.getX()+ playerEnt.getWidth()/2, playerEnt.getY()+playerEnt.getHeight()/2) )
+								playerInsideSpace = true;
+					}
+					if(playerInsideSpace) {
+						if (!GameWindow.gw.getSpaceChannels().containsKey(space.getId())) {
+							GameWindow.gw.send(ClientMessages.leaveSpaceChannel(space.getId()));
+							GameWindow.gw.send(ClientMessages.joinSpaceChannel(space.getId()));
 						}
-						if(playerInsideSpace) {
-							if (!GameWindow.gw.getSpaceChannels().containsKey(space.getId())) {
-								GameWindow.gw.send(ClientMessages.leaveSpaceChannel(space.getId()));
-								GameWindow.gw.send(ClientMessages.joinSpaceChannel(space.getId()));
-							}
-						} else {
-							if (GameWindow.gw.getSpaceChannels().containsKey(space.getId())) {
-								GameWindow.gw.send(ClientMessages.leaveSpaceChannel(space.getId()));
-							}
+					} else {
+						if (GameWindow.gw.getSpaceChannels().containsKey(space.getId())) {
+							GameWindow.gw.send(ClientMessages.leaveSpaceChannel(space.getId()));
 						}
-//						}
 					}
 				}
-//			}
+			}
 			playerOldMX = playerEntity.getMX();
 			playerOldMY = playerEntity.getMY();
 			GameWindow.gw.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY()}));

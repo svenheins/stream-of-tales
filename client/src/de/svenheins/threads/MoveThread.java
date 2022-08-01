@@ -9,6 +9,8 @@ import java.util.Random;
 
 import javax.swing.JComponent;
 
+import de.svenheins.functions.MyMath;
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
@@ -18,6 +20,7 @@ import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.WorldItemManager;
 import de.svenheins.messages.ClientMessages;
 
 import de.svenheins.objects.Entity;
@@ -55,21 +58,13 @@ public class MoveThread implements Runnable {
 			millis += duration;
 			frames +=1;
 			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.GAME) {
-
-				/** determine Animation */
-				this.determineAnimation(GamePanel.gp.getPlayerEntity());	
 				/** check collision here */
-//				System.out.println("movement: " + GamePanel.gp.getPlayerEntity().getMX()+" "+GamePanel.gp.getPlayerEntity().getMY());
 				if ((GamePanel.gp.getPlayerEntity().getMX() != 0 || GamePanel.gp.getPlayerEntity().getMY() != 0) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
 					/** playerPosition */
 					float movementX = duration * GamePanel.gp.getPlayerEntity().getMX()/1000;
 					float movementY = duration * GamePanel.gp.getPlayerEntity().getMY()/1000;
-//					System.out.println(movementX);
-//					System.out.println(movementY);
 					int newX = (int) (GamePanel.gp.getPlayerEntity().getX() + (movementX));
 					int newY = (int) (GamePanel.gp.getPlayerEntity().getY() + (movementY));
-//					float newMX = GamePanel.gp.getPlayerEntity().getMX();
-//					float newMY = GamePanel.gp.getPlayerEntity().getMY();
 					
 					Point entityPointX = new Point( newX, (int) GamePanel.gp.getPlayerEntity().getY() );
 					Point entityPointY = new Point( (int) GamePanel.gp.getPlayerEntity().getX(), newY );
@@ -98,36 +93,16 @@ public class MoveThread implements Runnable {
 					int urLocalXX = (int) Math.floor( (float) (urPointX.x - urLatticePointXX )/ GameStates.mapTileSetWidth);
 					int urLocalYX = (int) Math.floor( (float) ( urPointX.y - urLatticePointYX )/ GameStates.mapTileSetHeight);
 					
-//					int dlLatticePointXX = (int) Math.floor( (float) (dlPointX.x) / (localWidth)) * localWidth;
-//					int dlLatticePointYX = (int) Math.floor( (float) (dlPointX.y) / (localHeight)) * localHeight;
-//					int dlLocalXX = (int) Math.floor( (float) (dlPointX.x - dlLatticePointXX )/ GameStates.mapTileSetWidth);
-//					int dlLocalYX = (int) Math.floor( (float) ( dlPointX.y - dlLatticePointYX )/ GameStates.mapTileSetHeight);
-					
-//					int drLatticePointXX = (int) Math.floor( (float) (drPointX.x) / (localWidth)) * localWidth;
-//					int drLatticePointYX = (int) Math.floor( (float) (drPointX.y) / (localHeight)) * localHeight;
-//					int drLocalXX = (int) Math.floor( (float) (drPointX.x - drLatticePointXX )/ GameStates.mapTileSetWidth);
-//					int drLocalYX = (int) Math.floor( (float) ( drPointX.y - drLatticePointYX )/ GameStates.mapTileSetHeight);
-					
 					/** the same for the Y point */
 					int ulLatticePointXY = (int) Math.floor( (float) (ulPointY.x) / (localWidth)) * localWidth;
 					int ulLatticePointYY = (int) Math.floor( (float) (ulPointY.y) / (localHeight)) * localHeight;
 					int ulLocalXY = (int) Math.floor( (float) (ulPointY.x - ulLatticePointXY )/ GameStates.mapTileSetWidth);
 					int ulLocalYY = (int) Math.floor( (float) ( ulPointY.y - ulLatticePointYY )/ GameStates.mapTileSetHeight);
 					
-//					int urLatticePointXY = (int) Math.floor( (float) (urPointY.x) / (localWidth)) * localWidth;
-//					int urLatticePointYY = (int) Math.floor( (float) (urPointY.y) / (localHeight)) * localHeight;
-//					int urLocalXY = (int) Math.floor( (float) (urPointY.x - urLatticePointXY )/ GameStates.mapTileSetWidth);
-//					int urLocalYY = (int) Math.floor( (float) ( urPointY.y - urLatticePointYY )/ GameStates.mapTileSetHeight);
-					
 					int dlLatticePointXY = (int) Math.floor( (float) (dlPointY.x) / (localWidth)) * localWidth;
 					int dlLatticePointYY = (int) Math.floor( (float) (dlPointY.y) / (localHeight)) * localHeight;
 					int dlLocalXY = (int) Math.floor( (float) (dlPointY.x - dlLatticePointXY )/ GameStates.mapTileSetWidth);
 					int dlLocalYY = (int) Math.floor( (float) ( dlPointY.y - dlLatticePointYY )/ GameStates.mapTileSetHeight);
-					
-//					int drLatticePointXY = (int) Math.floor( (float) (drPointY.x) / (localWidth)) * localWidth;
-//					int drLatticePointYY = (int) Math.floor( (float) (drPointY.y) / (localHeight)) * localHeight;
-//					int drLocalXY = (int) Math.floor( (float) (drPointY.x - drLatticePointXY )/ GameStates.mapTileSetWidth);
-//					int drLocalYY = (int) Math.floor( (float) ( drPointY.y - drLatticePointYY )/ GameStates.mapTileSetHeight);
 					
 					/** direction determines the critical tiles (differ between x and y) */
 					/** X movement: right/ left tiles */
@@ -222,78 +197,25 @@ public class MoveThread implements Runnable {
 						/** movement Y = 0 */
 					}
 					/** calculate collisions separately for x and y movement */
-					/** set the movement to 0, if there is a collision */
-//					GamePanel.gp.getPlayerEntity().setMovement(newMX, newMY);
-					
-//					GamePanel.gp.getPlayerEntity().move(duration);
 					if (!xCollides) GamePanel.gp.getPlayerEntity().setX(GamePanel.gp.getPlayerEntity().getX()+movementX);
 					if (!yCollides) GamePanel.gp.getPlayerEntity().setY(GamePanel.gp.getPlayerEntity().getY()+movementY);
-					
-					
-//					/** check ul corner */
-//					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(ulLatticePointX, ulLatticePointY), ulLocalX, ulLocalY) ) ||
-//					(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(ulLatticePointX, ulLatticePointY), ulLocalX, ulLocalY) )) {
-//						int distX = Math.abs( ulPoint.x - (ulLatticePointX + (ulLocalX+1)*GameStates.tileSetWidth));
-//						int distY = Math.abs( ulPoint.y - (ulLatticePointY + (ulLocalY+1)*GameStates.tileSetHeight));
-//						if ( distX < distY ) {
-//							/** x is nearer than y, so move the entity right */
-////							GamePanel.gp.getPlayerEntity().setX(ulLatticePointX + (ulLocalX+1)*GameStates.tileSetWidth);
-//							newMY = 0;
-//						} else {
-//							/** x is farer than y, so move the entity down */
-////							GamePanel.gp.getPlayerEntity().setY(ulLatticePointY + (ulLocalY+1)*GameStates.tileSetHeight - entityHeight/2);
-//							newMX = 0;
-//						}
-//					}
-//					/** check ur corner */
-//					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(urLatticePointX, urLatticePointY), urLocalX, urLocalY) ) ||
-//					(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(urLatticePointX, urLatticePointY), urLocalX, urLocalY) )) {
-//						int distX = Math.abs( urPoint.x - (urLatticePointX + urLocalX*GameStates.tileSetWidth));
-//						int distY = Math.abs( urPoint.y - (urLatticePointY + (urLocalY+1)*GameStates.tileSetHeight));
-//						if ( distX < distY ) {
-//							/** x is nearer than y, so move the entity right */
-////							GamePanel.gp.getPlayerEntity().setX(urLatticePointX + (urLocalX)*GameStates.tileSetWidth - entityWidth);
-//							newMY = 0;
-//						} else {
-//							/** x is farer than y, so move the entity down */
-////							GamePanel.gp.getPlayerEntity().setY(urLatticePointY + (urLocalY+1)*GameStates.tileSetHeight - entityHeight/2);
-//							newMX = 0;
-//						}
-//					}
-//					/** check dl corner */
-//					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(dlLatticePointX, dlLatticePointY), dlLocalX, dlLocalY) ) ||
-//					(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(dlLatticePointX, dlLatticePointY), dlLocalX, dlLocalY) )) {
-//						int distX = Math.abs( dlPoint.x - (dlLatticePointX + (dlLocalX+1)*GameStates.tileSetWidth));
-//						int distY = Math.abs( dlPoint.y - (dlLatticePointY + dlLocalY*GameStates.tileSetHeight));
-//						if ( distX < distY ) {
-//							/** x is nearer than y, so move the entity right */
-////							GamePanel.gp.getPlayerEntity().setX(dlLatticePointX + (dlLocalX+1)*GameStates.tileSetWidth);
-//							newMY = 0;
-//						} else {
-//							/** x is farer than y, so move the entity up */
-////							GamePanel.gp.getPlayerEntity().setY(dlLatticePointY + (dlLocalY)*GameStates.tileSetHeight -entityHeight);
-//							newMX = 0;
-//						}
-//					}
-//					/** check dr corner */
-//					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(drLatticePointX, drLatticePointY), drLocalX, drLocalY) ) ||
-//					(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(drLatticePointX, drLatticePointY), drLocalX, drLocalY) )) {
-//						int distX = Math.abs( drPoint.x - (drLatticePointX + drLocalX*GameStates.tileSetWidth));
-//						int distY = Math.abs( drPoint.y - (drLatticePointY + drLocalY*GameStates.tileSetHeight));
-//						if ( distX < distY ) {
-//							/** x is nearer than y, so move the entity right */
-////							GamePanel.gp.getPlayerEntity().setX(drLatticePointX + (drLocalX)*GameStates.tileSetWidth - entityWidth);
-//							newMY = 0;
-//						} else {
-//							/** x is farer than y, so move the entity down */
-////							GamePanel.gp.getPlayerEntity().setY(drLatticePointY + (drLocalY)*GameStates.tileSetHeight - entityHeight);
-//							newMX = 0;
-//						}
-//					}
-						
-					
 				}
 				
+				
+				/** check if wants to take an item */
+				try {
+					for (BigInteger itemID : WorldItemManager.idList) {
+						if (itemID != null) {
+							if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.playerTileWidth/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.playerTileHeight/4, WorldItemManager.get(itemID).getItemEntity().getX()+GameStates.itemTileWidth/2, WorldItemManager.get(itemID).getItemEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
+								/** TODO: check if there is enough space inside the inventory */
+								GameWindow.gw.send(ClientMessages.takeItem(itemID));
+							}
+						}
+					} 
+				} catch(java.util.ConcurrentModificationException modError) {
+					// IGNORE CONCURRENT MODS
+//					System.out.println(modError);
+				}
 		
 				/** move spaces */
 				List<BigInteger> idListTempSpaces = new ArrayList<BigInteger>(SpaceManager.idList);
@@ -301,7 +223,6 @@ public class MoveThread implements Runnable {
 				for (BigInteger i : idListTempSpaces) {
 					Space space= SpaceManager.get(i);
 					if(space != null) {
-//						if(space.getHorizontalMovement() != 0 || space.getVerticalMovement()!=0) {
 						/** spaces move without limitations */	
 						space.move(duration);
 						
@@ -329,7 +250,7 @@ public class MoveThread implements Runnable {
 				for (BigInteger i: idListTempEntities) {
 					Entity e= EntityManager.get(i);
 					if (e != null) { 
-						this.determineAnimation(e);
+//						this.determineAnimation(e);
 						e.move(duration);
 					}
 					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
@@ -349,7 +270,7 @@ public class MoveThread implements Runnable {
 	//					if(e.getVerticalMovement()!=0) e.moveOnY(duration);
 							if (e != null) { 
 								e.setVisible(true);
-								this.determineAnimation(e);
+//								this.determineAnimation(e);
 								e.move(duration);
 							}
 						}
@@ -377,43 +298,59 @@ public class MoveThread implements Runnable {
 		}
 	}
 	
-	public void determineAnimation(Entity entity) {
-		if(entity.getMX() > 0) {
-			if(entity.getMY() > 0) {
-				// dr
-				entity.setAnimation(AnimationManager.manager.getAnimation("dr", entity.getTileSet(), GameStates.ani_dr_start, GameStates.ani_dr_end, entity.getAnimation().getTimeBetweenAnimation()));
-			} else if (entity.getMY() == 0)
-			{
-				// r
-				entity.setAnimation(AnimationManager.manager.getAnimation("r", entity.getTileSet(), GameStates.ani_r_start, GameStates.ani_r_end, entity.getAnimation().getTimeBetweenAnimation()));
-			} else {
-				// ur
-				entity.setAnimation(AnimationManager.manager.getAnimation("ur", entity.getTileSet(), GameStates.ani_ur_start, GameStates.ani_ur_end, entity.getAnimation().getTimeBetweenAnimation()));
-			}
-		} else if (entity.getMX() == 0){
-			if(entity.getMY() > 0) {
-				// d
-				entity.setAnimation(AnimationManager.manager.getAnimation("d", entity.getTileSet(), GameStates.ani_d_start, GameStates.ani_d_end, entity.getAnimation().getTimeBetweenAnimation()));
-			} else if (entity.getMY() == 0)
-			{
-				// standing still
-				entity.setAnimation(AnimationManager.manager.getAnimation("standard", entity.getTileSet(), GameStates.ani_standard_start, GameStates.ani_standard_end, entity.getAnimation().getTimeBetweenAnimation()));
-			} else {
-				// u
-				entity.setAnimation(AnimationManager.manager.getAnimation("u", entity.getTileSet(), GameStates.ani_u_start, GameStates.ani_u_end, entity.getAnimation().getTimeBetweenAnimation()));
-			}
-		} else {
-			if(entity.getMY() > 0) {
-				// dl
-				entity.setAnimation(AnimationManager.manager.getAnimation("dl", entity.getTileSet(), GameStates.ani_dl_start, GameStates.ani_dl_end, entity.getAnimation().getTimeBetweenAnimation()));
-			} else if (entity.getMY() == 0)
-			{
-				// l
-				entity.setAnimation(AnimationManager.manager.getAnimation("l", entity.getTileSet(), GameStates.ani_l_start, GameStates.ani_l_end, entity.getAnimation().getTimeBetweenAnimation()));
-			} else {
-				// ul
-				entity.setAnimation(AnimationManager.manager.getAnimation("ul", entity.getTileSet(), GameStates.ani_ul_start, GameStates.ani_ul_end, entity.getAnimation().getTimeBetweenAnimation()));
-			}
-		}
-	}
+//	public void determineAnimation(Entity entity) {
+//		if(entity.getMX() > 0) {
+//			if(entity.getMY() > 0) {
+//				// dr
+//				entity.setAnimation(AnimationManager.manager.getAnimation("dr", entity.getTileSet(), GameStates.ani_dr_start, GameStates.ani_dr_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			} else if (entity.getMY() == 0)
+//			{
+//				// r
+//				entity.setAnimation(AnimationManager.manager.getAnimation("r", entity.getTileSet(), GameStates.ani_r_start, GameStates.ani_r_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			} else {
+//				// ur
+//				entity.setAnimation(AnimationManager.manager.getAnimation("ur", entity.getTileSet(), GameStates.ani_ur_start, GameStates.ani_ur_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			}
+//		} else if (entity.getMX() == 0){
+//			if(entity.getMY() > 0) {
+//				// d
+//				entity.setAnimation(AnimationManager.manager.getAnimation("d", entity.getTileSet(), GameStates.ani_d_start, GameStates.ani_d_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			} else if (entity.getMY() == 0)
+//			{
+//				// standing still
+//				entity.setAnimation(AnimationManager.manager.getAnimation("standard", entity.getTileSet(), GameStates.ani_standard_start, GameStates.ani_standard_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			} else {
+//				// u
+//				entity.setAnimation(AnimationManager.manager.getAnimation("u", entity.getTileSet(), GameStates.ani_u_start, GameStates.ani_u_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			}
+//		} else {
+//			if(entity.getMY() > 0) {
+//				// dl
+//				entity.setAnimation(AnimationManager.manager.getAnimation("dl", entity.getTileSet(), GameStates.ani_dl_start, GameStates.ani_dl_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			} else if (entity.getMY() == 0)
+//			{
+//				// l
+//				entity.setAnimation(AnimationManager.manager.getAnimation("l", entity.getTileSet(), GameStates.ani_l_start, GameStates.ani_l_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			} else {
+//				// ul
+//				entity.setAnimation(AnimationManager.manager.getAnimation("ul", entity.getTileSet(), GameStates.ani_ul_start, GameStates.ani_ul_end, entity.getAnimation().getTimeBetweenAnimation()));
+//			}
+//		}
+//	}
+//	public void determineAnimation(Entity entity) {
+//		if ((entity.getMX() != 0) || (entity.getMY() != 0)) {
+//			if (entity.getState() != EntityStates.WALKING) {
+////				entity.startAnimation();
+//				entity.setState(EntityStates.WALKING);
+//				entity.setChangedStates(true);
+//			}
+//		} else {
+//			if (entity.getState() != EntityStates.STANDING) {
+////				entity.startAnimation();
+//				entity.setState(EntityStates.STANDING);
+//				entity.setChangedStates(true);
+//			}
+//			
+//		}
+//	}
 }

@@ -5,20 +5,28 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.io.IOException;
 import java.math.BigInteger;
 
 import javax.swing.SwingUtilities;
 
+import com.sun.sgs.client.ClientChannel;
 
+
+import de.svenheins.objects.Entity;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.Tile;
+import de.svenheins.objects.TileSet;
+import de.svenheins.objects.items.WorldItem;
+import de.svenheins.objects.items.materials.Wood;
 
 import de.svenheins.animation.SpaceDisappear;
 
 
 import de.svenheins.main.ConnectionWindow;
 import de.svenheins.main.EditWindow;
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
@@ -32,7 +40,9 @@ import de.svenheins.managers.ObjectMapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.UndergroundMapManager;
+import de.svenheins.managers.WorldItemManager;
 import de.svenheins.messages.ClientMessages;
+import de.svenheins.messages.ITEMCODE;
 import de.svenheins.messages.OBJECTCODE;
 
 public class MouseHandler implements MouseListener, MouseMotionListener{
@@ -394,6 +404,8 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			StatPanel.sp.contextMenu.mouseOver(point);
 		}
 		
+		determineAnimation(GamePanel.gp.getPlayerEntity(), correctedPoint);
+		
 		
 		
 	}
@@ -609,6 +621,30 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 								overlayMapManager.adjustSurrounding(overlayMapManager.get(p), localX, localY, GamePanel.gp.getPaintType()-GameStates.mapTileSetWidth*2);
 							} else {
 								//MapManager.get(p).setTile(localX, localY, null);
+								if (objectMapManager.get(p).getLocalMap()[localX][localY] != 0) {
+									// create drop 
+									BigInteger itemId = WorldItemManager.getMaxID().add(GamePanel.gp.getPlayerEntity().getId());
+//									System.out.println("added new wood object: "+itemId);
+//									Wood item = new Wood();
+//									TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", "WoodPileTileSet", GameStates.itemTileWidth, GameStates.itemTileHeight);
+//									Entity itemEntity = new Entity(woodTileSet, "wood", itemId, p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)), GameStates.animationDelayItems);
+//									WorldItem wood = new WorldItem(itemId, item, itemEntity);
+//									WorldItemManager.add(wood);
+									
+									/** send the complete Item to all players of the channel */
+									if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
+										/** first send to server for the itemList */
+										GameWindow.gw.send(ClientMessages.addItem(itemId));
+										for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
+											ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
+											try {
+												channel.send(ClientMessages.addCompleteItem(ITEMCODE.WOOD, itemId, "wood", p.x+localX*GameStates.mapTileSetWidth+(int) (Math.random()*(GameStates.mapTileSetWidth-GameStates.itemTileWidth)), p.y+localY*GameStates.mapTileSetHeight +(int) (Math.random()*(GameStates.mapTileSetHeight-GameStates.itemTileHeight)), 5, new float[1]));
+											} catch (IOException e) {
+												e.printStackTrace();
+											}	
+										}
+									}
+								}
 								objectMapManager.get(p).setUl(localX, localY, 0);
 								objectMapManager.get(p).setUr(localX, localY, 0);
 								objectMapManager.get(p).setDl(localX, localY, 0);
@@ -748,6 +784,48 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 				} else {
 					GameWindow.gw.gameInfoConsole.appendInfo("outside of paint area");
 				}
+			}
+		}
+	}
+	
+	public void determineAnimation(PlayerEntity entity, Point p) {
+		int distX = Math.abs((int) (entity.getX())-p.x);
+		int distY = Math.abs((int) (entity.getY())-p.y);
+		
+		/** define orientation by point of the mouse */
+		if (distX > distY) {
+			if (entity.getX() < p.x){
+				if (entity.getOrientation() != EntityStates.RIGHT)  {
+//					entity.startAnimation();
+					entity.setOrientation(EntityStates.RIGHT);
+					entity.setChangedStates(true);
+//					System.out.println("dist: "+(System.currentTimeMillis() -entity.getAnimation().getInstantOfAnimation()));
+					
+				}
+			} else {
+				if (entity.getOrientation() != EntityStates.LEFT) {
+//					entity.startAnimation();
+					entity.setOrientation(EntityStates.LEFT);
+					entity.setChangedStates(true);
+					
+				}
+			}
+		} else {
+			if (entity.getY() < p.y){
+				if (entity.getOrientation() != EntityStates.DOWN) {
+//					entity.startAnimation();
+					entity.setOrientation(EntityStates.DOWN);
+					entity.setChangedStates(true);
+					
+				}
+			} else  {
+				if (entity.getOrientation() != EntityStates.UP) {
+//					entity.startAnimation();
+					entity.setOrientation(EntityStates.UP);
+					entity.setChangedStates(true);
+					
+				}
+				
 			}
 		}
 	}

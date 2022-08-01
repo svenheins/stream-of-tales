@@ -26,7 +26,7 @@ public class WorldLatticePosition {
 		int latticePointX = (int) Math.floor( (float) (position.getX()) / (localWidth)) * localWidth;
 		int latticePointY = (int) Math.floor( (float) (position.getY()) / (localHeight)) * localHeight;
 		int localX = (int) Math.floor( (float) (position.getX() - latticePointX )/ GameStates.mapTileSetWidth);
-		int localY = (int) Math.floor( (float) ( position.getY() - latticePointX )/ GameStates.mapTileSetHeight);
+		int localY = (int) Math.floor( (float) ( position.getY() - latticePointY )/ GameStates.mapTileSetHeight);
 		
 		return new WorldLatticePosition(new Point(latticePointX, latticePointY), localX, localY);
 	}

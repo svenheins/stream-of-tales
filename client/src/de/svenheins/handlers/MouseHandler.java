@@ -22,6 +22,7 @@ import de.svenheins.objects.Space;
 import de.svenheins.objects.Tile;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldPosition;
+import de.svenheins.objects.agents.goals.Goal;
 import de.svenheins.objects.items.Item;
 //import de.svenheins.objects.items.materials.Wood;
 
@@ -42,6 +43,7 @@ import de.svenheins.main.gui.ContainerGUI;
 import de.svenheins.main.gui.ContainerGUIManager;
 import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUIManager;
+import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.InteractionManager;
 import de.svenheins.managers.ItemManager;
@@ -257,6 +259,16 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 			}
 		}
 		
+		for (BigInteger i : AgentManager.idList) {
+			if (AgentManager.get(i).contains(point)) {
+//				StatPanel.sp.contextMenu.create(EntityManager.get(i), p_save.x-GameStates.contextMenuFrameDistX, p_save.y-GameStates.contextMenuFrameDistY);
+				Goal goal = new Goal(new WorldPosition(GamePanel.gp.getPlayerEntity().getX(), GamePanel.gp.getPlayerEntity().getY()));//, GamePanel.gp.getPlayerEntity().getId(), GamePanel.gp.getPlayerEntity());
+				AgentManager.get(i).setActualGoal(goal);
+				System.out.println("added new goal!");
+//				AgentManager.get(i).getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
+			}
+		}
+		
 		for(BigInteger i : PlayerManager.idList){
 			if (PlayerManager.get(i).contains(point)) {
 				// open edit-windows
@@ -419,6 +431,18 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 				clickedOnGUI = true;
 			}
 		}
+		
+		for (BigInteger i : AgentManager.idList) {
+			if (AgentManager.get(i).contains(correctedPoint)) {
+//				StatPanel.sp.contextMenu.create(EntityManager.get(i), p_save.x-GameStates.contextMenuFrameDistX, p_save.y-GameStates.contextMenuFrameDistY);
+				Goal goal = new Goal(new WorldPosition(GamePanel.gp.getPlayerEntity().getX(), GamePanel.gp.getPlayerEntity().getY()));//, GamePanel.gp.getPlayerEntity().getId(), GamePanel.gp.getPlayerEntity());
+				AgentManager.get(i).getGoalList().add(goal);
+				AgentManager.get(i).setActualGoal(goal);
+				System.out.println("added new goal!");
+//				AgentManager.get(i).getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
+			}
+		}
+		
 		for(BigInteger i : PlayerManager.idList){
 			if (PlayerManager.get(i).contains(correctedPoint)) {
 				// open edit-windows

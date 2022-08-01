@@ -5,19 +5,22 @@ import de.svenheins.objects.WorldPosition;
 
 public class PathTile {
 	private WorldLatticePosition position;
+	private WorldLatticePosition parentPosition;
 	private float fScore;
 	private float gScore;
 	private float hScore;
 	
-	public PathTile(WorldLatticePosition position, float f, float g, float h) {
+	public PathTile(WorldLatticePosition position, WorldLatticePosition parentPosition, float f, float g, float h) {
 		this.position = position;
+		this.setParentPosition(parentPosition);
 		fScore = f;
 		gScore = g;
 		hScore = h;
 	}
 	
-	public PathTile(WorldPosition position, float f, float g, float h) {
+	public PathTile(WorldPosition position, WorldLatticePosition parentPosition, float f, float g, float h) {
 		this.position = WorldLatticePosition.getWorldLatticePosition(position);
+		this.setParentPosition(parentPosition);
 		fScore = f;
 		gScore = g;
 		hScore = h;
@@ -46,5 +49,13 @@ public class PathTile {
 	}
 	public void setHScore(float hScore) {
 		this.hScore = hScore;
+	}
+
+	public WorldLatticePosition getParentPosition() {
+		return parentPosition;
+	}
+
+	public void setParentPosition(WorldLatticePosition parentPosition) {
+		this.parentPosition = parentPosition;
 	}
 }

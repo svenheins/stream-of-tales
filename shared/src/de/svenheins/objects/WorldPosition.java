@@ -2,6 +2,8 @@ package de.svenheins.objects;
 
 import java.awt.Point;
 
+import de.svenheins.main.GameStates;
+
 public class WorldPosition {
 	private float x;
 	private float y;
@@ -16,6 +18,10 @@ public class WorldPosition {
 		this.y = y;
 		this.room = "";
 //		this.room = room;
+	}
+	
+	public static WorldPosition getWorldPosition(WorldLatticePosition position) {
+		return new WorldPosition((float) position.getMapCoordinates().getX() + position.getLocalX()*GameStates.mapTileSetWidth,(float) position.getMapCoordinates().getY() + position.getLocalY()*GameStates.mapTileSetHeight);
 	}
 	
 	@Override

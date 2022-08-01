@@ -60,8 +60,12 @@ public class MoveThread implements Runnable {
 			millis += duration;
 			frames +=1;
 			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.GAME) {
-				/** check collision here */
-				this.moveWithCollision(GamePanel.gp.getPlayerEntity());
+				/** check and handle collision here */
+				if(this.moveWithCollisions(GamePanel.gp.getPlayerEntity())) {
+					/** player collided */
+				} else {
+					/** no collision */
+				}
 
 				/** check if there is enough space inside the inventory */
 				if(GamePanel.gp.getPlayerEntity().getInventory().hasAvailableField()) {
@@ -135,8 +139,11 @@ public class MoveThread implements Runnable {
 					Agent e= AgentManager.get(i);
 					if (e != null) { 
 //						this.determineAnimation(e);
-						e.getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
-						this.moveWithCollision(e);
+//						e.getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
+						if(this.moveWithCollisions(e)) {
+							/** collided -> restart path calculation */
+							e.restartPathCalculation();
+						}
 						
 						
 					}
@@ -187,7 +194,8 @@ public class MoveThread implements Runnable {
 	
 	
 	/** this entity moves with colliding with objectMap-objects */
-	public void moveWithCollision(Entity e) {
+	public boolean moveWithCollisions(Entity e) {
+		boolean hasCollided = false;
 		/** check collision here */
 		if ((e.getMX() != 0 || e.getMY() != 0) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
 			/** playerPosition */
@@ -327,11 +335,11 @@ public class MoveThread implements Runnable {
 				/** movement Y = 0 */
 			}
 			/** calculate collisions separately for x and y movement */
-			if (!xCollides) e.setX(e.getX()+movementX);
-			if (!yCollides) e.setY(e.getY()+movementY);
+			if (!xCollides) e.setX(e.getX()+movementX); else hasCollided = true;
+			if (!yCollides) e.setY(e.getY()+movementY); else hasCollided = true;
 		}
 		
-		
+		return hasCollided;
 	}
 	
 //	public void determineAnimation(Entity entity) {

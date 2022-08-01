@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
+import de.svenheins.main.GameWindow;
 import de.svenheins.managers.AgentManager;
 
 public class AgentThread implements Runnable {
@@ -29,7 +30,7 @@ public class AgentThread implements Runnable {
 	}
 
 	private void runAgents() {
-		AgentManager.runNextAgent();
+		AgentManager.runNextAgent(GameWindow.gw.getObjectMapManagers().get("tree1"), GameWindow.gw.getObjectMapManagers().get("tree2"));
 //		for (BigInteger id : AgentManager.idList) {
 //			AgentManager.get(id).run();
 //		}

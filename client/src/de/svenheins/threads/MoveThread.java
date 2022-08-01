@@ -61,148 +61,8 @@ public class MoveThread implements Runnable {
 			frames +=1;
 			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.GAME) {
 				/** check collision here */
-				if ((GamePanel.gp.getPlayerEntity().getMX() != 0 || GamePanel.gp.getPlayerEntity().getMY() != 0) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
-					/** playerPosition */
-					float movementX = duration * GamePanel.gp.getPlayerEntity().getMX()/1000;
-					float movementY = duration * GamePanel.gp.getPlayerEntity().getMY()/1000;
-					int newX = (int) (GamePanel.gp.getPlayerEntity().getX() + (movementX));
-					int newY = (int) (GamePanel.gp.getPlayerEntity().getY() + (movementY));
-					
-					Point entityPointX = new Point( newX, (int) GamePanel.gp.getPlayerEntity().getY() );
-					Point entityPointY = new Point( (int) GamePanel.gp.getPlayerEntity().getX(), newY );
-					int localWidth = GameStates.mapTotalWidth;
-					int localHeight = GameStates.mapTotalHeight;
-					int entityHeight = (int) GamePanel.gp.getPlayerEntity().getHeight();
-					int entityWidth = (int) GamePanel.gp.getPlayerEntity().getWidth();
-					/** define collisionCorners of PlayerEntity */
-					Point ulPointX = new Point(entityPointX.x, entityPointX.y+entityHeight/2);
-					Point urPointX = new Point(entityPointX.x + entityWidth-1, entityPointX.y+entityHeight/2);
-					Point dlPointX = new Point(entityPointX.x, entityPointX.y + entityHeight-1);
-					Point drPointX = new Point(entityPointX.x + entityWidth-1, entityPointX.y +entityHeight-1);
-					
-					Point ulPointY = new Point(entityPointY.x, entityPointY.y+entityHeight/2);
-					Point urPointY = new Point(entityPointY.x + entityWidth-1, entityPointY.y+entityHeight/2);
-					Point dlPointY = new Point(entityPointY.x, entityPointY.y + entityHeight-1);
-					Point drPointY = new Point(entityPointY.x + entityWidth-1, entityPointY.y +entityHeight-1);
-					
-					int ulLatticePointXX = (int) Math.floor( (float) (ulPointX.x) / (localWidth)) * localWidth;
-					int ulLatticePointYX = (int) Math.floor( (float) (ulPointX.y) / (localHeight)) * localHeight;
-					int ulLocalXX = (int) Math.floor( (float) (ulPointX.x - ulLatticePointXX )/ GameStates.mapTileSetWidth);
-					int ulLocalYX = (int) Math.floor( (float) ( ulPointX.y - ulLatticePointYX )/ GameStates.mapTileSetHeight);
-					
-					int urLatticePointXX = (int) Math.floor( (float) (urPointX.x) / (localWidth)) * localWidth;
-					int urLatticePointYX = (int) Math.floor( (float) (urPointX.y) / (localHeight)) * localHeight;
-					int urLocalXX = (int) Math.floor( (float) (urPointX.x - urLatticePointXX )/ GameStates.mapTileSetWidth);
-					int urLocalYX = (int) Math.floor( (float) ( urPointX.y - urLatticePointYX )/ GameStates.mapTileSetHeight);
-					
-					/** the same for the Y point */
-					int ulLatticePointXY = (int) Math.floor( (float) (ulPointY.x) / (localWidth)) * localWidth;
-					int ulLatticePointYY = (int) Math.floor( (float) (ulPointY.y) / (localHeight)) * localHeight;
-					int ulLocalXY = (int) Math.floor( (float) (ulPointY.x - ulLatticePointXY )/ GameStates.mapTileSetWidth);
-					int ulLocalYY = (int) Math.floor( (float) ( ulPointY.y - ulLatticePointYY )/ GameStates.mapTileSetHeight);
-					
-					int dlLatticePointXY = (int) Math.floor( (float) (dlPointY.x) / (localWidth)) * localWidth;
-					int dlLatticePointYY = (int) Math.floor( (float) (dlPointY.y) / (localHeight)) * localHeight;
-					int dlLocalXY = (int) Math.floor( (float) (dlPointY.x - dlLatticePointXY )/ GameStates.mapTileSetWidth);
-					int dlLocalYY = (int) Math.floor( (float) ( dlPointY.y - dlLatticePointYY )/ GameStates.mapTileSetHeight);
-					
-					/** direction determines the critical tiles (differ between x and y) */
-					/** X movement: right/ left tiles */
-					boolean xCollides = false;
-					boolean yCollides = false;
-					if (movementX > 0) {
-						/** get all right hand sided tiles */
-						int it_RightLocalY = urLocalYX;
-						int rightLocalYLimit = (int) Math.floor( (float) ( drPointX.y - urLatticePointYX )/ GameStates.mapTileSetHeight);
-						int it_RightLatticeY = urLatticePointYX;
-						for (int i = it_RightLocalY; i<= rightLocalYLimit; i++) {
-							if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) ) ||
-									(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) )) {
-								/** collision!!! */
-//								System.out.println("collision +x!");
-								xCollides = true;
-								break;
-							}
-							/** increment variables */
-							it_RightLocalY++;
-							if (it_RightLocalY >= GameStates.mapHeight) {
-								it_RightLocalY = 0;
-								it_RightLatticeY += GameStates.mapTotalHeight;
-							}
-						}
-					} else if (movementX < 0) {
-						/** get all left hand sided tiles */
-						int it_LeftLocalY = ulLocalYX;
-						int leftLocalYLimit = (int) Math.floor( (float) ( dlPointX.y - ulLatticePointYX )/ GameStates.mapTileSetHeight);
-						int it_LeftLatticeY = ulLatticePointYX;
-						for (int i = it_LeftLocalY; i<= leftLocalYLimit; i++) {
-							if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) ) ||
-									(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) )) {
-								/** collision!!! */
-//								System.out.println("collision +x!");
-								xCollides = true;
-								break;
-							}
-							/** increment variables */
-							it_LeftLocalY++;
-							if (it_LeftLocalY >= GameStates.mapHeight) {
-								it_LeftLocalY = 0;
-								it_LeftLatticeY += GameStates.mapTotalHeight;
-							}
-						}
-					} else {
-						/** movement X = 0 */
-					}
-					
-					/** Y movement upper / lower tiles */
-					if (movementY < 0) {
-						/** get all upper hand sided tiles */
-						int it_UpperLocalX = ulLocalXY;
-						int upperLocalXLimit = (int) Math.floor( (float) ( urPointY.x - ulLatticePointXY )/ GameStates.mapTileSetWidth);
-						int it_UpperLatticeX = ulLatticePointXY;
-						for (int i = it_UpperLocalX; i<= upperLocalXLimit; i++) {
-							if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) ) ||
-									(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) )) {
-								/** collision!!! */
-//								System.out.println("collision y!");
-								yCollides = true;
-								break;
-							}
-							/** increment variables */
-							it_UpperLocalX++;
-							if (it_UpperLocalX >= GameStates.mapWidth) {
-								it_UpperLocalX = 0;
-								it_UpperLatticeX += GameStates.mapTotalWidth;
-							}
-						}
-					} else if (movementY > 0) {
-						/** get all left hand sided tiles */
-						int it_LowerLocalX = dlLocalXY;
-						int lowerLocalXLimit = (int) Math.floor( (float) ( drPointY.x - dlLatticePointXY )/ GameStates.mapTileSetWidth);
-						int it_LowerLatticeX = dlLatticePointXY;
-						for (int i = it_LowerLocalX; i<= lowerLocalXLimit; i++) {
-							if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) ) ||
-									(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) )) {
-								/** collision!!! */
-//								System.out.println("collision y!");
-								yCollides = true;
-								break;
-							}
-							/** increment variables */
-							it_LowerLocalX++;
-							if (it_LowerLocalX >= GameStates.mapWidth) {
-								it_LowerLocalX = 0;
-								it_LowerLatticeX += GameStates.mapTotalWidth;
-							}
-						}
-					} else {
-						/** movement Y = 0 */
-					}
-					/** calculate collisions separately for x and y movement */
-					if (!xCollides) GamePanel.gp.getPlayerEntity().setX(GamePanel.gp.getPlayerEntity().getX()+movementX);
-					if (!yCollides) GamePanel.gp.getPlayerEntity().setY(GamePanel.gp.getPlayerEntity().getY()+movementY);
-				}
-				
+				this.moveWithCollision(GamePanel.gp.getPlayerEntity());
+
 				/** check if there is enough space inside the inventory */
 				if(GamePanel.gp.getPlayerEntity().getInventory().hasAvailableField()) {
 					/** check if wants to take an item */
@@ -276,7 +136,9 @@ public class MoveThread implements Runnable {
 					if (e != null) { 
 //						this.determineAnimation(e);
 						e.getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
-						e.move(duration);
+						this.moveWithCollision(e);
+						
+						
 					}
 					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
 				}
@@ -321,6 +183,155 @@ public class MoveThread implements Runnable {
 				System.out.println(exception);
 			}
 		}
+	}
+	
+	
+	/** this entity moves with colliding with objectMap-objects */
+	public void moveWithCollision(Entity e) {
+		/** check collision here */
+		if ((e.getMX() != 0 || e.getMY() != 0) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
+			/** playerPosition */
+			float movementX = duration * e.getMX()/1000;
+			float movementY = duration * e.getMY()/1000;
+			int newX = (int) (e.getX() + (movementX));
+			int newY = (int) (e.getY() + (movementY));
+			
+			Point entityPointX = new Point( newX, (int) e.getY() );
+			Point entityPointY = new Point( (int) e.getX(), newY );
+			int localWidth = GameStates.mapTotalWidth;
+			int localHeight = GameStates.mapTotalHeight;
+			int entityHeight = (int) e.getHeight();
+			int entityWidth = (int) e.getWidth();
+			/** define collisionCorners of PlayerEntity */
+			Point ulPointX = new Point(entityPointX.x, entityPointX.y+entityHeight/2);
+			Point urPointX = new Point(entityPointX.x + entityWidth-1, entityPointX.y+entityHeight/2);
+			Point dlPointX = new Point(entityPointX.x, entityPointX.y + entityHeight-1);
+			Point drPointX = new Point(entityPointX.x + entityWidth-1, entityPointX.y +entityHeight-1);
+			
+			Point ulPointY = new Point(entityPointY.x, entityPointY.y+entityHeight/2);
+			Point urPointY = new Point(entityPointY.x + entityWidth-1, entityPointY.y+entityHeight/2);
+			Point dlPointY = new Point(entityPointY.x, entityPointY.y + entityHeight-1);
+			Point drPointY = new Point(entityPointY.x + entityWidth-1, entityPointY.y +entityHeight-1);
+			
+			int ulLatticePointXX = (int) Math.floor( (float) (ulPointX.x) / (localWidth)) * localWidth;
+			int ulLatticePointYX = (int) Math.floor( (float) (ulPointX.y) / (localHeight)) * localHeight;
+			int ulLocalXX = (int) Math.floor( (float) (ulPointX.x - ulLatticePointXX )/ GameStates.mapTileSetWidth);
+			int ulLocalYX = (int) Math.floor( (float) ( ulPointX.y - ulLatticePointYX )/ GameStates.mapTileSetHeight);
+			
+			int urLatticePointXX = (int) Math.floor( (float) (urPointX.x) / (localWidth)) * localWidth;
+			int urLatticePointYX = (int) Math.floor( (float) (urPointX.y) / (localHeight)) * localHeight;
+			int urLocalXX = (int) Math.floor( (float) (urPointX.x - urLatticePointXX )/ GameStates.mapTileSetWidth);
+			int urLocalYX = (int) Math.floor( (float) ( urPointX.y - urLatticePointYX )/ GameStates.mapTileSetHeight);
+			
+			/** the same for the Y point */
+			int ulLatticePointXY = (int) Math.floor( (float) (ulPointY.x) / (localWidth)) * localWidth;
+			int ulLatticePointYY = (int) Math.floor( (float) (ulPointY.y) / (localHeight)) * localHeight;
+			int ulLocalXY = (int) Math.floor( (float) (ulPointY.x - ulLatticePointXY )/ GameStates.mapTileSetWidth);
+			int ulLocalYY = (int) Math.floor( (float) ( ulPointY.y - ulLatticePointYY )/ GameStates.mapTileSetHeight);
+			
+			int dlLatticePointXY = (int) Math.floor( (float) (dlPointY.x) / (localWidth)) * localWidth;
+			int dlLatticePointYY = (int) Math.floor( (float) (dlPointY.y) / (localHeight)) * localHeight;
+			int dlLocalXY = (int) Math.floor( (float) (dlPointY.x - dlLatticePointXY )/ GameStates.mapTileSetWidth);
+			int dlLocalYY = (int) Math.floor( (float) ( dlPointY.y - dlLatticePointYY )/ GameStates.mapTileSetHeight);
+			
+			/** direction determines the critical tiles (differ between x and y) */
+			/** X movement: right/ left tiles */
+			boolean xCollides = false;
+			boolean yCollides = false;
+			if (movementX > 0) {
+				/** get all right hand sided tiles */
+				int it_RightLocalY = urLocalYX;
+				int rightLocalYLimit = (int) Math.floor( (float) ( drPointX.y - urLatticePointYX )/ GameStates.mapTileSetHeight);
+				int it_RightLatticeY = urLatticePointYX;
+				for (int k = it_RightLocalY; k<= rightLocalYLimit; k++) {
+					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) ) ||
+							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) )) {
+						/** collision!!! */
+//						System.out.println("collision +x!");
+						xCollides = true;
+						break;
+					}
+					/** increment variables */
+					it_RightLocalY++;
+					if (it_RightLocalY >= GameStates.mapHeight) {
+						it_RightLocalY = 0;
+						it_RightLatticeY += GameStates.mapTotalHeight;
+					}
+				}
+			} else if (movementX < 0) {
+				/** get all left hand sided tiles */
+				int it_LeftLocalY = ulLocalYX;
+				int leftLocalYLimit = (int) Math.floor( (float) ( dlPointX.y - ulLatticePointYX )/ GameStates.mapTileSetHeight);
+				int it_LeftLatticeY = ulLatticePointYX;
+				for (int k = it_LeftLocalY; k<= leftLocalYLimit; k++) {
+					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) ) ||
+							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) )) {
+						/** collision!!! */
+//						System.out.println("collision +x!");
+						xCollides = true;
+						break;
+					}
+					/** increment variables */
+					it_LeftLocalY++;
+					if (it_LeftLocalY >= GameStates.mapHeight) {
+						it_LeftLocalY = 0;
+						it_LeftLatticeY += GameStates.mapTotalHeight;
+					}
+				}
+			} else {
+				/** movement X = 0 */
+			}
+			
+			/** Y movement upper / lower tiles */
+			if (movementY < 0) {
+				/** get all upper hand sided tiles */
+				int it_UpperLocalX = ulLocalXY;
+				int upperLocalXLimit = (int) Math.floor( (float) ( urPointY.x - ulLatticePointXY )/ GameStates.mapTileSetWidth);
+				int it_UpperLatticeX = ulLatticePointXY;
+				for (int k = it_UpperLocalX; k<= upperLocalXLimit; k++) {
+					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) ) ||
+							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) )) {
+						/** collision!!! */
+//						System.out.println("collision y!");
+						yCollides = true;
+						break;
+					}
+					/** increment variables */
+					it_UpperLocalX++;
+					if (it_UpperLocalX >= GameStates.mapWidth) {
+						it_UpperLocalX = 0;
+						it_UpperLatticeX += GameStates.mapTotalWidth;
+					}
+				}
+			} else if (movementY > 0) {
+				/** get all left hand sided tiles */
+				int it_LowerLocalX = dlLocalXY;
+				int lowerLocalXLimit = (int) Math.floor( (float) ( drPointY.x - dlLatticePointXY )/ GameStates.mapTileSetWidth);
+				int it_LowerLatticeX = dlLatticePointXY;
+				for (int k = it_LowerLocalX; k<= lowerLocalXLimit; k++) {
+					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) ) ||
+							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) )) {
+						/** collision!!! */
+//						System.out.println("collision y!");
+						yCollides = true;
+						break;
+					}
+					/** increment variables */
+					it_LowerLocalX++;
+					if (it_LowerLocalX >= GameStates.mapWidth) {
+						it_LowerLocalX = 0;
+						it_LowerLatticeX += GameStates.mapTotalWidth;
+					}
+				}
+			} else {
+				/** movement Y = 0 */
+			}
+			/** calculate collisions separately for x and y movement */
+			if (!xCollides) e.setX(e.getX()+movementX);
+			if (!yCollides) e.setY(e.getY()+movementY);
+		}
+		
+		
 	}
 	
 //	public void determineAnimation(Entity entity) {

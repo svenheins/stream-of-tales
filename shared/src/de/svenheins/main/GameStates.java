@@ -221,7 +221,10 @@ public class GameStates {
 	public static int lightTileHeight = 16;
 	
 	/** agent properties */
-	public static float agentGoalDistance = 100.0f;
+	public static float agentGoalDistance = 20.0f;
+	
+	/** agent path properties */
+	public static float pathMinAcceptanceDistance = 5.0f;
 	
 	public static int getWidth() {
 		return width;

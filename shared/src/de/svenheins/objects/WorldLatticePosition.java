@@ -2,6 +2,8 @@ package de.svenheins.objects;
 
 import java.awt.Point;
 
+import de.svenheins.main.GameStates;
+
 public class WorldLatticePosition {
 	private Point mapCoordinates;
 	private int localX;
@@ -17,6 +19,17 @@ public class WorldLatticePosition {
 //		this.room = room;
 	}
 	
+	public static WorldLatticePosition getWorldLatticePosition(WorldPosition position) {
+		int localWidth = GameStates.mapTotalWidth;
+		int localHeight = GameStates.mapTotalHeight;
+		
+		int latticePointX = (int) Math.floor( (float) (position.getX()) / (localWidth)) * localWidth;
+		int latticePointY = (int) Math.floor( (float) (position.getY()) / (localHeight)) * localHeight;
+		int localX = (int) Math.floor( (float) (position.getX() - latticePointX )/ GameStates.mapTileSetWidth);
+		int localY = (int) Math.floor( (float) ( position.getY() - latticePointX )/ GameStates.mapTileSetHeight);
+		
+		return new WorldLatticePosition(new Point(latticePointX, latticePointY), localX, localY);
+	}
 	
 	
 @Override

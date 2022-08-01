@@ -72,7 +72,7 @@ public class AgentManager {
 	}
 	
 	/** update the Entity with the ID objectId */
-	public static void runNextAgent() {
+	public static void runNextAgent(ObjectMapManager objectMapManager1, ObjectMapManager objectMapManager2) {
 		Agent agent = null;
 		BigInteger agentID = null;
 		if (updateAgentList.hasNext()) {
@@ -89,7 +89,7 @@ public class AgentManager {
 		}
 		
 		if (agent != null) {
-			agent.run();
+			agent.run(objectMapManager1, objectMapManager2);
 			AgentManager.agentList.put(agentID, agent);
 		}
 	}

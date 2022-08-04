@@ -226,6 +226,7 @@ public class GameStates {
 	
 	/** agent path properties */
 	public static float pathMinAcceptanceDistance = 4.0f;
+	public static long timeForPathCalculation = 10000; // milliseconds
 	
 	public static int getWidth() {
 		return width;

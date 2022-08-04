@@ -16,6 +16,7 @@ import de.svenheins.objects.agents.goals.Goal;
 
 public class NormalAgent extends Agent {
 	private boolean directModus;
+	private long timestampPathCalculation;
 	
 	public NormalAgent(TileSet tileSet, String name, BigInteger id, float x,
 			float y, long animationDelay) {
@@ -198,12 +199,21 @@ public class NormalAgent extends Agent {
 			/** AND check if the path is still valid (no new blocking objects) */
 //			System.out.println("READY!!!");
 			/** else stop movement and calculate new path */
-		} else {			
+		} else {		
 //			int localWidth = GameStates.mapTotalWidth;
 //			int localHeight = GameStates.mapTotalHeight;
 			/** else continue with path calculation */
 			if (closedList.size() > 0 && openList.size() > 0) {
 				/** so we already started the generation of the lists */
+				long timeNow = System.currentTimeMillis();
+				/** if too long time went by, stop the calculation and goto next goal */
+				if (timeNow - this.getTimestampPathCalculation() > GameStates.timeForPathCalculation) {
+					System.out.println("NEXT GOAL, because time is up!");
+					this.nextGoal();
+					this.setDirectModus(false);
+					return;
+				}
+				System.out.println("time passed: "+(timeNow - this.getTimestampPathCalculation()));
 				/** upper */
 				PathTile originTile = this.getOpenListMinimumFScorePathTile();
 //				System.out.println("F="+originTile.getFScore()+" G="+originTile.getGScore()+" H="+originTile.getHScore()); 
@@ -211,8 +221,8 @@ public class NormalAgent extends Agent {
 				if (originTile != null) {
 					closedList.put(originTile.getPosition(), originTile); //(originTile);
 					openList.remove(originTile.getPosition());
-					System.out.println("added to closedList: x="+originTile.getPosition().getLocalX()+" y="+originTile.getPosition().getLocalY());
-					System.out.println("with parent: x="+originTile.getParentPosition().getLocalX()+" y="+originTile.getParentPosition().getLocalY());
+//					System.out.println("added to closedList: x="+originTile.getPosition().getLocalX()+" y="+originTile.getPosition().getLocalY());
+//					System.out.println("with parent: x="+originTile.getParentPosition().getLocalX()+" y="+originTile.getParentPosition().getLocalY());
 					
 					/** upper */
 					WorldPosition tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX(), 
@@ -240,10 +250,10 @@ public class NormalAgent extends Agent {
 					
 					if (openList.containsKey(WorldLatticePosition.getWorldLatticePosition(actualGoal.getPosition()))) {
 						/** create the path now! */
-						System.out.println("found a path!!!");
+//						System.out.println("found a path!!!");
 						this.pathList = createCompletePath(WorldLatticePosition.getWorldLatticePosition(actualGoal.getPosition()));
 						this.setActualPathElement(pathList.get(0));
-						System.out.println("actualPathElement: X="+ this.getActualPathElement().getX()+" Y="+this.getActualPathElement().getY());
+//						System.out.println("actualPathElement: X="+ this.getActualPathElement().getX()+" Y="+this.getActualPathElement().getY());
 						this.setPathCalculationComplete(true);
 					}
 				} else {
@@ -251,53 +261,69 @@ public class NormalAgent extends Agent {
 				}
 				
 			} else {
-				/** add first PathTile (entity itself) 
-				 * here we do not need to calculate the manhatten distance
-				 * */
-				WorldLatticePosition firstPosition = WorldLatticePosition.getClosestWorldLatticePosition(new WorldPosition(this.getX(), this.getY()+(this.getHeight()/2)));
-				PathTile originTile = new PathTile(firstPosition, firstPosition, 0, 0, 0);
-				closedList.put(originTile.getPosition(), originTile); //(originTile);
-				float f, g, h;
-				
-				/** upper */
-				WorldPosition tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX(), 
-						(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY() -GameStates.mapTileSetHeight);
-				WorldLatticePosition tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
-				h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
-				g = originTile.getGScore() + 1.0f;
-				f = g + h;
-				PathTile addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
-				checkFirstTiles(addTile, collisionMap1, collisionMap2);
-				
-				/** right */
-				tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX() + GameStates.mapTileSetWidth, 
-						(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY());
-				tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
-				h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
-				g = originTile.getGScore() + 1.0f;
-				f = g + h;
-				addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
-				checkFirstTiles(addTile, collisionMap1, collisionMap2);
-				
-				/** lower */
-				tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX(), 
-						(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY() + GameStates.mapTileSetHeight);
-				tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
-				h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
-				g = originTile.getGScore() + 1.0f;
-				f = g + h;
-				addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
-				checkFirstTiles(addTile, collisionMap1, collisionMap2);
-				
-				/** left */
-				tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX() - GameStates.mapTileSetWidth, 
-						(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY());
-				tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
-				h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
-				g = originTile.getGScore() + 1.0f;
-				f = g + h;
-				addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
-				checkFirstTiles(addTile, collisionMap1, collisionMap2);
+				/** start pathCalculation */
+				this.setTimestampPathCalculation(System.currentTimeMillis());
+				/** check if the goal is reachable */
+				WorldLatticePosition goalPosition = WorldLatticePosition.getClosestWorldLatticePosition(this.getActualGoal().getPosition());
+				PathTile goalTile = new PathTile(goalPosition, goalPosition, 0, 0, 0);
+				if ((collisionMap1.checkCollision(goalTile.getPosition().getMapCoordinates(), goalTile.getPosition().getLocalX(), goalTile.getPosition().getLocalY() ) ) ||
+						(collisionMap2.checkCollision(goalTile.getPosition().getMapCoordinates(), goalTile.getPosition().getLocalX(), goalTile.getPosition().getLocalY() ) )) {
+					/** collision!!! 
+					 * GoalTile is definitely not reachable		
+					 * so begin the pathCalculation with the next goal!			 * */
+					this.nextGoal();
+					this.setDirectModus(false);
+					System.out.println("Occupied Goal! -> search a way to the next goal!");
+				} else {
+					/** goal is not occupied, so we can search a path to it */
+					/** add first PathTile (entity itself) 
+					 * here we do not need to calculate the manhatten distance
+					 * */
+					WorldLatticePosition firstPosition = WorldLatticePosition.getClosestWorldLatticePosition(new WorldPosition(this.getX(), this.getY()+(this.getHeight()/2)));
+					PathTile originTile = new PathTile(firstPosition, firstPosition, 0, 0, 0);
+					closedList.put(originTile.getPosition(), originTile); //(originTile);
+					float f, g, h;
+					
+					/** upper */
+					WorldPosition tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX(), 
+							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY() -GameStates.mapTileSetHeight);
+					WorldLatticePosition tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
+					h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
+					g = originTile.getGScore() + 1.0f;
+					f = g + h;
+					PathTile addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
+					checkFirstTiles(addTile, collisionMap1, collisionMap2);
+					
+					/** right */
+					tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX() + GameStates.mapTileSetWidth, 
+							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY());
+					tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
+					h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
+					g = originTile.getGScore() + 1.0f;
+					f = g + h;
+					addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
+					checkFirstTiles(addTile, collisionMap1, collisionMap2);
+					
+					/** lower */
+					tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX(), 
+							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY() + GameStates.mapTileSetHeight);
+					tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
+					h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
+					g = originTile.getGScore() + 1.0f;
+					f = g + h;
+					addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
+					checkFirstTiles(addTile, collisionMap1, collisionMap2);
+					
+					/** left */
+					tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX() - GameStates.mapTileSetWidth, 
+							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY());
+					tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
+					h = this.guessDistanceValue(tileWorldPosition, actualGoal.getPosition());	
+					g = originTile.getGScore() + 1.0f;
+					f = g + h;
+					addTile = new PathTile(tileWorldLatticePosition, firstPosition, f,g,h);
+					checkFirstTiles(addTile, collisionMap1, collisionMap2);
+				}				
 			}
 		}
 		/** end */
@@ -310,17 +336,17 @@ public class NormalAgent extends Agent {
 		if (closedList.containsKey(goalLatticePosition)) {
 			// TODO: handle if this happens
 		} else if (openList.containsKey(goalLatticePosition)) {
-			System.out.println("PATH:");
+//			System.out.println("PATH:");
 			returnList.add(0, WorldPosition.getWorldPosition(goalLatticePosition));
 			saveWLPList.add(0, goalLatticePosition);
-			System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
+//			System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
 			
 			/** first adding from openList to closedList */
 			WorldLatticePosition oldWLP = goalLatticePosition;
 			WorldLatticePosition parentWLP = openList.get(goalLatticePosition).getParentPosition();
 			returnList.add(0, WorldPosition.getWorldPosition(closedList.get(parentWLP).getPosition()));
 			saveWLPList.add(0, closedList.get(parentWLP).getPosition());
-			System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
+//			System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
 			
 			int sizeOfClosedList = closedList.size();			
 			for (int i = 0; i < sizeOfClosedList-1; i++) {
@@ -332,7 +358,7 @@ public class NormalAgent extends Agent {
 				if (returnList.get(0).getX() != (WorldPosition.getWorldPosition(saveWLPList.get(0))).getX() ||
 						returnList.get(0).getY() != (WorldPosition.getWorldPosition(saveWLPList.get(0))).getY()) {
 					returnList.add(0, WorldPosition.getWorldPosition(saveWLPList.get(0)));
-					System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
+//					System.out.println("x = "+returnList.get(0).getX()+" | y = "+returnList.get(0).getY());
 				} else {
 					System.out.println("double entry!");
 				}
@@ -425,7 +451,7 @@ public class NormalAgent extends Agent {
 		WorldPosition pathStepPosition = new WorldPosition(this.getX()+((this.getActualGoal().getPosition().getX()-this.getX())*((float)(2)/pathSeparation)), this.getY()+((this.getActualGoal().getPosition().getY()-this.getY())*((float)(2)/pathSeparation)));
 		
 		Goal intermediateGoal = new Goal(pathStepPosition);
-		this.addFirstGoal(intermediateGoal);
+		this.addFirstGoal(this.getActualGoal());
 		this.setActualGoal(intermediateGoal);
 		this.setDirectModus(false);
 	}
@@ -433,5 +459,13 @@ public class NormalAgent extends Agent {
 	public void nextGoal() {
 		super.nextGoal();
 		setDirectModus(true);
+	}
+
+	public long getTimestampPathCalculation() {
+		return timestampPathCalculation;
+	}
+
+	public void setTimestampPathCalculation(long timestampPathCalculation) {
+		this.timestampPathCalculation = timestampPathCalculation;
 	}
 }

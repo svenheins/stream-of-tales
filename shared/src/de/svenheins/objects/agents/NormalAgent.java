@@ -4,35 +4,42 @@ import java.awt.Point;
 import java.math.BigInteger;
 import java.util.ArrayList;
 
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.RestoreAction;
+
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
-import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ObjectMapManager;
-import de.svenheins.objects.Entity;
-import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldLatticePosition;
 import de.svenheins.objects.WorldPosition;
+import de.svenheins.objects.agents.goals.Goal;
 
-public class SimpleAgent extends Agent {
-
-	public SimpleAgent(TileSet tileSet, String name, BigInteger id, float x,
+public class NormalAgent extends Agent {
+	private boolean directModus;
+	
+	public NormalAgent(TileSet tileSet, String name, BigInteger id, float x,
 			float y, long animationDelay) {
 		super(tileSet, name, id, x, y, animationDelay);
 //		this.setMY(0.0f);
 //		this.setMY(0.0f);
 		this.setMaxSpeed(150.0f);
+		this.setDirectModus(true);
 	}
-	
+
 	@Override
-	public void run(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
+	public void run(ObjectMapManager collisionMap1,
+			ObjectMapManager collisionMap2) {
 		updateGoalRanking();
 		if (actualGoal != null) {
 			searchBetterLocation();
 			if (actualGoal != null) {
 				/** only search if we are too far away from goal */
 				if ( this.getDistance(actualGoal.getPosition().getX(), actualGoal.getPosition().getY()) > GameStates.agentGoalDistance) {
-					updatePathfinding(collisionMap1, collisionMap2);
+					if (isDirectModus()) {
+						updatePathfindingDirect(collisionMap1, collisionMap2);
+					} else {
+						updatePathfinding(collisionMap1, collisionMap2);
+					}
 					if (isPathCalculationComplete()) {
 						updateMovement();
 					} else {
@@ -47,14 +54,11 @@ public class SimpleAgent extends Agent {
 			}
 		}
 	}
-	
+
 	@Override
-	/** update the movement depending on desired Position */
 	public void updateMovement() {
 		float velocity = this.getMaxSpeed();//Math.sqrt(this.getHorizontalMovement()*this.getHorizontalMovement() + this.getVerticalMovement()*this.getVerticalMovement());
 		float newMX, newMY;
-//		newMX = (float) (this.getActualGoal().getPosition().getX()-this.getX());
-//		newMY = (float) (this.getActualGoal().getPosition().getY()-this.getY());
 		newMX = (float) (this.getActualPathElement().getX()-(this.getX()));
 		newMY = (float) (this.getActualPathElement().getY()-(this.getY()+(this.getHeight()/2)));
 		/** correct the destination if it is an old one */
@@ -66,16 +70,17 @@ public class SimpleAgent extends Agent {
 		} else {
 			float tempVelocity = (float) Math.sqrt(newMX*newMX + newMY*newMY);
 			if (tempVelocity > 0) {
-				if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < this.getMaxSpeed()/20) {
-//					int decelerationWeight = Math.max(2, (int)(this.getMaxSpeed()/2));
-					tempVelocity = tempVelocity*1.5f;
-//					tempVelocity = tempVelocity*((decelerationWeight*this.getMaxSpeed())/((this.getMaxSpeed())+(decelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2))));
+				if (isDirectModus()) {
+					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < this.getMaxSpeed()) {
+						int decelerationWeight = Math.max(2, (int)(this.getMaxSpeed()/2));
+						tempVelocity = tempVelocity*((decelerationWeight*this.getMaxSpeed())/((this.getMaxSpeed())+(decelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2))));
+					}
+				} else {
+					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < this.getMaxSpeed()/20) {
+						tempVelocity = tempVelocity*1.5f;
+					}
 				}
-//				if ( getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)) < 3*GameStates.pathMinAcceptanceDistance) {
-//					tempVelocity = tempVelocity*1.5f;
-//				}
 				this.setMovement(velocity*(newMX/tempVelocity), velocity*(newMY/tempVelocity));
-				
 			} else
 			{
 				this.setMovement(0, 0);
@@ -98,35 +103,24 @@ public class SimpleAgent extends Agent {
 		} else {
 			this.setContinuousState(EntityStates.WALKING);
 		}
-		
 	}
-	
-	@Override
-	public void updateGoalRanking() {
-		// TODO Auto-generated method stub
-		
-	}
-	
+
 	@Override
 	public void searchBetterLocation() {
-		/** update the pathList */
-		if (this.pathList != null && this.pathList.size() > 0) {
-			if ( getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)) < GameStates.pathMinAcceptanceDistance) {
+		/** Direct Modus */
+		if (isDirectModus()) {
+			/** if the agent is close enough */
+			if ( getDistance(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY()-(this.getHeight()/2)) < GameStates.pathMinAcceptanceDistance) {		
 				/** ensure we landed exactly on the right spot */
-//				if (Math.abs(this.getX() - this.pathList.get(0).getX()) <GameStates.pathMinAcceptanceDistance)
-				this.setX(this.pathList.get(0).getX());
-//				if (Math.abs(this.getY() +(this.getHeight()/2)- this.pathList.get(0).getY()) <GameStates.pathMinAcceptanceDistance)
-				this.setY(this.pathList.get(0).getY()-(this.getHeight()/2));
+				this.setX(this.getActualGoal().getPosition().getX());
+				this.setY(this.getActualGoal().getPosition().getY()-(this.getHeight()/2));
 				this.setMovement(0, 0);
-				/** position is close enough, so get next pathElement */
-				this.nextPathElement();
-				System.out.println("next pathList element! remaining: "+this.pathList.size());
-			} else {
-//				System.out.println("Distance = "+getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)));
-			}
-			if (this.pathList != null && this.pathList.size() > 0) {			
+				/** position is close enough, so get next goal */
+				this.nextGoal();
+			} 
+			if (this.getActualGoal() != null) {			
 				/** here we already have a valid pathList */
-				this.setActualPathElement(this.pathList.get(0));
+				this.setActualPathElement(this.getActualGoal().getPosition());
 			} else {
 				/** here the pathList does not yet exist or the pathList might be empty */
 				this.pathList = new ArrayList<WorldPosition>();
@@ -143,21 +137,61 @@ public class SimpleAgent extends Agent {
 				}
 			}
 		} else {
-		/** here we have no more pathList, so check for other goals or positions */
-			/** if there is an entityID as goal, update the location depending on position */
-			if (!this.getActualGoal().getGoalEntityID().equals(BigInteger.valueOf(-1))) {
-				this.getActualGoal().setPosition(new WorldPosition(this.getActualGoal().getEntity().getX(), this.getActualGoal().getEntity().getY()));
-			} else if (this.getActualGoal().getPosition() != null) {
-				// no entity-ID but simple position as goal
+			/** update the pathList */
+			if (this.pathList != null && this.pathList.size() > 0) {
+				if ( getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)) < GameStates.pathMinAcceptanceDistance) {
+					/** ensure we landed exactly on the right spot */
+					this.setX(this.pathList.get(0).getX());
+					this.setY(this.pathList.get(0).getY()-(this.getHeight()/2));
+					this.setMovement(0, 0);
+					/** position is close enough, so get next pathElement */
+					this.nextPathElement();
+					System.out.println("next pathList element! remaining: "+this.pathList.size());
+				} else {
+	//				System.out.println("Distance = "+getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)));
+				}
+				if (this.pathList != null && this.pathList.size() > 0) {			
+					/** here we already have a valid pathList */
+					this.setActualPathElement(this.pathList.get(0));
+				} else {
+					/** here the pathList does not yet exist or the pathList might be empty */
+					this.pathList = new ArrayList<WorldPosition>();
+					this.setPathCalculationComplete(false);
+					System.out.println("restart pathfinding...");
+					if (goalList != null && (goalList.size() >0) ) {
+						/** take the next goal */
+						this.nextGoal();
+					} else {
+						/** no more goals available */
+						setActualGoal(null);
+						this.setMovement(0, 0);
+						this.setContinuousState(EntityStates.STANDING);
+					}
+				}
 			} else {
-				// no valid goal!
-				System.out.println("no valid goal!");
+			/** here we have no more pathList, so check for other goals or positions */
+				/** if there is an entityID as goal, update the location depending on position */
+				if (!this.getActualGoal().getGoalEntityID().equals(BigInteger.valueOf(-1))) {
+					this.getActualGoal().setPosition(new WorldPosition(this.getActualGoal().getEntity().getX(), this.getActualGoal().getEntity().getY()));
+				} else if (this.getActualGoal().getPosition() != null) {
+					// no entity-ID but simple position as goal
+				} else {
+					// no valid goal!
+					System.out.println("no valid goal!");
+				}
 			}
 		}
 	}
+	
+	public void updatePathfindingDirect(ObjectMapManager collisionMap1,
+			ObjectMapManager collisionMap2) {
+		this.setActualPathElement(actualGoal.getPosition());
+		this.setPathCalculationComplete(true);
+	}
 
 	@Override
-	public void updatePathfinding(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
+	public void updatePathfinding(ObjectMapManager collisionMap1,
+			ObjectMapManager collisionMap2) {
 		/** check if the path-finding was completed */
 		if (isPathCalculationComplete()) {
 			/** check if the path is leading to the goal */
@@ -269,7 +303,6 @@ public class SimpleAgent extends Agent {
 		/** end */
 	}
 	
-	
 	/** as soon as we are ready, complete the path and return it to the agent */
 	public ArrayList<WorldPosition> createCompletePath(WorldLatticePosition goalLatticePosition) {
 		ArrayList<WorldPosition> returnList = new ArrayList<WorldPosition>();
@@ -352,12 +385,53 @@ public class SimpleAgent extends Agent {
 			openList.put(tile.getPosition(), tile); //(originTile);
 		}
 	}
-	
+
 	@Override
 	public void updateGoals() {
 		// TODO Auto-generated method stub
 		
 	}
 
+	@Override
+	public void updateGoalRanking() {
+		// TODO Auto-generated method stub
+		
+	}
 
+	public boolean isDirectModus() {
+		return directModus;
+	}
+
+	public void setDirectModus(boolean directModus) {
+		this.directModus = directModus;
+	}
+	
+	public void restartPathCalculationAfterCollision(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
+		super.restartPathCalculationAfterCollision(collisionMap1, collisionMap2);
+		int pathSeparation = 4;
+//		WorldPosition pathStepPosition = new WorldPosition(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY());
+//		for (int i = 1; i <= pathSeparation; i++) {
+//			pathStepPosition = new WorldPosition(this.getX()+((this.getActualGoal().getPosition().getX()-this.getX())*((float)(i)/pathSeparation)), this.getY()+((this.getActualGoal().getPosition().getY()-this.getY())*((float)(i)/pathSeparation)));
+//			if ((collisionMap1.checkCollision(WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getMapCoordinates(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalX(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalY() ) ) ||
+//					(collisionMap2.checkCollision(WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getMapCoordinates(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalX(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalY() ) )){
+//				/** collision */
+//				//next!
+//			} else {
+//				/** this position is fine! so leave the loop */
+//				break;
+//			}
+//		}
+		
+		WorldPosition pathStepPosition = new WorldPosition(this.getX()+((this.getActualGoal().getPosition().getX()-this.getX())*((float)(2)/pathSeparation)), this.getY()+((this.getActualGoal().getPosition().getY()-this.getY())*((float)(2)/pathSeparation)));
+		
+		Goal intermediateGoal = new Goal(pathStepPosition);
+		this.addFirstGoal(intermediateGoal);
+		this.setActualGoal(intermediateGoal);
+		this.setDirectModus(false);
+	}
+	
+	public void nextGoal() {
+		super.nextGoal();
+		setDirectModus(true);
+	}
 }

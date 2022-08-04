@@ -143,7 +143,7 @@ public class MoveThread implements Runnable {
 						if(this.moveWithCollisions(e)) {
 							/** collided -> restart path calculation */
 							System.out.println("Agent collided!!!");
-							e.restartPathCalculation();
+							e.restartPathCalculationAfterCollision(GameWindow.gw.getObjectMapManagers().get("tree1"), GameWindow.gw.getObjectMapManagers().get("tree2"));
 						}
 						
 						

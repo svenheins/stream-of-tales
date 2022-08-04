@@ -49,6 +49,9 @@ public abstract class Agent extends PlayerEntity {
 	/** run */
 	public abstract void run(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2);
 	
+	/** update the movement depending on desired Position */
+	public abstract void updateMovement();
+	
 	/** find a location based on needs */
 	public abstract void searchBetterLocation();
 	
@@ -70,58 +73,16 @@ public abstract class Agent extends PlayerEntity {
 		this.satisfaction = satisfaction;
 	}
 		
-	/** update the movement depending on desired Position */
-	public void updateMovement() {
-		float velocity = this.getMaxSpeed();//Math.sqrt(this.getHorizontalMovement()*this.getHorizontalMovement() + this.getVerticalMovement()*this.getVerticalMovement());
-		float newMX, newMY;
-//		newMX = (float) (this.getActualGoal().getPosition().getX()-this.getX());
-//		newMY = (float) (this.getActualGoal().getPosition().getY()-this.getY());
-		newMX = (float) (this.getActualPathElement().getX()-(this.getX()));
-		newMY = (float) (this.getActualPathElement().getY()-(this.getY()+(this.getHeight()/2)));
-		/** correct the destination if it is an old one */
-		if ((newMX ==0 && newMY == 0) && this.pathList.size() >0) {
-			this.nextPathElement();
-			this.setMovement(0, 0);
-			/** if we have a path to follow */
-			System.out.println("old pathelement");
-		} else {
-			float tempVelocity = (float) Math.sqrt(newMX*newMX + newMY*newMY);
-			if (tempVelocity > 0) {
-				if ( getDistance(this.pathList.get(0).getX(), this.pathList.get(0).getY()-(this.getHeight()/2)) < 3*GameStates.pathMinAcceptanceDistance) {
-					tempVelocity = tempVelocity*1.5f;
-				}
-				this.setMovement(velocity*(newMX/tempVelocity), velocity*(newMY/tempVelocity));
-				
-			} else
-			{
-				this.setMovement(0, 0);
-				/** if we have a path to follow */
-				System.out.println("STOP, because we reached the pathlistelement");
-			}
-		}
-		
-//		System.out.println("movement: X="+this.getMX()+" Y="+this.getMY());
-		
-		this.determineOrientation(new Point((int) this.getActualGoal().getPosition().getX(),(int) this.getActualGoal().getPosition().getY()));
-//		this.determineOrientation(new Point((int) this.getActualPathElement().getX(),(int) this.getActualPathElement().getY()));
-
-		if ( this.getMX() == 0 && this.getMY()== 0) {
-			if (this.getContinuousState() == EntityStates.WALKING) {
-				this.setContinuousState(EntityStates.STANDING);
-//				this.setChangedStates(true);
-			}
-			
-		} else {
-			this.setContinuousState(EntityStates.WALKING);
-		}
-		
-		
-	}
 	
 	/** calculate distance to Point (x,y) */
 	public float getDistance(float x, float y) {
 		return (float) Math.sqrt((x-this.getX())*(x-this.getX()) + (y-(this.getY()))*(y-(this.getY())));
 	}
+	
+//	/** calculate distance to Point (x,y) */
+//	public int getDistance(int x, int y) {
+//		return (int) Math.sqrt((x-this.getX())*(x-this.getX()) + (y-(this.getY()))*(y-(this.getY())));
+//	}
 	
 	public void setGoal(boolean goal) {
 		this.goal = goal;
@@ -137,6 +98,13 @@ public abstract class Agent extends PlayerEntity {
 	
 	public void addGoal( Goal additionalGoal)  {
 		this.goalList.add(additionalGoal);
+	}
+	
+	public void addFirstGoal( Goal additionalGoal)  {
+		for (int i = goalList.size(); i > 0; i--) {
+			goalList.add(i, goalList.get(i-1));
+		}
+		this.goalList.add(0, additionalGoal);
 	}
 
 	public void setActualGoal(Goal actualGoal) {
@@ -226,5 +194,9 @@ public abstract class Agent extends PlayerEntity {
 		openList = new HashMap<WorldLatticePosition, PathTile>(); // defines the openList (A*-algorithm)
 		closedList = new HashMap<WorldLatticePosition, PathTile>(); // defines the closedList (A*-algorithm)
 		this.setActualPathElement(null);
+	}
+	
+	public void restartPathCalculationAfterCollision(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
+		restartPathCalculation();
 	}
 }

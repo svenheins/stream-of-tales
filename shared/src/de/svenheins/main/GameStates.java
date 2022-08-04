@@ -53,6 +53,7 @@ public class GameStates {
 	/**take distance */
 	public static int takeDistance = 16;
 	public static int dropDistance = 20;
+	public static int interactDistance = 80;
 	public static int inventoryPlayerX = width * 15 / 20;
 	public static int inventoryPlayerY = 120;
 	public static int inventoryWidthPlayer = 4;
@@ -221,10 +222,10 @@ public class GameStates {
 	public static int lightTileHeight = 16;
 	
 	/** agent properties */
-	public static float agentGoalDistance = 20.0f;
+	public static float agentGoalDistance = 32.0f;
 	
 	/** agent path properties */
-	public static float pathMinAcceptanceDistance = 3.0f;
+	public static float pathMinAcceptanceDistance = 4.0f;
 	
 	public static int getWidth() {
 		return width;

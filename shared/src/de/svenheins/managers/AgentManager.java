@@ -90,7 +90,7 @@ public class AgentManager {
 		
 		if (agent != null) {
 			agent.run(objectMapManager1, objectMapManager2);
-			AgentManager.agentList.put(agentID, agent);
+//			AgentManager.agentList.put(agentID, agent);
 		}
 	}
 
@@ -102,7 +102,7 @@ public class AgentManager {
 			agent.setX(objectX);
 			agent.setY(objectY);
 			agent.setMovement(objectMX, objectMY);
-			AgentManager.agentList.put(objectId, agent);
+//			AgentManager.agentList.put(objectId, agent);
 		}
 	}
 	

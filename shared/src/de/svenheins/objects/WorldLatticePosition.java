@@ -31,6 +31,33 @@ public class WorldLatticePosition {
 		return new WorldLatticePosition(new Point(latticePointX, latticePointY), localX, localY);
 	}
 	
+	public static WorldLatticePosition getClosestWorldLatticePosition(WorldPosition position) {
+		int localWidth = GameStates.mapTotalWidth;
+		int localHeight = GameStates.mapTotalHeight;
+		
+		int latticePointX = (int) Math.floor( (float) (position.getX()) / (localWidth)) * localWidth;
+		int latticePointY = (int) Math.floor( (float) (position.getY()) / (localHeight)) * localHeight;
+		int localXFloor = (int) Math.floor( (float) (position.getX() - latticePointX )/ GameStates.mapTileSetWidth);
+		int localYFloor = (int) Math.floor( (float) ( position.getY() - latticePointY )/ GameStates.mapTileSetHeight);
+		int localXCeiling = (int) Math.ceil( (float) (position.getX() - latticePointX )/ GameStates.mapTileSetWidth);
+		int localYCeiling = (int) Math.ceil( (float) ( position.getY() - latticePointY )/ GameStates.mapTileSetHeight);
+		
+		int localX,localY;
+		
+		if (Math.abs(latticePointX+localXFloor*GameStates.mapTileSetWidth-position.getX()) < Math.abs(latticePointX+localXCeiling*GameStates.mapTileSetWidth-position.getX())) {
+			localX = localXFloor;
+		} else {
+			localX = localXCeiling;
+		}
+		if (Math.abs(latticePointY+localYFloor*GameStates.mapTileSetHeight-position.getY()) < Math.abs(latticePointY+localYCeiling*GameStates.mapTileSetHeight-position.getY())) {
+			localY = localYFloor;
+		} else {
+			localY = localYCeiling;
+		}
+		
+		return new WorldLatticePosition(new Point(latticePointX, latticePointY), localX, localY);
+	}
+	
 	
 @Override
 	public int hashCode() {

@@ -98,9 +98,9 @@ public abstract class Agent extends PlayerEntity {
 	
 	public void addGoal( Goal additionalGoal)  {
 		this.goalList.add(additionalGoal);
-		for (int i = 0; i < goalList.size(); i ++) {
-			System.out.println("Goal No: "+i+": x="+goalList.get(i).getPosition().getX()+" y="+goalList.get(i).getPosition().getY());
-		}
+//		for (int i = 0; i < goalList.size(); i ++) {
+//			System.out.println("Goal No: "+i+": x="+goalList.get(i).getPosition().getX()+" y="+goalList.get(i).getPosition().getY());
+//		}
 	}
 	
 	public void addFirstGoal( Goal additionalGoal)  {
@@ -108,9 +108,9 @@ public abstract class Agent extends PlayerEntity {
 //			goalList.add(i, goalList.get(i-1));
 //		}
 		this.goalList.add(0, additionalGoal);
-		for (int i = 0; i < goalList.size(); i ++) {
-			System.out.println("Goal No: "+i+": x="+goalList.get(i).getPosition().getX()+" y="+goalList.get(i).getPosition().getY());
-		}
+//		for (int i = 0; i < goalList.size(); i ++) {
+//			System.out.println("Goal No: "+i+": x="+goalList.get(i).getPosition().getX()+" y="+goalList.get(i).getPosition().getY());
+//		}
 	}
 
 	public void setActualGoal(Goal actualGoal) {
@@ -160,19 +160,19 @@ public abstract class Agent extends PlayerEntity {
 	}
 	
 	public void nextGoal() {
+		this.setMovement(0, 0);
+		this.setContinuousState(EntityStates.STANDING);
 		if (goalList != null && goalList.size()>0) {
 //			System.out.println("old position: x="+pathList.get(0).getX()+" y="+pathList.get(0).getY());
 			this.actualGoal = goalList.get(0);
-			System.out.println("actualGoal: x="+actualGoal.getPosition().getX()+" y="+actualGoal.getPosition().getY());
+//			System.out.println("actualGoal: x="+actualGoal.getPosition().getX()+" y="+actualGoal.getPosition().getY());
 			this.restartPathCalculation();
 			this.goalList.remove(0);
-			for (int i = 0; i < goalList.size(); i ++) {
-				System.out.println("Goal No: "+i+": x="+goalList.get(i).getPosition().getX()+" y="+goalList.get(i).getPosition().getY());
-			}
+//			for (int i = 0; i < goalList.size(); i ++) {
+//				System.out.println("Goal No: "+i+": x="+goalList.get(i).getPosition().getX()+" y="+goalList.get(i).getPosition().getY());
+//			}
 		} else {
 			this.setActualGoal(null);
-			this.setMovement(0, 0);
-			this.setContinuousState(EntityStates.STANDING);
 			System.out.println("no more goals!");
 		}
 	}
@@ -204,7 +204,7 @@ public abstract class Agent extends PlayerEntity {
 		pathCalculationComplete = false;
 		openList = new HashMap<WorldLatticePosition, PathTile>(); // defines the openList (A*-algorithm)
 		closedList = new HashMap<WorldLatticePosition, PathTile>(); // defines the closedList (A*-algorithm)
-		this.setActualPathElement(null);
+		this.setActualPathElement(null); // important to set it null!
 	}
 	
 	public void restartPathCalculationAfterCollision(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {

@@ -21,8 +21,6 @@ public class NormalAgent extends Agent {
 	public NormalAgent(TileSet tileSet, String name, BigInteger id, float x,
 			float y, long animationDelay) {
 		super(tileSet, name, id, x, y, animationDelay);
-//		this.setMY(0.0f);
-//		this.setMY(0.0f);
 		this.setMaxSpeed(150.0f);
 		this.setDirectModus(true);
 	}
@@ -98,7 +96,6 @@ public class NormalAgent extends Agent {
 		if ( this.getMX() == 0 && this.getMY()== 0) {
 			if (this.getContinuousState() == EntityStates.WALKING) {
 				this.setContinuousState(EntityStates.STANDING);
-//				this.setChangedStates(true);
 			}
 			
 		} else {
@@ -200,8 +197,6 @@ public class NormalAgent extends Agent {
 //			System.out.println("READY!!!");
 			/** else stop movement and calculate new path */
 		} else {		
-//			int localWidth = GameStates.mapTotalWidth;
-//			int localHeight = GameStates.mapTotalHeight;
 			/** else continue with path calculation */
 			if (closedList.size() > 0 && openList.size() > 0) {
 				/** so we already started the generation of the lists */
@@ -217,7 +212,6 @@ public class NormalAgent extends Agent {
 				/** upper */
 				PathTile originTile = this.getOpenListMinimumFScorePathTile();
 //				System.out.println("F="+originTile.getFScore()+" G="+originTile.getGScore()+" H="+originTile.getHScore()); 
-//				float f, g, h;
 				if (originTile != null) {
 					closedList.put(originTile.getPosition(), originTile); //(originTile);
 					openList.remove(originTile.getPosition());
@@ -227,25 +221,21 @@ public class NormalAgent extends Agent {
 					/** upper */
 					WorldPosition tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX(), 
 							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY() -GameStates.mapTileSetHeight);
-	//				WorldLatticePosition tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
 					checkTile(originTile, tileWorldPosition, collisionMap1, collisionMap2);
 					
 					/** right */
 					tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX() + GameStates.mapTileSetWidth, 
 							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY());
-	//				tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
 					checkTile(originTile, tileWorldPosition, collisionMap1, collisionMap2);
 					
 					/** lower */
 					tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX(), 
 							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY() + GameStates.mapTileSetHeight);
-	//				tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
 					checkTile(originTile, tileWorldPosition, collisionMap1, collisionMap2);
 					
 					/** left */
 					tileWorldPosition = new WorldPosition((int) originTile.getPosition().getMapCoordinates().getX()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalX() - GameStates.mapTileSetWidth, 
 							(int) originTile.getPosition().getMapCoordinates().getY()+GameStates.mapTileSetWidth*originTile.getPosition().getLocalY());
-	//				tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
 					checkTile(originTile, tileWorldPosition, collisionMap1, collisionMap2);
 					
 					if (openList.containsKey(WorldLatticePosition.getWorldLatticePosition(actualGoal.getPosition()))) {
@@ -434,23 +424,22 @@ public class NormalAgent extends Agent {
 	
 	public void restartPathCalculationAfterCollision(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
 		super.restartPathCalculationAfterCollision(collisionMap1, collisionMap2);
-		int pathSeparation = 4;
-//		WorldPosition pathStepPosition = new WorldPosition(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY());
-//		for (int i = 1; i <= pathSeparation; i++) {
-//			pathStepPosition = new WorldPosition(this.getX()+((this.getActualGoal().getPosition().getX()-this.getX())*((float)(i)/pathSeparation)), this.getY()+((this.getActualGoal().getPosition().getY()-this.getY())*((float)(i)/pathSeparation)));
-//			if ((collisionMap1.checkCollision(WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getMapCoordinates(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalX(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalY() ) ) ||
-//					(collisionMap2.checkCollision(WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getMapCoordinates(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalX(), WorldLatticePosition.getWorldLatticePosition(pathStepPosition).getLocalY() ) )){
-//				/** collision */
-//				//next!
-//			} else {
-//				/** this position is fine! so leave the loop */
-//				break;
-//			}
-//		}
-		
-		WorldPosition pathStepPosition = new WorldPosition(this.getX()+((this.getActualGoal().getPosition().getX()-this.getX())*((float)(2)/pathSeparation)), this.getY()+((this.getActualGoal().getPosition().getY()-this.getY())*((float)(2)/pathSeparation)));
-		
-		Goal intermediateGoal = new Goal(pathStepPosition);
+		int pathSeparation = 20;
+		/** if no intermediate step will be found, we take the goal itself */
+		WorldLatticePosition pathStepPosition = WorldLatticePosition.getClosestWorldLatticePosition(new WorldPosition(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY()));
+		for (int i = 1; i <= pathSeparation; i++) {
+			pathStepPosition = WorldLatticePosition.getClosestWorldLatticePosition(new WorldPosition(this.getX()+((this.getActualGoal().getPosition().getX()-this.getX())*((float)(i)/pathSeparation)), this.getY()+((this.getActualGoal().getPosition().getY()-this.getY())*((float)(i)/pathSeparation))));
+			PathTile pathStepTile = new PathTile(pathStepPosition, pathStepPosition, 0, 0, 0);
+			if ((collisionMap1.checkCollision(pathStepTile.getPosition().getMapCoordinates(), pathStepTile.getPosition().getLocalX(), pathStepTile.getPosition().getLocalY() ) ) ||
+					(collisionMap2.checkCollision(pathStepTile.getPosition().getMapCoordinates(), pathStepTile.getPosition().getLocalX(), pathStepTile.getPosition().getLocalY() ) )) {
+				/** collision!!! 
+				 * this tile is not acceptable as an intermediate step * */
+			} else {
+				/** we found the first acceptable intermediate step!*/
+				break;
+			}
+		}	
+		Goal intermediateGoal = new Goal(WorldPosition.getWorldPosition(pathStepPosition));
 		this.addFirstGoal(this.getActualGoal());
 		this.setActualGoal(intermediateGoal);
 		this.setDirectModus(false);

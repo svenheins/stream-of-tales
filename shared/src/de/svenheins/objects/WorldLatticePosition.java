@@ -48,11 +48,19 @@ public class WorldLatticePosition {
 			localX = localXFloor;
 		} else {
 			localX = localXCeiling;
+			if( localX == GameStates.mapWidth) {
+				latticePointX += localWidth;
+				localX = 0;
+			}
 		}
 		if (Math.abs(latticePointY+localYFloor*GameStates.mapTileSetHeight-position.getY()) < Math.abs(latticePointY+localYCeiling*GameStates.mapTileSetHeight-position.getY())) {
 			localY = localYFloor;
 		} else {
 			localY = localYCeiling;
+			if( localY == GameStates.mapHeight) {
+				latticePointY += localHeight;
+				localY = 0;
+			}
 		}
 		
 		return new WorldLatticePosition(new Point(latticePointX, latticePointY), localX, localY);

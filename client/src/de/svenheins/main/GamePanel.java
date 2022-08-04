@@ -61,7 +61,9 @@ import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldPosition;
 import de.svenheins.objects.agents.Agent;
+import de.svenheins.objects.agents.NormalAgent;
 import de.svenheins.objects.agents.SimpleAgent;
+import de.svenheins.objects.agents.StupidAgent;
 import de.svenheins.objects.agents.goals.Goal;
 import de.svenheins.objects.items.Item;
 
@@ -383,23 +385,47 @@ public class GamePanel extends JPanel {
 		LightManager.add(light3);
 		
 		/** add some agents to the Agentmanager */
-		SimpleAgent agent;
+		NormalAgent agent;
+		StupidAgent stupidAgent;
+		SimpleAgent simpleAgent;
 		BigInteger runningID = BigInteger.valueOf(0);
 		TileSet tileSet_SA = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
 		for (int i = 0; i <1; i++ ){
 			float x = 400+ (int) (Math.random()*100) -100; 
 			float y = -32+ (int) (Math.random()*200) -100;
-			agent = new SimpleAgent(tileSet_SA, "simpleAgent", runningID, x, y, GameStates.animationDelay);
+			agent = new NormalAgent(tileSet_SA, "normalAgent", runningID, x, y, GameStates.animationDelay);
+			/** increase ID, so the AgentManager can identify the agent */
+			runningID = runningID.add(BigInteger.valueOf(1));
+			x = 400+ (int) (Math.random()*100) -10; 
+			stupidAgent = new StupidAgent(tileSet_SA, "stupidAgent", runningID, x, y, GameStates.animationDelay);
+			runningID = runningID.add(BigInteger.valueOf(1));
+			simpleAgent = new SimpleAgent(tileSet_SA, "simpleAgent", runningID, x, y, GameStates.animationDelay);
+			runningID = runningID.add(BigInteger.valueOf(1));
+			
 			Goal goal = new Goal(new WorldPosition(-500, -300)/*, playerEntity.getId(), playerEntity*/);
-			Goal additionalGoal = new Goal(new WorldPosition(200,  0));
+			Goal additionalGoal = new Goal(new WorldPosition(400,  0));
 			Goal additionalGoal2 = new Goal(new WorldPosition(-500, 300));
 			Goal additionalGoal3 = new Goal(new WorldPosition(400, -100+ (int) (Math.random()*20) -100));
+//			Goal playerEntityPosition = new Goal(new WorldPosition(playerEntity.getX(),playerEntity.getY()), entityID, entity)
 			agent.setActualGoal(goal);
+			agent.addGoal(goal);
 			agent.addGoal(additionalGoal);
 			agent.addGoal(additionalGoal2);
 			agent.addGoal(additionalGoal3);
-			runningID = runningID.add(BigInteger.valueOf(1));
+			stupidAgent.setActualGoal(goal);
+			stupidAgent.addGoal(goal);
+			stupidAgent.addGoal(additionalGoal);
+			stupidAgent.addGoal(additionalGoal2);
+			stupidAgent.addGoal(additionalGoal3);
+			simpleAgent.setActualGoal(goal);
+			simpleAgent.addGoal(goal);
+			simpleAgent.addGoal(additionalGoal);
+			simpleAgent.addGoal(additionalGoal2);
+			simpleAgent.addGoal(additionalGoal3);
+			
 			AgentManager.add(agent);
+			AgentManager.add(stupidAgent);
+			AgentManager.add(simpleAgent);
 		}
 		
 		

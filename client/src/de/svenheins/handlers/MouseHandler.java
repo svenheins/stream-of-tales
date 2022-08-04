@@ -27,6 +27,7 @@ import de.svenheins.objects.items.Item;
 //import de.svenheins.objects.items.materials.Wood;
 
 import de.svenheins.animation.SpaceDisappear;
+import de.svenheins.functions.MyMath;
 
 
 import de.svenheins.main.ConnectionWindow;
@@ -325,7 +326,9 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 		}
 		if (GamePanel.gp.getPlayerEntity().contains(correctedPoint)) {
 //			StatPanel.sp.contextMenu.create(GamePanel.gp.playerEntity, p_save.x, p_save.y);
-			clickedOnGUI = true;
+//			clickedOnGUI = true;
+			/** ignore left-clicks on the player himself */
+			clickedOnGUI = false;
 		}
 		boolean clickedOnAnyContainer = false;
 		for (ContainerGUI congui : ContainerGUIManager.containerGUIList.values()) {
@@ -370,38 +373,57 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 				GamePanel.gp.setDeleteModus(false);
 				paintTiles(point);
 			} else {
-				/** interact with actual interactionItem */
-				ObjectMapManager objectMapManagerTree1 = GameWindow.gw.getObjectMapManagers().get("tree1");
-				ObjectMapManager objectMapManagerTree2 = GameWindow.gw.getObjectMapManagers().get("tree2");
-//				WorldPosition position = new WorldPosition(GamePanel.gp.getPlayerEntity().getX()-16, GamePanel.gp.getPlayerEntity().getY()+16);
-				WorldPosition position = new WorldPosition(GamePanel.gp.getPlayerEntity().getX()-32, GamePanel.gp.getPlayerEntity().getY());
-				int[] values = new int[TileType.values().length];
-				values[TileType.TREE.ordinal()] = 30;
-				values[TileType.STONE.ordinal()] = 15;
-				InteractionArea iArea = new InteractionArea(position, values, 96, 96);
-				ArrayList<InteractionTile> overflowTile1 = objectMapManagerTree1.interact(iArea);
-				ArrayList<InteractionTile> overflowTile2 = objectMapManagerTree2.interact(iArea);
-				if (overflowTile1 != null) {
-//					System.out.println("overflowTile1 != null");
-					if (overflowTile1.size() > 0) {
-//						System.out.println("overflowTile1.size() = "+overflowTile1.size());
-						for (InteractionTile iTile : overflowTile1) {
-//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
-							GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
-							InteractionManager.remove(iTile.getPosition());
+				/** normal player might interact with objects */
+				int interactionWidth = 32;
+				int interactionHeight = 32;
+				/** define center of Player */
+				float playerCenterX = GamePanel.gp.getPlayerEntity().getX() + (GamePanel.gp.getPlayerEntity().getWidth()/2);
+				float playerCenterY = GamePanel.gp.getPlayerEntity().getY() + ((float)GamePanel.gp.getPlayerEntity().getHeight());
+				Point playerPos = new Point((int)playerCenterX,(int) playerCenterY);
+				
+//				System.out.println("Distance: "+MyMath.getDistance(playerPos, correctedPoint));
+				/** if interaction is close enough */
+				if(MyMath.getDistance(playerPos, correctedPoint) < GameStates.interactDistance) {
+					float interactionPosX = (float) correctedPoint.getX();// - ((interactionWidth*2)/3);
+					float interactionPosY = (float) correctedPoint.getY();// - ((interactionHeight*2)/3);
+					
+	//				WorldPosition position = new WorldPosition(GamePanel.gp.getPlayerEntity().getX()-32, GamePanel.gp.getPlayerEntity().getY());
+					WorldPosition position = new WorldPosition(interactionPosX, interactionPosY);
+					
+					/** interact with actual interactionItem */
+					ObjectMapManager objectMapManagerTree1 = GameWindow.gw.getObjectMapManagers().get("tree1");
+					ObjectMapManager objectMapManagerTree2 = GameWindow.gw.getObjectMapManagers().get("tree2");
+					
+					int[] values = new int[TileType.values().length];
+					values[TileType.TREE.ordinal()] = 30;
+					values[TileType.STONE.ordinal()] = 15;
+					InteractionArea iArea = new InteractionArea(position, values, interactionWidth, interactionHeight);
+					ArrayList<InteractionTile> overflowTile1 = objectMapManagerTree1.interact(iArea);
+					ArrayList<InteractionTile> overflowTile2 = objectMapManagerTree2.interact(iArea);
+					if (overflowTile1 != null) {
+	//					System.out.println("overflowTile1 != null");
+						if (overflowTile1.size() > 0) {
+	//						System.out.println("overflowTile1.size() = "+overflowTile1.size());
+							for (InteractionTile iTile : overflowTile1) {
+	//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
+								GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
+								InteractionManager.remove(iTile.getPosition());
+							}
 						}
 					}
-				}
-				if ( overflowTile2 != null) {
-//					System.out.println("overflowTile2 != null");
-					if (overflowTile2.size() > 0) {
-//						System.out.println("overflowTile2.size() = "+overflowTile2.size());
-						for (InteractionTile iTile : overflowTile2) {
-//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
-							GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree2", "overlayTree2"));
-							InteractionManager.remove(iTile.getPosition());
+					if ( overflowTile2 != null) {
+	//					System.out.println("overflowTile2 != null");
+						if (overflowTile2.size() > 0) {
+	//						System.out.println("overflowTile2.size() = "+overflowTile2.size());
+							for (InteractionTile iTile : overflowTile2) {
+	//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
+								GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree2", "overlayTree2"));
+								InteractionManager.remove(iTile.getPosition());
+							}
 						}
 					}
+				} else {
+					/** interaction is too far away */
 				}
 			}
 		}

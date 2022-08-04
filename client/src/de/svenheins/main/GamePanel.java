@@ -408,7 +408,7 @@ public class GamePanel extends JPanel {
 			Goal additionalGoal3 = new Goal(new WorldPosition(400, -100+ (int) (Math.random()*20) -100));
 //			Goal playerEntityPosition = new Goal(new WorldPosition(playerEntity.getX(),playerEntity.getY()), entityID, entity)
 			agent.setActualGoal(goal);
-			agent.addGoal(goal);
+//			agent.addGoal(goal);
 			agent.addGoal(additionalGoal);
 			agent.addGoal(additionalGoal2);
 			agent.addGoal(additionalGoal3);
@@ -424,8 +424,8 @@ public class GamePanel extends JPanel {
 			simpleAgent.addGoal(additionalGoal3);
 			
 			AgentManager.add(agent);
-			AgentManager.add(stupidAgent);
-			AgentManager.add(simpleAgent);
+//			AgentManager.add(stupidAgent);
+//			AgentManager.add(simpleAgent);
 		}
 		
 		

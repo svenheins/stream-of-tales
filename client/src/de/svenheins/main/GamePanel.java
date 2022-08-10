@@ -391,7 +391,7 @@ public class GamePanel extends JPanel {
 		SimpleAgent simpleAgent;
 		BigInteger runningID = BigInteger.valueOf(0);
 		TileSet tileSet_SA = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
-		for (int i = 0; i <0; i++ ){
+		for (int i = 0; i <1; i++ ){
 			float x = 400+ (int) (Math.random()*100) -100; 
 			float y = -32+ (int) (Math.random()*200) -100;
 			agent = new NormalAgent(tileSet_SA, "normalAgent", runningID, x, y, GameStates.animationDelay);
@@ -407,12 +407,14 @@ public class GamePanel extends JPanel {
 			Goal additionalGoal = new Goal(new WorldPosition(400,  0));
 			Goal additionalGoal2 = new Goal(new WorldPosition(-500, 300));
 			Goal additionalGoal3 = new Goal(new WorldPosition(400, -100+ (int) (Math.random()*20) -100));
+			Goal additionalGoal4 = new Goal(new WorldPosition(36000, -2000));
 //			Goal playerEntityPosition = new Goal(new WorldPosition(playerEntity.getX(),playerEntity.getY()), entityID, entity)
 			agent.setActualGoal(goal);
 //			agent.addGoal(goal);
 			agent.addGoal(additionalGoal);
 			agent.addGoal(additionalGoal2);
 			agent.addGoal(additionalGoal3);
+			agent.addGoal(additionalGoal4);
 			stupidAgent.setActualGoal(goal);
 			stupidAgent.addGoal(goal);
 			stupidAgent.addGoal(additionalGoal);
@@ -424,7 +426,7 @@ public class GamePanel extends JPanel {
 			simpleAgent.addGoal(additionalGoal2);
 			simpleAgent.addGoal(additionalGoal3);
 			
-//			AgentManager.add(agent);
+			AgentManager.add(agent);
 //			AgentManager.add(stupidAgent);
 //			AgentManager.add(simpleAgent);
 		}

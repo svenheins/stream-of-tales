@@ -423,8 +423,10 @@ public class NormalAgent extends Agent {
 	}
 	
 	public void restartPathCalculationAfterCollision(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
+//		System.out.println("restartPathCalculation of NormalAgent");
+		this.setDirectModus(false);
 		super.restartPathCalculationAfterCollision(collisionMap1, collisionMap2);
-		int pathSeparation = 20;
+		int pathSeparation = (int) Math.ceil(this.getDistance(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY())/(4*GameStates.mapTileSetWidth));
 		/** if no intermediate step will be found, we take the goal itself */
 		WorldLatticePosition pathStepPosition = WorldLatticePosition.getClosestWorldLatticePosition(new WorldPosition(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY()));
 		for (int i = 1; i <= pathSeparation; i++) {
@@ -442,7 +444,6 @@ public class NormalAgent extends Agent {
 		Goal intermediateGoal = new Goal(WorldPosition.getWorldPosition(pathStepPosition));
 		this.addFirstGoal(this.getActualGoal());
 		this.setActualGoal(intermediateGoal);
-		this.setDirectModus(false);
 	}
 	
 	public void nextGoal() {

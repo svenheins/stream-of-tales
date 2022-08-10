@@ -374,57 +374,59 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 				paintTiles(point);
 			} else {
 				/** normal player might interact with objects */
-				int interactionWidth = 32;
-				int interactionHeight = 32;
+				int interactionWidth = GameStates.mapTileSetWidth;
+				int interactionHeight = GameStates.mapTileSetHeight;
 				/** define center of Player */
 				float playerCenterX = GamePanel.gp.getPlayerEntity().getX() + (GamePanel.gp.getPlayerEntity().getWidth()/2);
 				float playerCenterY = GamePanel.gp.getPlayerEntity().getY() + ((float)GamePanel.gp.getPlayerEntity().getHeight());
 				Point playerPos = new Point((int)playerCenterX,(int) playerCenterY);
 				
-//				System.out.println("Distance: "+MyMath.getDistance(playerPos, correctedPoint));
-				/** if interaction is close enough */
-				if(MyMath.getDistance(playerPos, correctedPoint) < GameStates.interactDistance) {
-					float interactionPosX = (float) correctedPoint.getX();// - ((interactionWidth*2)/3);
-					float interactionPosY = (float) correctedPoint.getY();// - ((interactionHeight*2)/3);
-					
-	//				WorldPosition position = new WorldPosition(GamePanel.gp.getPlayerEntity().getX()-32, GamePanel.gp.getPlayerEntity().getY());
-					WorldPosition position = new WorldPosition(interactionPosX, interactionPosY);
-					
-					/** interact with actual interactionItem */
-					ObjectMapManager objectMapManagerTree1 = GameWindow.gw.getObjectMapManagers().get("tree1");
-					ObjectMapManager objectMapManagerTree2 = GameWindow.gw.getObjectMapManagers().get("tree2");
-					
-					int[] values = new int[TileType.values().length];
-					values[TileType.TREE.ordinal()] = 30;
-					values[TileType.STONE.ordinal()] = 15;
-					InteractionArea iArea = new InteractionArea(position, values, interactionWidth, interactionHeight);
-					ArrayList<InteractionTile> overflowTile1 = objectMapManagerTree1.interact(iArea);
-					ArrayList<InteractionTile> overflowTile2 = objectMapManagerTree2.interact(iArea);
-					if (overflowTile1 != null) {
-	//					System.out.println("overflowTile1 != null");
-						if (overflowTile1.size() > 0) {
-	//						System.out.println("overflowTile1.size() = "+overflowTile1.size());
-							for (InteractionTile iTile : overflowTile1) {
-	//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
-								GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
-								InteractionManager.remove(iTile.getPosition());
-							}
-						}
-					}
-					if ( overflowTile2 != null) {
-	//					System.out.println("overflowTile2 != null");
-						if (overflowTile2.size() > 0) {
-	//						System.out.println("overflowTile2.size() = "+overflowTile2.size());
-							for (InteractionTile iTile : overflowTile2) {
-	//							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
-								GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree2", "overlayTree2"));
-								InteractionManager.remove(iTile.getPosition());
-							}
-						}
-					}
+				float interactionPosX;// = (float) (playerCenterX + GameStates.interactDistance*(((float)(correctedPoint.getX()- playerCenterX))/MyMath.getDistance(playerPos, correctedPoint))-(interactionWidth/2));
+				float interactionPosY;
+				WorldPosition interactionPosition;
+				if (MyMath.getDistance(playerPos, correctedPoint) >0) {
+					interactionPosX = (float) (playerCenterX + GameStates.interactDistance*(((float)(correctedPoint.getX()- playerCenterX))/MyMath.getDistance(playerPos, correctedPoint))-(interactionWidth/2));
+					interactionPosY = (float) (playerCenterY + GameStates.interactDistance*(((float)(correctedPoint.getY()- playerCenterY))/MyMath.getDistance(playerPos, correctedPoint))-(interactionHeight/2));
+					interactionPosition = new WorldPosition(interactionPosX, interactionPosY);
 				} else {
-					/** interaction is too far away */
+					interactionPosX = (float) (playerCenterX);
+					interactionPosY = (float) (playerCenterY);
+					interactionPosition = new WorldPosition(interactionPosX, interactionPosY);
 				}
+				
+				/** interact with actual interactionItem */
+				ObjectMapManager objectMapManagerTree1 = GameWindow.gw.getObjectMapManagers().get("tree1");
+				ObjectMapManager objectMapManagerTree2 = GameWindow.gw.getObjectMapManagers().get("tree2");
+				
+				int[] values = new int[TileType.values().length];
+				values[TileType.TREE.ordinal()] = 30;
+				values[TileType.STONE.ordinal()] = 15;
+				InteractionArea iArea = new InteractionArea(interactionPosition, values, interactionWidth, interactionHeight);
+				ArrayList<InteractionTile> overflowTile1 = objectMapManagerTree1.interact(iArea);
+				ArrayList<InteractionTile> overflowTile2 = objectMapManagerTree2.interact(iArea);
+				if (overflowTile1 != null) {
+//					System.out.println("overflowTile1 != null");
+					if (overflowTile1.size() > 0) {
+						System.out.println("overflowTile1.size() = "+overflowTile1.size());
+						for (InteractionTile iTile : overflowTile1) {
+							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
+							GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
+							InteractionManager.remove(iTile.getPosition());
+						}
+					}
+				}
+				if ( overflowTile2 != null) {
+//					System.out.println("overflowTile2 != null");
+					if (overflowTile2.size() > 0) {
+						System.out.println("overflowTile2.size() = "+overflowTile2.size());
+						for (InteractionTile iTile : overflowTile2) {
+							System.out.println("reached limit at map "+iTile.getPosition().getMapCoordinates().getX()+"|"+iTile.getPosition().getMapCoordinates().getY()+" localX|Y="+iTile.getPosition().getLocalX()+"|"+iTile.getPosition().getLocalY());
+							GameWindow.gw.send(ClientMessages.deleteMapObject(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree2", "overlayTree2"));
+							InteractionManager.remove(iTile.getPosition());
+						}
+					}
+				}
+
 			}
 		}
 	}
@@ -440,12 +442,10 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 					clickedOnGUI = true;
 					StatPanel.sp.contextMenu.create(playerEntity, point.x-GameStates.contextMenuFrameDistX, point.y-GameStates.contextMenuFrameDistY);
 				}
-				
 //				GamePanel.gp.setPaintType(PlayerListGUIManager.get(playerGUIName).getIntValue());
 //				GamePanel.gp.setPaintLayer(PlayerListGUIManager.get(playerGUIName).getStrValue());
 			}
 		}
-		
 		Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
 		for(BigInteger i : EntityManager.idList){
 			if (EntityManager.get(i).contains(correctedPoint)) {

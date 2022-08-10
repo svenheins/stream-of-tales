@@ -47,13 +47,13 @@ public class GameStates {
 	/** movement properties */
 //	public static int DEFAULT_MOVEMENT_ON_X = 100;
 //	public static int DEFAULT_MOVEMENT_ON_Y = 100;
-	public static float entityMaxSpeed = 100.0f;
+	public static float entityMaxSpeed = 500.0f;
 	
 	/** item/ inventory stuff */ 
 	/**take distance */
 	public static int takeDistance = 16;
 	public static int dropDistance = 20;
-	public static int interactDistance = 80;
+	public static int interactDistance = 48;
 	public static int inventoryPlayerX = width * 15 / 20;
 	public static int inventoryPlayerY = 120;
 	public static int inventoryWidthPlayer = 4;

@@ -1,0 +1,14 @@
+#Fat Jar Configuration File
+#Sat Nov 08 22:35:26 CET 2014
+onejar.license.required=true
+manifest.classpath=
+manifest.removesigners=true
+onejar.checkbox=false
+jarname=rd56_client_fat.jar
+manifest.mergeall=true
+manifest.mainclass=de.svenheins.main.GUI
+manifest.file=<createnew>
+jarname.isextern=false
+onejar.expand=
+excludes=
+includes=

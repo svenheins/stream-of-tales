@@ -53,8 +53,8 @@ public class InteractionArea {
 		int localX; //= (int) Math.floor( (float) ((position.getX()+this.getWidth()) - latticePointDRX )/ GameStates.mapTileSetWidth);
 		int localY; //= (int) Math.floor( (float) ((position.getY()+this.getHeight()) - latticePointDRY )/ GameStates.mapTileSetHeight);
 //		WorldLatticePosition worldLatticePositionAdd;// = new WorldLatticePosition(mapCoordinates, localX, localY, room)
-		for (int i = 0; i< limitY; i++) {
-			for (int j =0 ; j< limitX; j++) {
+		for (int i = 0; i<= limitY; i++) {
+			for (int j =0 ; j<= limitX; j++) {
 				latticePointX = (int) Math.floor( (float) (position.getX()+i*GameStates.mapTileSetWidth) / (localWidth)) * localWidth;
 				latticePointY = (int) Math.floor( (float) (position.getY()+j*GameStates.mapTileSetHeight) / (localHeight)) * localHeight;
 				localX = (int) Math.floor( (float) ((position.getX()+i*GameStates.mapTileSetWidth) - latticePointX )/ GameStates.mapTileSetWidth);

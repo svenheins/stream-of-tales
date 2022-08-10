@@ -1090,7 +1090,7 @@ public class ClientMessageHandler {
 				}
 			}
 
-			if ( localX % 2 == 0 && localY % 2 == 0) {
+			if ( localX % 2 == 0 && localY % 2 == 0) {				
 				/** determine here the relevant paintLayer */
 				int paintType = LocalMap.getPaintType(localMap.getLocalMap()[localX][localY]);
 				ITEMCODE itemCode = LocalMap.getItemCode(paintType);

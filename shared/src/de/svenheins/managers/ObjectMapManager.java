@@ -1317,6 +1317,7 @@ public void adjustSurrounding2x1(LocalMap localMap, int localX, int localY, int 
 		ArrayList<InteractionTile> retList = new ArrayList<InteractionTile>();
 		int[] interactValues;
 		for (WorldLatticePosition worldLatticePosition : interactionArea.getInfluencedInteractionTilePositions()) {
+			System.out.println("A");
 			if (localMapList.containsKey(worldLatticePosition.getMapCoordinates())) {		
 				if (localMapList.get(worldLatticePosition.getMapCoordinates()).getLocalMap()[worldLatticePosition.getLocalX()][worldLatticePosition.getLocalY()] != 0) {
 					/** calculate index, that is not null */

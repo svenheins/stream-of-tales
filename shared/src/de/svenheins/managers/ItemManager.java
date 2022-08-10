@@ -36,9 +36,9 @@ public class ItemManager {
 		}
 	}
 	
-	public static Item get(BigInteger index){
+	public static Item get(BigInteger id){
 		try {
-			return itemList.get(index);
+			return itemList.get(id);
 		}
 		catch(IndexOutOfBoundsException e){
 			return null;

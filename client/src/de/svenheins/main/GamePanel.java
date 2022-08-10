@@ -36,6 +36,7 @@ import de.svenheins.main.gui.PlayerListGUI;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.AnimationManager;
+import de.svenheins.managers.AreaInfluenceManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ItemManager;
@@ -49,6 +50,7 @@ import de.svenheins.managers.UndergroundMapManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.ITEMCODE;
 
+import de.svenheins.objects.AreaInfluence;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.IngameConsole;
 import de.svenheins.objects.IngameWindow;
@@ -69,12 +71,15 @@ import de.svenheins.objects.items.Item;
 
 import de.svenheins.threads.AgentThread;
 import de.svenheins.threads.AnimationThread;
+import de.svenheins.threads.AreaInfluenceThread;
 import de.svenheins.threads.ChannelUpdateMapsThread;
 import de.svenheins.threads.ChannelUpdateThread;
 import de.svenheins.threads.CollisionThread;
 import de.svenheins.threads.GraphicThread;
+import de.svenheins.threads.InfluenceThread;
 import de.svenheins.threads.InputThread;
 import de.svenheins.threads.InteractionThread;
+import de.svenheins.threads.ItemInfluenceThread;
 import de.svenheins.threads.LightThread;
 import de.svenheins.threads.MapUpdateThread;
 import de.svenheins.threads.MoveThread;
@@ -115,6 +120,9 @@ public class GamePanel extends JPanel {
 	private LightThread lightThread;
 	private AgentThread agentThread;
 	private InteractionThread interactionThread;
+	private ItemInfluenceThread itemInfluenceThread;
+	private AreaInfluenceThread areaInfluenceThread;
+	private InfluenceThread influenceThread;
 	public static GamePanel gp;
 //	public static String resourcePath = "/resources/";
 //	public static String svgPath = "/resources/svg/";
@@ -182,6 +190,9 @@ public class GamePanel extends JPanel {
 		new Thread(lightThread).start();
 		new Thread(agentThread).start();
 		new Thread(interactionThread).start();
+		new Thread(itemInfluenceThread).start();
+		new Thread(areaInfluenceThread).start();
+		new Thread(influenceThread).start();
 	}
 	
 	/**
@@ -235,6 +246,9 @@ public class GamePanel extends JPanel {
 		lightThread = new LightThread();
 		agentThread = new AgentThread();
 		interactionThread = new InteractionThread();
+		itemInfluenceThread = new ItemInfluenceThread();
+		areaInfluenceThread = new AreaInfluenceThread();
+		influenceThread = new InfluenceThread();
 	}
 	
 	public void config() {		
@@ -431,6 +445,10 @@ public class GamePanel extends JPanel {
 //			AgentManager.add(simpleAgent);
 		}
 		
+		float[] tempAttributes = new float[AttributeType.values().length];
+		tempAttributes[AttributeType.MX.ordinal()]= 70.0f;
+		AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+60000, new Entity(new TileSet("tilesets/entities/areaInfluence.png", "areaInfluence1", 500, 500), "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay), "movers", true, tempAttributes, Priority.LOW);
+		AreaInfluenceManager.add(areaInfluence1);
 		
 		/** add standard background texture */
 		ClientTextureManager.manager.getTexture(GameStates.standardBackgroundTexture);
@@ -523,23 +541,25 @@ public class GamePanel extends JPanel {
 		}
 		
 		/** define rect for underground */
-		int localWidthUnderground = GameStates.ugrMapWidth * GameStates.ugrMapTileSetWidth;
-		int localHeightUnderground = GameStates.ugrMapHeight * GameStates.ugrMapTileSetHeight;
+//		int localWidthUnderground = GameStates.ugrMapWidth * GameStates.ugrMapTileSetWidth;
+//		int localHeightUnderground = GameStates.ugrMapHeight * GameStates.ugrMapTileSetHeight;
 
-		int minXUnderground = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidthUnderground/2) / (localWidthUnderground)) * localWidthUnderground) - GameStates.factorOfViewDeleteDistance*localWidthUnderground;
-		int maxXUnderground = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidthUnderground/2) / (localWidthUnderground)) * localWidthUnderground) + GameStates.factorOfViewDeleteDistance*localWidthUnderground;
-		int minYUnderground = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeightUnderground/2) / (localHeightUnderground)) * localHeightUnderground - GameStates.factorOfViewDeleteDistance*localHeightUnderground;
-		int maxYUnderground = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeightUnderground/2) / (localHeightUnderground)) * localHeightUnderground + GameStates.factorOfViewDeleteDistance*localHeightUnderground;
+		int minXUnderground = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+GameStates.ugrMapTotalWidth/2) / (GameStates.ugrMapTotalWidth)) * GameStates.ugrMapTotalWidth) - GameStates.factorOfViewDeleteDistance*GameStates.ugrMapTotalWidth;
+		int maxXUnderground = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+GameStates.ugrMapTotalWidth/2) / (GameStates.ugrMapTotalWidth)) * GameStates.ugrMapTotalWidth) + GameStates.factorOfViewDeleteDistance*GameStates.ugrMapTotalWidth;
+		int minYUnderground = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+GameStates.ugrMapTotalHeight/2) / (GameStates.ugrMapTotalHeight)) * GameStates.ugrMapTotalHeight - GameStates.factorOfViewDeleteDistance*GameStates.ugrMapTotalHeight;
+		int maxYUnderground = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+GameStates.ugrMapTotalHeight/2) / (GameStates.ugrMapTotalHeight)) * GameStates.ugrMapTotalHeight + GameStates.factorOfViewDeleteDistance*GameStates.ugrMapTotalHeight;
 		Rectangle rectUnderground = new Rectangle(minXUnderground, minYUnderground, maxXUnderground-minXUnderground, maxYUnderground-minYUnderground);
 
 		
 		/** define min and max for view distance */
-		int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
-		int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
-		int minX = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidth/2) / (localWidth)) * localWidth) - GameStates.factorOfViewDeleteDistance*localWidth;
-		int maxX = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+localWidth/2) / (localWidth)) * localWidth) + GameStates.factorOfViewDeleteDistance*localWidth;
-		int minY = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeight/2) / (localHeight)) * localHeight - GameStates.factorOfViewDeleteDistance*localHeight;
-		int maxY = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+localHeight/2) / (localHeight)) * localHeight + GameStates.factorOfViewDeleteDistance*localHeight;
+//		int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
+//		int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
+		
+		
+		int minX = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+GameStates.mapTotalWidth/2) / (GameStates.mapTotalWidth)) * GameStates.mapTotalWidth) - GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth;
+		int maxX = ((int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getX()+GameStates.mapTotalWidth/2) / (GameStates.mapTotalWidth)) * GameStates.mapTotalWidth) + GameStates.factorOfViewDeleteDistance*GameStates.mapTotalWidth;
+		int minY = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+GameStates.mapTotalHeight/2) / (GameStates.mapTotalHeight)) * GameStates.mapTotalHeight - GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight;
+		int maxY = (int) Math.floor( (float) (GamePanel.gp.getPlayerEntity().getY()+GameStates.mapTotalHeight/2) / (GameStates.mapTotalHeight)) * GameStates.mapTotalHeight + GameStates.factorOfViewDeleteDistance*GameStates.mapTotalHeight;
 		Rectangle rect = new Rectangle(minX, minY, maxX-minX, maxY-minY);
 		
 //		if (isPaintEditSpaceArea() == true) {
@@ -1293,7 +1313,7 @@ public class GamePanel extends JPanel {
 		/** send the complete Item to all players of the channel */
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 			/** first send to server for the itemList */
-			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId(), mouseItem.getItemCode(), mouseItem.getCount(), mouseItem.getCapacity(), p.x, p.y, mouseItem.getEntity().getMX(), mouseItem.getEntity().getMY(), mouseItem.getName(), mouseItem.getEntity().getTileSet().getFileName(), mouseItem.getEntity().getName(), mouseItem.getStates()));
+			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId(), mouseItem.getItemCode(), mouseItem.getCount(), mouseItem.getCapacity(), p.x, p.y, mouseItem.getEntity().getMX(), mouseItem.getEntity().getMY(), mouseItem.getName(), mouseItem.getEntity().getTileSet().getFileName(), mouseItem.getEntity().getName(), mouseItem.getAttributes()));
 			
 //			GameWindow.gw.send(ClientMessages.addItem(mouseItem.getId()));
 			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
@@ -1306,5 +1326,13 @@ public class GamePanel extends JPanel {
 			}
 			this.mouseItem = null;
 		}
+	}
+
+	public InfluenceThread getInfluenceThread() {
+		return influenceThread;
+	}
+
+	public void setInfluenceThread(InfluenceThread influenceThread) {
+		this.influenceThread = influenceThread;
 	}
 }

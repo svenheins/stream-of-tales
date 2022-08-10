@@ -1,6 +1,5 @@
 package de.svenheins.objects;
 
-import de.svenheins.main.GameStates;
 import de.svenheins.main.TileType;
 
 public class InteractionTile {

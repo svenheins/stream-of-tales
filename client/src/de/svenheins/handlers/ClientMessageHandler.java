@@ -461,7 +461,7 @@ public class ClientMessageHandler {
     				break;
     			case CONTAINER_EQUIPMENT_BODY:
     				GamePanel.gp.getPlayerEntity().setEquipmentBody(inventory_SC);
-    				
+    				GamePanel.gp.getPlayerEntity().calculateTotalEquipmentInfluence();
     				break;
     			case CONTAINER_USE:
     				GamePanel.gp.getPlayerEntity().setInventoryUse(inventory_SC);
@@ -559,6 +559,7 @@ public class ClientMessageHandler {
     				if (fieldX < GamePanel.gp.getPlayerEntity().getEquipmentBody().getWidth() || fieldY < GamePanel.gp.getPlayerEntity().getEquipmentBody().getHeight() ) {
     					GameWindow.gw.send(ClientMessages.getNextItem(GamePanel.gp.getPlayerEntity().getId(), containerType_SC, fieldX, fieldY));
     				}
+    				GamePanel.gp.getPlayerEntity().calculateTotalEquipmentInfluence();
     				break;
     			case CONTAINER_USE:
     				GamePanel.gp.getPlayerEntity().getInventoryUse().getContainerArray()[fieldY][fieldX] = itemID_SC;
@@ -852,7 +853,7 @@ public class ClientMessageHandler {
 		    		GameWindow.gw.send(ClientMessages.tookItem(takeItemId));
 		    		if (restItem != null) {
 	    				/** first send to server for the itemList */
-						GameWindow.gw.send(ClientMessages.addItem(restItem.getId(), restItem.getItemCode(), restItem.getCount(), restItem.getCapacity(), restItem.getEntity().getX(), restItem.getEntity().getY(), restItem.getEntity().getMX(), restItem.getEntity().getMY(), restItem.getName(), restItem.getEntity().getTileSet().getFileName(), restItem.getEntity().getName(), restItem.getStates()));
+						GameWindow.gw.send(ClientMessages.addItem(restItem.getId(), restItem.getItemCode(), restItem.getCount(), restItem.getCapacity(), restItem.getEntity().getX(), restItem.getEntity().getY(), restItem.getEntity().getMX(), restItem.getEntity().getMY(), restItem.getName(), restItem.getEntity().getTileSet().getFileName(), restItem.getEntity().getName(), restItem.getAttributes()));
 						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 							try {
@@ -1105,11 +1106,11 @@ public class ClientMessageHandler {
 					/** send the complete Item to all players of the channel */
 					if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 						/** first send to server for the itemList */
-						GameWindow.gw.send(ClientMessages.addItem(dropItem.getId(), dropItem.getItemCode(), dropItem.getCount(), dropItem.getCapacity(), dropItem.getEntity().getX(), dropItem.getEntity().getY(), dropItem.getEntity().getMX(), dropItem.getEntity().getMY(), dropItem.getName(), dropItem.getEntity().getTileSet().getFileName(), dropItem.getEntity().getName(), dropItem.getStates()));
+						GameWindow.gw.send(ClientMessages.addItem(dropItem.getId(), dropItem.getItemCode(), dropItem.getCount(), dropItem.getCapacity(), dropItem.getEntity().getX(), dropItem.getEntity().getY(), dropItem.getEntity().getMX(), dropItem.getEntity().getMY(), dropItem.getName(), dropItem.getEntity().getTileSet().getFileName(), dropItem.getEntity().getName(), dropItem.getAttributes()));
 						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 							try {
-								channel.send(ClientMessages.addCompleteItem(dropItem.getItemCode(), dropItem.getId(), dropItem.getName(), dropItem.getEntity().getX(), dropItem.getEntity().getY(), dropItem.getCount(), dropItem.getStates()));
+								channel.send(ClientMessages.addCompleteItem(dropItem.getItemCode(), dropItem.getId(), dropItem.getName(), dropItem.getEntity().getX(), dropItem.getEntity().getY(), dropItem.getCount(), dropItem.getAttributes()));
 							} catch (IOException e) {
 								e.printStackTrace();
 							}	
@@ -1328,7 +1329,7 @@ public class ClientMessageHandler {
     				GameWindow.gw.send(ClientMessages.clearContainerPosition(inventory.getContainerType(), i, j));
     			} else {
     				tempItem = inventory.getItemList().get(inventory.getContainerArray()[i][j]);
-					GameWindow.gw.send(ClientMessages.addItemToContainer(inventory.getContainerType(), tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getEntity().getX(), tempItem.getEntity().getY(), tempItem.getEntity().getMX(), tempItem.getEntity().getMY(), tempItem.getName(), tempItem.getEntity().getTileSet().getFileName(), tempItem.getEntity().getName(), tempItem.getStates(), i, j));
+					GameWindow.gw.send(ClientMessages.addItemToContainer(inventory.getContainerType(), tempItem.getId(), tempItem.getItemCode(), tempItem.getCount(), tempItem.getCapacity(), tempItem.getEntity().getX(), tempItem.getEntity().getY(), tempItem.getEntity().getMX(), tempItem.getEntity().getMY(), tempItem.getName(), tempItem.getEntity().getTileSet().getFileName(), tempItem.getEntity().getName(), tempItem.getAttributes(), i, j));
     			}    	    			
     		}
     	}

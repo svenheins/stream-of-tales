@@ -186,4 +186,32 @@ public class MyMath {
 		}
 		return sumComplete;
 	}
+	
+	/** addition of float arrays (component wise) */
+	public static float[] addFloatArrays(float[] float1, float[] float2) {
+		if (float1.length == float2.length) {
+			float[] retFloat = new float[float1.length];
+			for (int i = 0; i < float1.length; i++) {
+				retFloat[i] = float1[i] + float2[i];
+			}
+			return retFloat;
+		} else {
+			System.out.println("Wrong dimensions: float1.length="+float1.length+" VS float2.length="+float2.length);
+			return null;
+		}
+	}
+	
+	/** addition of float arrays (component wise) */
+	public static float[] add5FloatArrays(float[] float1, float[] float2, float[] float3, float[] float4, float[] float5) {
+		if ((float1.length == float2.length) && (float1.length == float2.length)&& (float1.length == float3.length)&& (float1.length == float4.length)&& (float1.length == float5.length)) {
+			float[] retFloat = new float[float1.length];
+			for (int i = 0; i < float1.length; i++) {
+				retFloat[i] = float1[i] + float2[i] + float3[i] + float4[i] + float5[i];
+			}
+			return retFloat;
+		} else {
+			System.out.println("Wrong dimensions: float1.length="+float1.length+" VS float2.length="+float2.length+" VS float3.length="+float3.length+" VS float4.length="+float4.length+" VS float5.length="+float5.length);
+			return null;
+		}
+	}
 }

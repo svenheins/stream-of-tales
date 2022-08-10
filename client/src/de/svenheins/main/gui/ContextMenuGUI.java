@@ -193,7 +193,7 @@ public class ContextMenuGUI {
 				putY = (int) (GamePanel.gp.getPlayerEntity().getY() + GamePanel.gp.getPlayerEntity().getHeight()*3/4 + (GameStates.dropDistance));
 			}
 				
-			Cloak cloak = new Cloak(itemId, putX, putY, new float[]{1.3f, 0.5f, 30.45f});
+			Cloak cloak = new Cloak(itemId, putX, putY);
 			System.out.println("added new cloak object: "+itemId);
 //			Wood item = new Wood();
 //			TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", "WoodPileTileSet", GameStates.itemTileWidth, GameStates.itemTileHeight);
@@ -204,14 +204,14 @@ public class ContextMenuGUI {
 			/** send the complete Item to all players of the channel */
 			if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 				/** first send to server for the itemList */
-				GameWindow.gw.send(ClientMessages.addItem(cloak.getId(), cloak.getItemCode(), cloak.getCount(), cloak.getCapacity(), cloak.getEntity().getX(), cloak.getEntity().getY(), cloak.getEntity().getMX(), cloak.getEntity().getMY(), cloak.getName(), cloak.getEntity().getTileSet().getFileName(), cloak.getEntity().getName(), cloak.getStates()));
+				GameWindow.gw.send(ClientMessages.addItem(cloak.getId(), cloak.getItemCode(), cloak.getCount(), cloak.getCapacity(), cloak.getEntity().getX(), cloak.getEntity().getY(), cloak.getEntity().getMX(), cloak.getEntity().getMY(), cloak.getName(), cloak.getEntity().getTileSet().getFileName(), cloak.getEntity().getName(), cloak.getAttributes()));
 				
 //				GameWindow.gw.send(ClientMessages.addItem(itemId));
 				
 				for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 					ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 					try {
-						channel.send(ClientMessages.addCompleteItem(cloak.getItemCode(), cloak.getId(), cloak.getName(), cloak.getX(), cloak.getY(), cloak.getCount(), cloak.getStates()));
+						channel.send(ClientMessages.addCompleteItem(cloak.getItemCode(), cloak.getId(), cloak.getName(), cloak.getX(), cloak.getY(), cloak.getCount(), cloak.getAttributes()));
 					} catch (IOException e) {
 						e.printStackTrace();
 					}	

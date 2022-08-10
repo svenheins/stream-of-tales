@@ -47,7 +47,7 @@ public class GameStates {
 	/** movement properties */
 //	public static int DEFAULT_MOVEMENT_ON_X = 100;
 //	public static int DEFAULT_MOVEMENT_ON_Y = 100;
-	public static float entityMaxSpeed = 500.0f;
+	public static float entityMaxSpeed = 100.0f;
 	
 	/** item/ inventory stuff */ 
 	/**take distance */
@@ -227,6 +227,14 @@ public class GameStates {
 	/** agent path properties */
 	public static float pathMinAcceptanceDistance = 4.0f;
 	public static long timeForPathCalculation = 10000; // milliseconds
+	
+	/** influence parameter */
+	public static float influenceOfMaxLifeToLifeRegeneration = 0.01f;
+	public static float influenceOfMaxManaToManaRegeneration = 0.03f;
+	
+	/** standard attributes */
+	public static float playerStartAttributeMaxLife = 100.0f;
+	public static float playerStartAttributeMaxMana = 0.0f;
 	
 	public static int getWidth() {
 		return width;

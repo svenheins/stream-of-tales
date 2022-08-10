@@ -10,7 +10,6 @@ import de.svenheins.animation.Animation;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.AnimationManager;
-import de.svenheins.managers.SpriteManager;
 import de.svenheins.managers.TileSetManager;
 
 
@@ -73,6 +72,7 @@ public class Entity extends LocalObject {
 	
 	/** standard constructor for entities */
 	public Entity(TileSet tileSet, String name, BigInteger id, float x, float y, long animationDelay) {
+		super();
 		standardAnimation = tileSet.getTileNames(GameStates.ani_standard_start, GameStates.ani_standard_end);
 		animation = AnimationManager.manager.getAnimation("standard", tileSet,  GameStates.ani_standard_start, GameStates.ani_standard_end, animationDelay);
 		TileSetManager.manager.getTileSet(tileSet);
@@ -204,21 +204,20 @@ public class Entity extends LocalObject {
 
 	public void changeDirection() {
 		// TODO Auto-generated method stub
-		
 	}
 	
-	public boolean collides(Entity otherEntity) {
-		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
-		Rectangle r1 = new Rectangle((int) x, (int) y, sprite.getWidth(), sprite.getHeight());
-		Rectangle r2 = new Rectangle((int) otherEntity.x, (int) otherEntity.y, otherEntity.getSprite().getWidth(), otherEntity.getSprite().getHeight());
-		return r1.intersects(r2);
-	}
-	
-	public boolean contains(Point p) {
-		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
-		Rectangle r1 = new Rectangle((int) x, (int) y, sprite.getWidth(), sprite.getHeight());
-		return r1.contains(p);
-	}
+//	public boolean collides(Entity otherEntity) {
+//		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
+//		Rectangle r1 = new Rectangle((int) x, (int) y, sprite.getWidth(), sprite.getHeight());
+//		Rectangle r2 = new Rectangle((int) otherEntity.x, (int) otherEntity.y, otherEntity.getSprite().getWidth(), otherEntity.getSprite().getHeight());
+//		return r1.intersects(r2);
+//	}
+//	
+//	public boolean contains(Point p) {
+//		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
+//		Rectangle r1 = new Rectangle((int) x, (int) y, sprite.getWidth(), sprite.getHeight());
+//		return r1.contains(p);
+//	}
 	
 	@Override
 	public float getHeight() {

@@ -18,10 +18,12 @@ import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.main.LoadingStates;
+import de.svenheins.main.Priority;
 import de.svenheins.main.TileDimensions;
 import de.svenheins.main.gui.Button;
 import de.svenheins.main.gui.PlayerListGUI;
 import de.svenheins.main.gui.PlayerListGUIManager;
+import de.svenheins.managers.AreaInfluenceManager;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ItemManager;
@@ -34,9 +36,11 @@ import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.ITEMCODE;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
+import de.svenheins.objects.AreaInfluence;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.LocalMap;
+import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
@@ -335,6 +339,7 @@ public class ClientMessageHandler {
     		float my = packet.getFloat();
     		
     		BigInteger maxItemID = BigInteger.valueOf(packet.getLong());
+    		BigInteger maxAreaInfluenceID = BigInteger.valueOf(packet.getLong());
     		
     		TileSet tileSet = new TileSet(tilePathName, tileName, GameStates.playerTileWidth, GameStates.playerTileHeight);
     		PlayerEntity playerEntity = new PlayerEntity(tileSet, GameWindow.gw.getPlayerName(), myId, x, y, GameStates.animationDelay);
@@ -347,6 +352,7 @@ public class ClientMessageHandler {
     		playerEntity.setY(y);
     		
     		ItemManager.setMaxIDValue(maxItemID);
+    		AreaInfluenceManager.setMaxIDValue(maxAreaInfluenceID);
     		GamePanel.gp.setPlayerEntity(playerEntity);
     		GamePanel.gp.initContainers();
     		
@@ -866,6 +872,44 @@ public class ClientMessageHandler {
 	    		}
     		}
     		break;
+    	case INITAREAINFLUENCES: {
+    		int areaInfluenceCount = packet.getInt();
+    		GameWindow.gw.gameInfoConsole.appendInfo("Got "+areaInfluenceCount+" areaInfluences");
+    		
+    		for (int j = 0; j < areaInfluenceCount; j++) {
+    			Priority priority = getPriority(packet);
+        		BigInteger addCompleteAreaInfluenceId = BigInteger.valueOf(packet.getLong());
+        		long timeBegin = packet.getLong();
+        		long timeEnd = packet.getLong();
+        		byte[] groupNameAddCompleteGroupNameBytes = new byte[packet.getInt()];
+    			packet.get(groupNameAddCompleteGroupNameBytes);
+    			String addCompleteGroupName = new String(groupNameAddCompleteGroupNameBytes); // name
+    			int exclusiveInt = packet.getInt();
+    			boolean exclusive;
+    			if (exclusiveInt == 1) exclusive = true; else exclusive = false;
+        		float addCompleteAreaInfluenceX = packet.getFloat(); 
+        		float addCompleteAreaInfluenceY = packet.getFloat();
+        		float addCompleteAreaInfluenceWidth = packet.getFloat(); 
+        		float addCompleteAreaInfluenceHeight = packet.getFloat();
+        		float addCompleteAreaInfluenceMX = packet.getFloat(); 
+        		float addCompleteAreaInfluenceMY = packet.getFloat();
+//    			int addCompleteAreaInfluenceCount = packet.getInt();
+    			int attributeLength = packet.getInt();
+    			float[] attributes = new float[attributeLength];
+    			for(int i = 0; i< attributeLength; i++) {
+    				attributes[i] = packet.getFloat();
+    			}
+    			
+    			AreaInfluence areaInfluenceInit = new AreaInfluence(addCompleteAreaInfluenceId, timeBegin, timeEnd, new LocalObject(addCompleteAreaInfluenceId, "", addCompleteAreaInfluenceX, addCompleteAreaInfluenceY, addCompleteAreaInfluenceWidth, addCompleteAreaInfluenceHeight, addCompleteAreaInfluenceMX, addCompleteAreaInfluenceMY, 0, 0),addCompleteGroupName, exclusive, attributes, priority);
+//    					Item.getItem(itemCode, addCompleteItemId, addCompleteItemName, addCompleteItemCount, 1, addCompleteItemX, addCompleteItemY, System.currentTimeMillis(), states);
+        		if (AreaInfluenceManager.add(areaInfluenceInit)) {
+        			System.out.println("Successfully added areaInfluence");
+        		} else {
+        			System.out.println("Could not added areaInfluence");
+        		}    		
+    		}
+    		break;}
+
     	case READY_FOR_NEXT_TEXTURE_PACKET:
     		byte[] nameBytes = new byte[packet.getInt()];
 			packet.get(nameBytes);
@@ -1262,6 +1306,20 @@ public class ClientMessageHandler {
         ITEMCODE itemCode = ITEMCODE.values()[itemByte];
         
         return itemCode;
+    }
+    
+    private static Priority getPriority(ByteBuffer packet) 
+    {
+        byte priorityByte = packet.get();
+        if ((priorityByte < 0) || (priorityByte > Priority.values().length - 1)) {
+        	//TODO: exception is better
+        	System.out.println("Unknown priority value: " + priorityByte);
+//            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        Priority priority = Priority.values()[priorityByte];
+        
+        return priority;
     }
     
     private static OBJECTCODE getObjectCode(ByteBuffer packet) 

@@ -1,7 +1,5 @@
 package de.svenheins.objects;
 
-import java.awt.Point;
-
 import de.svenheins.main.GameStates;
 
 public class WorldPosition {

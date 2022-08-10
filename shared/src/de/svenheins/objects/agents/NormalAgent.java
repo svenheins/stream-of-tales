@@ -6,6 +6,8 @@ import java.util.ArrayList;
 
 import javax.swing.plaf.basic.BasicInternalFrameTitlePane.RestoreAction;
 
+import de.svenheins.functions.MyMath;
+import de.svenheins.main.AttributeType;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.ObjectMapManager;
@@ -21,7 +23,7 @@ public class NormalAgent extends Agent {
 	public NormalAgent(TileSet tileSet, String name, BigInteger id, float x,
 			float y, long animationDelay) {
 		super(tileSet, name, id, x, y, animationDelay);
-		this.setMaxSpeed(150.0f);
+		this.setMaxSpeed(100.0f);
 		this.setDirectModus(true);
 	}
 
@@ -33,20 +35,23 @@ public class NormalAgent extends Agent {
 			searchBetterLocation();
 			if (actualGoal != null) {
 				/** only search if we are too far away from goal */
-				if ( this.getDistance(actualGoal.getPosition().getX(), actualGoal.getPosition().getY()) > GameStates.agentGoalDistance) {
-					if (isDirectModus()) {
-						updatePathfindingDirect(collisionMap1, collisionMap2);
-					} else {
-						updatePathfinding(collisionMap1, collisionMap2);
-					}
+				if ( this.getDistance(actualGoal.getPosition().getX(), actualGoal.getPosition().getY()) > GameStates.agentGoalDistance) {	
 					if (isPathCalculationComplete()) {
 						updateMovement();
 					} else {
-						this.setMovement(0, 0);
+						this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
 						this.setContinuousState(EntityStates.STANDING);
 						this.pathList = new ArrayList<WorldPosition>();
+						/** pathfinding depending on direct or exact mode */	
+						if (isDirectModus()) {
+							updatePathfindingDirect(collisionMap1, collisionMap2);
+						} else {
+							updatePathfinding(collisionMap1, collisionMap2);
+						}
+						
 					}
 				} else {
+					System.out.println("close enough to take NEXT GOAL!");
 					this.nextGoal();
 				}
 				updateGoals();
@@ -54,50 +59,141 @@ public class NormalAgent extends Agent {
 		}
 	}
 
+//	public void updateMovementOLD() {
+//		float actualVelocity = (float) Math.sqrt((this.getMX()+this.getAttributes()[AttributeType.MX.ordinal()])*(this.getMX()+this.getAttributes()[AttributeType.MX.ordinal()]) + (this.getMY()+this.getAttributes()[AttributeType.MY.ordinal()])*(this.getMY()+this.getAttributes()[AttributeType.MY.ordinal()]));
+//		float velocity = this.getMaxSpeed();
+//		float newMX, newMY;
+//		newMX = (float) (this.getActualPathElement().getX()-(this.getX())-this.getAttributes()[AttributeType.MX.ordinal()]);
+//		newMY = (float) (this.getActualPathElement().getY()-(this.getY()+(this.getHeight()/2))-this.getAttributes()[AttributeType.MY.ordinal()]);
+//		/** correct the destination if it is an old one */
+//		if ((newMX ==0 && newMY == 0) && this.pathList.size() >0) {
+//			this.nextPathElement();
+//			this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MX.ordinal()]);
+//			/** if we have a path to follow */
+//			System.out.println("old pathelement");
+//		} else {
+//			float tempVelocity = (float) Math.sqrt(newMX*newMX + newMY*newMY);// (float) Math.sqrt((newMX+this.getAttributes()[AttributeType.MX.ordinal()])*(newMX+this.getAttributes()[AttributeType.MX.ordinal()]) + (newMY+this.getAttributes()[AttributeType.MY.ordinal()])*(newMY+this.getAttributes()[AttributeType.MY.ordinal()]));
+//			if (tempVelocity > 0) {
+//				if (isDirectModus()) {
+//					/** deceleration */
+//					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < actualVelocity) {
+//						int decelerationWeight = Math.max(2, (int)(actualVelocity/2));
+//						tempVelocity = tempVelocity*((decelerationWeight*actualVelocity)/(actualVelocity+(decelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2))));
+//					}
+//					/** acceleration */
+//					if ((actualVelocity < this.getMaxSpeed() && getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) >= actualVelocity)) {
+//						tempVelocity = tempVelocity / 1.5f;
+//						//						float accelerationWeight = Math.max(2, (int)(actualVelocity/2));
+////						tempVelocity = tempVelocity*((float) 1 / ((accelerationWeight*actualVelocity)/(actualVelocity+(accelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)))));
+//					}
+//				} else {
+//					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < actualVelocity/20) {
+//						tempVelocity = tempVelocity*1.5f;
+//					}
+//				}
+//				this.setMovement( velocity*(newMX/tempVelocity), velocity*(newMY/tempVelocity));
+//			} else
+//			{
+//				this.setMovement(0, 0);
+//				/** if we have a path to follow */
+//				System.out.println("STOP, because we reached the pathlistelement");
+//			}
+//		}
+//		
+////		System.out.println("movement: X="+this.getMX()+" Y="+this.getMY());
+//		
+//		this.determineOrientation(new Point((int) this.getActualGoal().getPosition().getX(),(int) this.getActualGoal().getPosition().getY()));
+////		this.determineOrientation(new Point((int) this.getActualPathElement().getX(),(int) this.getActualPathElement().getY()));
+//
+//		if ( this.getMX() == 0 && this.getMY()== 0) {
+//			if (this.getContinuousState() == EntityStates.WALKING) {
+//				this.setContinuousState(EntityStates.STANDING);
+//			}
+//			
+//		} else {
+//			this.setContinuousState(EntityStates.WALKING);
+//		}
+//	}
+	
+
 	@Override
 	public void updateMovement() {
-		float velocity = this.getMaxSpeed();//Math.sqrt(this.getHorizontalMovement()*this.getHorizontalMovement() + this.getVerticalMovement()*this.getVerticalMovement());
-		float newMX, newMY;
-		newMX = (float) (this.getActualPathElement().getX()-(this.getX()));
-		newMY = (float) (this.getActualPathElement().getY()-(this.getY()+(this.getHeight()/2)));
+		float areaInfluenceMX = this.getAttributes()[AttributeType.MX.ordinal()];
+		float areaInfluenceMY = this.getAttributes()[AttributeType.MY.ordinal()];
+		float actualVelocity = (float) Math.sqrt((this.getMX()+areaInfluenceMX)*(this.getMX()+areaInfluenceMX) + (this.getMY()+areaInfluenceMY)*(this.getMY()+areaInfluenceMY));
+		float maxSpeed = this.getMaxSpeed();
+		float newMX = (float) (this.getActualPathElement().getX()-(this.getX()));//-this.getAttributes()[AttributeType.MX.ordinal()]); 
+		float newMY = (float) (this.getActualPathElement().getY()-(this.getY()+(this.getHeight()/2)));//-this.getAttributes()[AttributeType.MY.ordinal()]);
+		
+		float moveDirectionX, moveDirectionY;
+		float vectorAx;
+		float vectorAy;
+		float lengthA;
 		/** correct the destination if it is an old one */
-		if ((newMX ==0 && newMY == 0) && this.pathList.size() >0) {
+		if ((newMX == 0 && newMY == 0) && this.pathList.size() >0) {
 			this.nextPathElement();
-			this.setMovement(0, 0);
+			this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
 			/** if we have a path to follow */
 			System.out.println("old pathelement");
 		} else {
-			float tempVelocity = (float) Math.sqrt(newMX*newMX + newMY*newMY);
+			float tempVelocity = (float) Math.sqrt(newMX*newMX + newMY*newMY);// (float) Math.sqrt((newMX+this.getAttributes()[AttributeType.MX.ordinal()])*(newMX+this.getAttributes()[AttributeType.MX.ordinal()]) + (newMY+this.getAttributes()[AttributeType.MY.ordinal()])*(newMY+this.getAttributes()[AttributeType.MY.ordinal()]));
 			if (tempVelocity > 0) {
+//				if (isDirectModus()) {
+//					/** deceleration */
+//					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < actualVelocity) {
+//						int decelerationWeight = Math.max(2, (int)(actualVelocity/2));
+//						tempVelocity = tempVelocity*((decelerationWeight*actualVelocity)/(actualVelocity+(decelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2))));
+//					}
+//					/** acceleration */
+//					if ((actualVelocity < this.getMaxSpeed() && getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) >= actualVelocity)) {
+//						tempVelocity = tempVelocity / 1.5f;
+//						//						float accelerationWeight = Math.max(2, (int)(actualVelocity/2));
+////						tempVelocity = tempVelocity*((float) 1 / ((accelerationWeight*actualVelocity)/(actualVelocity+(accelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)))));
+//					}
+//				} else {
+//					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < actualVelocity/20) {
+//						tempVelocity = tempVelocity*1.5f;
+//					}
+//				}
+				
+				/** adapt speed */
 				if (isDirectModus()) {
-					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < this.getMaxSpeed()) {
-						int decelerationWeight = Math.max(2, (int)(this.getMaxSpeed()/2));
-						tempVelocity = tempVelocity*((decelerationWeight*this.getMaxSpeed())/((this.getMaxSpeed())+(decelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2))));
-					}
+					
 				} else {
-					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < this.getMaxSpeed()/20) {
+					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < actualVelocity/20) {
 						tempVelocity = tempVelocity*1.5f;
 					}
 				}
-				this.setMovement(velocity*(newMX/tempVelocity), velocity*(newMY/tempVelocity));
+							
+				/** calculate new movement */
+				if (areaInfluenceMX != 0 || areaInfluenceMY != 0) {
+					float areaInfluenceStrength = (float) Math.sqrt(areaInfluenceMX*areaInfluenceMX + areaInfluenceMY*areaInfluenceMY);
+					if ( (newMX/ newMY) == (areaInfluenceMX/areaInfluenceMY) ) lengthA = maxSpeed+areaInfluenceStrength; 
+					else if ((newMX/newMY)== -(areaInfluenceMX/areaInfluenceMY)) lengthA = maxSpeed-areaInfluenceStrength;
+					else lengthA = MyMath.calculateTriangleA(newMX, newMY, areaInfluenceMX, areaInfluenceMY, maxSpeed);
+					vectorAx = lengthA*(newMX / MyMath.calculateNorm(newMX, newMY));
+					vectorAy = lengthA*(newMY / MyMath.calculateNorm(newMX, newMY));
+					moveDirectionX = vectorAx - areaInfluenceMX;
+					moveDirectionY = vectorAy - areaInfluenceMY;
+					this.setMovement(moveDirectionX, moveDirectionY);
+				} else {
+					this.setMovement( maxSpeed*(newMX/tempVelocity), maxSpeed*(newMY/tempVelocity));
+				}
+
 			} else
 			{
-				this.setMovement(0, 0);
+				this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
 				/** if we have a path to follow */
 				System.out.println("STOP, because we reached the pathlistelement");
 			}
 		}
-		
-//		System.out.println("movement: X="+this.getMX()+" Y="+this.getMY());
-		
-		this.determineOrientation(new Point((int) this.getActualGoal().getPosition().getX(),(int) this.getActualGoal().getPosition().getY()));
-//		this.determineOrientation(new Point((int) this.getActualPathElement().getX(),(int) this.getActualPathElement().getY()));
 
+		/** Orientation and animation */
+		this.determineOrientation(new Point((int) this.getActualGoal().getPosition().getX(),(int) this.getActualGoal().getPosition().getY()));
 		if ( this.getMX() == 0 && this.getMY()== 0) {
 			if (this.getContinuousState() == EntityStates.WALKING) {
 				this.setContinuousState(EntityStates.STANDING);
 			}
-			
 		} else {
 			this.setContinuousState(EntityStates.WALKING);
 		}
@@ -107,18 +203,20 @@ public class NormalAgent extends Agent {
 	public void searchBetterLocation() {
 		/** Direct Modus */
 		if (isDirectModus()) {
-			/** if the agent is close enough */
-			if ( getDistance(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY()-(this.getHeight()/2)) < GameStates.pathMinAcceptanceDistance) {		
-				/** ensure we landed exactly on the right spot */
-				this.setX(this.getActualGoal().getPosition().getX());
-				this.setY(this.getActualGoal().getPosition().getY()-(this.getHeight()/2));
-				this.setMovement(0, 0);
-				/** position is close enough, so get next goal */
-				this.nextGoal();
-			} 
 			if (this.getActualGoal() != null) {			
-				/** here we already have a valid pathList */
-				this.setActualPathElement(this.getActualGoal().getPosition());
+//				/** here we already have a valid pathList */
+//				this.setActualPathElement(this.getActualGoal().getPosition());
+				
+				/** if the agent is close enough */
+				if ( getDistance(this.getActualGoal().getPosition().getX(), this.getActualGoal().getPosition().getY()-(this.getHeight()/2)) < GameStates.pathMinAcceptanceDistance) {		
+					/** ensure we landed exactly on the right spot */
+					this.setX(this.getActualGoal().getPosition().getX());
+					this.setY(this.getActualGoal().getPosition().getY()-(this.getHeight()/2));
+					this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
+					/** position is close enough, so get next goal */
+					System.out.println("direct mode NEXT GOAL!: x="+this.getX()+" y="+this.getY());
+					this.nextGoal();
+				} 
 			} else {
 				/** here the pathList does not yet exist or the pathList might be empty */
 				this.pathList = new ArrayList<WorldPosition>();
@@ -126,6 +224,7 @@ public class NormalAgent extends Agent {
 				System.out.println("restart pathfinding...");
 				if (goalList != null && (goalList.size() >0) ) {
 					/** take the next goal */
+					System.out.println("actualGoal == null NEXT GOAL!");
 					this.nextGoal();
 				} else {
 					/** no more goals available */
@@ -141,7 +240,7 @@ public class NormalAgent extends Agent {
 					/** ensure we landed exactly on the right spot */
 					this.setX(this.pathList.get(0).getX());
 					this.setY(this.pathList.get(0).getY()-(this.getHeight()/2));
-					this.setMovement(0, 0);
+					this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
 					/** position is close enough, so get next pathElement */
 					this.nextPathElement();
 					System.out.println("next pathList element! remaining: "+this.pathList.size());
@@ -158,6 +257,7 @@ public class NormalAgent extends Agent {
 					System.out.println("restart pathfinding...");
 					if (goalList != null && (goalList.size() >0) ) {
 						/** take the next goal */
+						System.out.println("goalList == null || goalList.size() == 0 -> nextGoal");
 						this.nextGoal();
 					} else {
 						/** no more goals available */

@@ -277,6 +277,15 @@ public class ClientMessages extends Messages{
         return buffer;
     }
     
+    public static ByteBuffer initAreaInfluences() {
+        byte[] bytes = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITAREAINFLUENCES.ordinal());
+//        buffer.putInt(objCode.ordinal());
+        buffer.flip();
+        return buffer;
+    }
+    
     public static ByteBuffer initSpaces() {
         byte[] bytes = new byte[1];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);

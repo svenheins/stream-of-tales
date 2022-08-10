@@ -2,17 +2,12 @@ package de.svenheins.objects;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-
 import de.svenheins.functions.MyMath;
 import de.svenheins.main.AttributeType;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.Priority;
-import de.svenheins.managers.AgentManager;
-import de.svenheins.managers.AreaInfluenceManager;
 import de.svenheins.messages.ITEMCODE;
 import de.svenheins.messages.OBJECTCODE;
-import de.svenheins.objects.agents.Agent;
 import de.svenheins.objects.items.Container;
 import de.svenheins.objects.items.Item;
 

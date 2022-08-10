@@ -56,6 +56,7 @@ import de.svenheins.objects.IngameConsole;
 import de.svenheins.objects.IngameWindow;
 import de.svenheins.objects.Light;
 import de.svenheins.objects.LocalMap;
+import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.LocalUndergroundMap;
 import de.svenheins.objects.Player;
 import de.svenheins.objects.PlayerEntity;
@@ -406,39 +407,47 @@ public class GamePanel extends JPanel {
 		BigInteger runningID = BigInteger.valueOf(0);
 		TileSet tileSet_SA = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
 		for (int i = 0; i <1; i++ ){
-			float x = 400+ (int) (Math.random()*100) -100; 
-			float y = -32+ (int) (Math.random()*200) -100;
+			float x = 400+ (int) (Math.random()*100) -100;
+			float y = 200+ (int) (Math.random()*200) -100;
 			agent = new NormalAgent(tileSet_SA, "normalAgent", runningID, x, y, GameStates.animationDelay);
 			/** increase ID, so the AgentManager can identify the agent */
 			runningID = runningID.add(BigInteger.valueOf(1));
-			x = 400+ (int) (Math.random()*100) -10; 
+			x = 400+ (int) (Math.random()*100) -10;
 			stupidAgent = new StupidAgent(tileSet_SA, "stupidAgent", runningID, x, y, GameStates.animationDelay);
 			runningID = runningID.add(BigInteger.valueOf(1));
 			simpleAgent = new SimpleAgent(tileSet_SA, "simpleAgent", runningID, x, y, GameStates.animationDelay);
 			runningID = runningID.add(BigInteger.valueOf(1));
 			
-			Goal goal = new Goal(new WorldPosition(-500, -300)/*, playerEntity.getId(), playerEntity*/);
-			Goal additionalGoal = new Goal(new WorldPosition(400,  0));
-			Goal additionalGoal2 = new Goal(new WorldPosition(-500, 300));
-			Goal additionalGoal3 = new Goal(new WorldPosition(400, -100+ (int) (Math.random()*20) -100));
-			Goal additionalGoal4 = new Goal(new WorldPosition(36000, -2000));
+			Goal goal = new Goal(new WorldPosition(-100, 100)/*, playerEntity.getId(), playerEntity*/);
+			Goal additionalGoal = new Goal(new WorldPosition(400,  200));
+			Goal additionalGoal0 = new Goal(new WorldPosition(100,  100));
+			Goal additionalGoal01 = new Goal(new WorldPosition(300,  100));
+			Goal additionalGoal02 = new Goal(new WorldPosition(100,  100));
+			Goal additionalGoal03 = new Goal(new WorldPosition(200,  200));
+			Goal additionalGoal2 = new Goal(new WorldPosition(-300, 300));
+			Goal additionalGoal3 = new Goal(new WorldPosition(700, -100+ (int) (Math.random()*20) -100));
+//			Goal additionalGoal4 = new Goal(new WorldPosition(36000, -2000));
 //			Goal playerEntityPosition = new Goal(new WorldPosition(playerEntity.getX(),playerEntity.getY()), entityID, entity)
 			agent.setActualGoal(goal);
 //			agent.addGoal(goal);
 			agent.addGoal(additionalGoal);
+			agent.addGoal(additionalGoal0);
+			agent.addGoal(additionalGoal01);
+			agent.addGoal(additionalGoal02);
+			agent.addGoal(additionalGoal03);
 			agent.addGoal(additionalGoal2);
 			agent.addGoal(additionalGoal3);
-			agent.addGoal(additionalGoal4);
-			stupidAgent.setActualGoal(goal);
-			stupidAgent.addGoal(goal);
-			stupidAgent.addGoal(additionalGoal);
-			stupidAgent.addGoal(additionalGoal2);
-			stupidAgent.addGoal(additionalGoal3);
-			simpleAgent.setActualGoal(goal);
-			simpleAgent.addGoal(goal);
-			simpleAgent.addGoal(additionalGoal);
-			simpleAgent.addGoal(additionalGoal2);
-			simpleAgent.addGoal(additionalGoal3);
+//			agent.addGoal(additionalGoal4);
+//			stupidAgent.setActualGoal(goal);
+//			stupidAgent.addGoal(goal);
+//			stupidAgent.addGoal(additionalGoal);
+//			stupidAgent.addGoal(additionalGoal2);
+//			stupidAgent.addGoal(additionalGoal3);
+//			simpleAgent.setActualGoal(goal);
+//			simpleAgent.addGoal(goal);
+//			simpleAgent.addGoal(additionalGoal);
+//			simpleAgent.addGoal(additionalGoal2);
+//			simpleAgent.addGoal(additionalGoal3);
 			
 			AgentManager.add(agent);
 //			AgentManager.add(stupidAgent);
@@ -446,9 +455,13 @@ public class GamePanel extends JPanel {
 		}
 		
 		float[] tempAttributes = new float[AttributeType.values().length];
-		tempAttributes[AttributeType.MX.ordinal()]= 70.0f;
-		AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+60000, new Entity(new TileSet("tilesets/entities/areaInfluence.png", "areaInfluence1", 500, 500), "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay), "movers", true, tempAttributes, Priority.LOW);
+		tempAttributes[AttributeType.MX.ordinal()]= 80.0f;
+		AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+120000, new LocalObject(BigInteger.valueOf(0), "", 0,0,500,500, 0,0,0,0), "movers", true, tempAttributes, Priority.LOW);
 		AreaInfluenceManager.add(areaInfluence1);
+		float[] tempAttributes2 = new float[AttributeType.values().length];
+		tempAttributes2[AttributeType.MX.ordinal()]= -80.0f;
+		AreaInfluence areaInfluence2 = new AreaInfluence(BigInteger.valueOf(1), System.currentTimeMillis(), System.currentTimeMillis()+120000, new LocalObject(BigInteger.valueOf(0), "", 250,0,500,500, 0,0,0,0), "movers", true, tempAttributes2, Priority.LOW);
+//		AreaInfluenceManager.add(areaInfluence2);
 		
 		/** add standard background texture */
 		ClientTextureManager.manager.getTexture(GameStates.standardBackgroundTexture);

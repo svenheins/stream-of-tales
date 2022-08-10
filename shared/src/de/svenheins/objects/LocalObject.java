@@ -1,5 +1,7 @@
 package de.svenheins.objects;
 
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.math.BigInteger;
 
 public class LocalObject {
@@ -11,6 +13,33 @@ public class LocalObject {
 	protected float maxSpeed;
 	protected BigInteger id;
 	protected String name;
+	
+	public LocalObject() {
+		float standardValue = 0.0f;
+		this.id = BigInteger.valueOf(0);
+		this.x = standardValue;
+		this.y = standardValue;
+		this.height = standardValue;
+		this.width = standardValue;
+		this.mx = standardValue;
+		this.my = standardValue;
+		this.zIndex = standardValue;
+		this.maxSpeed = standardValue;
+		this.name = "";
+	}
+	
+	public LocalObject(BigInteger id, String name, float x, float y, float width, float height, float mx, float my, float zIndex, float maxSpeed) {
+		this.setId(id);
+		this.setX(x);
+		this.setY(y);
+		this.setHeight(height);
+		this.setWidth(width);
+		this.setMX(mx);
+		this.setMY(my);
+		this.setZIndex(zIndex);
+		this.setMaxSpeed(maxSpeed);
+		this.setName(name);
+	}
 
 	public float getZIndex() {
 		return zIndex;
@@ -113,5 +142,18 @@ public class LocalObject {
 
 	public void setMaxSpeed(float maxSpeed) {
 		this.maxSpeed = maxSpeed;
+	}
+	
+	public boolean collides(LocalObject otherLocalObject) {
+		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
+		Rectangle r1 = new Rectangle((int) x, (int) y, (int) this.getWidth(), (int) this.getHeight());
+		Rectangle r2 = new Rectangle((int) otherLocalObject.x, (int) otherLocalObject.y, (int) otherLocalObject.getWidth(), (int) otherLocalObject.getHeight());
+		return r1.intersects(r2);
+	}
+	
+	public boolean contains(Point p) {
+		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
+		Rectangle r1 = new Rectangle((int) x, (int) y, (int) this.getWidth(), (int) this.getHeight());
+		return r1.contains(p);
 	}
 }

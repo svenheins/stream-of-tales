@@ -55,6 +55,7 @@ public class ServerUpdateThread implements Runnable {
 					ClientTextureManager.manager.init();
 					GameWindow.gw.send(ClientMessages.initEntities());
 					GameWindow.gw.send(ClientMessages.initItems());
+					GameWindow.gw.send(ClientMessages.initAreaInfluences());
 					GameWindow.gw.send(ClientMessages.initSpaces());
 					GameWindow.gw.send(ClientMessages.initTextures());
 					GameWindow.gw.send(ClientMessages.initPlayers());

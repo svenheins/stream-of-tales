@@ -21,7 +21,7 @@ public abstract class Item implements Cloneable {
 	private ITEMCODE itemCode;
 	private Entity entity;
 	private long creationTime;
-	private float[] states;
+	private float[] attributes;
 	protected float x;
 	protected float y;
 	protected boolean visible;
@@ -84,12 +84,12 @@ public abstract class Item implements Cloneable {
 		this.creationTime = creationTime;
 	}
 
-	public float[] getStates() {
-		return states;
+	public float[] getAttributes() {
+		return attributes;
 	}
 
-	public void setStates(float[] states) {
-		this.states = states;
+	public void setAttributes(float[] attributes) {
+		this.attributes = attributes;
 	}
 	
 	public static Item getItem(ITEMCODE itemCode, BigInteger id, String name, int count, int capacity, float x, float y, long creationTime, float[] states) {
@@ -105,7 +105,7 @@ public abstract class Item implements Cloneable {
 			
 		case BODY:
 			if (name.equals("Cloak")) {
-				retItem = new Cloak(id, x, y, states);
+				retItem = new Cloak(id, x, y);
 				retItem.setCount(count);
 			}
 			break;

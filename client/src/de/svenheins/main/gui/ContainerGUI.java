@@ -209,6 +209,7 @@ public class ContainerGUI {
 		
 		/** update server */
 		ClientMessageHandler.containerUpdateSendBrutal(this.container);
+		GamePanel.gp.getPlayerEntity().calculateTotalEquipmentInfluence();
 	}
 
 	

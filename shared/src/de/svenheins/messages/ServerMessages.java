@@ -157,7 +157,7 @@ public class ServerMessages extends Messages{
     public static ByteBuffer sendItems(Item[] localObjects) {
     	byte[] bytes;
     	ByteBuffer buffer = null;
-        int stateLength = 0;
+        int attributeLength = 0;
         int itemNamesLength = 0;
         int itemCodeLength = localObjects.length*1;
         int IDLength = localObjects.length*8;
@@ -165,13 +165,13 @@ public class ServerMessages extends Messages{
         int countLength = localObjects.length*(4); 
         for (int i = 0; i<localObjects.length; i++) {
     		Item e = localObjects[i];
-    		if (e.getStates() != null) stateLength += 4 + (e.getStates().length*4); 
+    		if (e.getAttributes() != null) attributeLength += 4 + (e.getAttributes().length*4); 
     		else {
-    			stateLength += 4; 
+    			attributeLength += 4; 
     		}
     		itemNamesLength += 4+e.getName().length();
     	}
-    	bytes = new byte[1 + 4 + itemCodeLength + IDLength + itemNamesLength + xyLength + countLength +stateLength];
+    	bytes = new byte[1 + 4 + itemCodeLength + IDLength + itemNamesLength + xyLength + countLength +attributeLength];
         buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITITEMS.ordinal()); // 1
         buffer.putInt(localObjects.length); // 4
@@ -188,10 +188,10 @@ public class ServerMessages extends Messages{
         	buffer.putFloat(e.getX()); // 4
         	buffer.putFloat(e.getY()); // 4
             buffer.putInt(e.getCount()); // 4
-    		if (e.getStates() != null) {
-    			buffer.putInt(e.getStates().length);
-    			for (int j = 0; j < e.getStates().length; j++) {
-                	buffer.putFloat(e.getStates()[j]);
+    		if (e.getAttributes() != null) {
+    			buffer.putInt(e.getAttributes().length);
+    			for (int j = 0; j < e.getAttributes().length; j++) {
+                	buffer.putFloat(e.getAttributes()[j]);
                 }
     		}
     		else {
@@ -206,9 +206,9 @@ public class ServerMessages extends Messages{
 //    	buffer.putFloat(x); // 4
 //    	buffer.putFloat(y); // 4
 //        buffer.putInt(count); // 4
-//        buffer.putInt(stateLength);
-//        for (int i = 0; i < stateLength; i++) {
-//        	buffer.putFloat(states[i]);
+//        buffer.putInt(attributeLength);
+//        for (int i = 0; i < attributeLength; i++) {
+//        	buffer.putFloat(attributes[i]);
 //        }
         
         
@@ -223,10 +223,10 @@ public class ServerMessages extends Messages{
      * @param id
      * @return 
      */
-    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, float x, float y, int count, float[] states) {
-        int stateLength = 0;
-        if (states != null) stateLength = states.length;
-    	byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4 +4 +stateLength*4];
+    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, float x, float y, int count, float[] attributes) {
+        int attributeLength = 0;
+        if (attributes != null) attributeLength = attributes.length;
+    	byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4 +4 +attributeLength*4];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.ADDCOMPLETEITEM.ordinal()); // 1
         
@@ -237,9 +237,9 @@ public class ServerMessages extends Messages{
     	buffer.putFloat(x); // 4
     	buffer.putFloat(y); // 4
         buffer.putInt(count); // 4
-        buffer.putInt(stateLength);
-        for (int i = 0; i < stateLength; i++) {
-        	buffer.putFloat(states[i]);
+        buffer.putInt(attributeLength);
+        for (int i = 0; i < attributeLength; i++) {
+        	buffer.putFloat(attributes[i]);
         }
         buffer.flip();
         return buffer;
@@ -445,7 +445,7 @@ public class ServerMessages extends Messages{
 		int itemEntityTileNameLength = 0; // string
 		int itemEntityTileFileNameLength = 0; //string
 		int itemNameLength = 0; // String
-		int itemStatesLength = 0; // float[]
+		int itemAttributesLength = 0; // float[]
 		int containerArraySize = 8 * inventoryHeight * inventoryWidth;
 		
 		int itemCountLength = 0;
@@ -474,8 +474,8 @@ public class ServerMessages extends Messages{
 					itemEntityNameLength += 4 + item.getEntity().getName().length();
 					itemEntityTileNameLength += 4 + item.getEntity().getTileSet().getName().length();
 					itemEntityTileFileNameLength += 4 + item.getEntity().getTileSet().getFileName().length();
-					itemStatesLength += 4;
-					if (item.getStates() != null) itemStatesLength += 4*item.getStates().length;
+					itemAttributesLength += 4;
+					if (item.getAttributes() != null) itemAttributesLength += 4*item.getAttributes().length;
 				} else {
 					/** there is no item in this field */
 				}
@@ -486,7 +486,7 @@ public class ServerMessages extends Messages{
 		
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 8 + 1 +1+/**inventory*/ 4 + 4 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemStatesLength+ containerArraySize+ itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength];
+		bytes = new byte[1 + 8 + 1 +1+/**inventory*/ 4 + 4 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemAttributesLength+ containerArraySize+ itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.SENDCONTAINER.ordinal()); // 1
         buffer.putLong(id.longValue()); // + 8 
@@ -520,14 +520,14 @@ public class ServerMessages extends Messages{
 			    	buffer.putFloat(item.getEntity().getX()); // 4
 			    	buffer.putFloat(item.getEntity().getY()); // 4
 //			    	System.out.println("Sending initial x: "+item.getEntity().getX()+" and y: "+item.getEntity().getY());
-			    	/** item states */
-			    	if (item.getStates() != null) {
-						buffer.putInt(item.getStates().length);
-						for (int k = 0; k< item.getStates().length; k++) {
-							buffer.putFloat(item.getStates()[k]);
+			    	/** item attributes */
+			    	if (item.getAttributes() != null) {
+						buffer.putInt(item.getAttributes().length);
+						for (int k = 0; k< item.getAttributes().length; k++) {
+							buffer.putFloat(item.getAttributes()[k]);
 						}
 			    	} else {
-			    		// if there is no really itemStates
+			    		// if there is no really itemAttributes
 			    		buffer.putInt(0);
 			    	}
 				} else {
@@ -549,8 +549,8 @@ public class ServerMessages extends Messages{
 		int itemEntityTileNameLength = 4 + item.getEntity().getTileSet().getName().length(); // string
 		int itemEntityTileFileNameLength = 4 + item.getEntity().getTileSet().getFileName().length(); //string
 		int itemNameLength = 4 + item.getName().length(); // String
-		int itemStatesLength = 4; // float[]
-		if (item.getStates() != null) itemStatesLength += 4*item.getStates().length;
+		int itemAttributesLength = 4; // float[]
+		if (item.getAttributes() != null) itemAttributesLength += 4*item.getAttributes().length;
 		
 		int itemCountLength = 4;
 		int itemCapacityLength = 4;
@@ -561,7 +561,7 @@ public class ServerMessages extends Messages{
 		
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 +8+ 1 +/**inventory*/ 8 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemStatesLength+  itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength+4+4];
+		bytes = new byte[1 +8+ 1 +/**inventory*/ 8 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemAttributesLength+  itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength+4+4];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.SENDITEMFIELD.ordinal()); // 1
         buffer.putLong(playerID.longValue());
@@ -585,14 +585,14 @@ public class ServerMessages extends Messages{
     	buffer.put(item.getEntity().getTileSet().getFileName().getBytes()); // name.length
     	buffer.putFloat(item.getEntity().getX()); // 4
     	buffer.putFloat(item.getEntity().getY()); // 4
-    	/** item states */
-    	if (item.getStates() != null) {
-			buffer.putInt(item.getStates().length);
-			for (int k = 0; k< item.getStates().length; k++) {
-				buffer.putFloat(item.getStates()[k]);
+    	/** item attributes */
+    	if (item.getAttributes() != null) {
+			buffer.putInt(item.getAttributes().length);
+			for (int k = 0; k< item.getAttributes().length; k++) {
+				buffer.putFloat(item.getAttributes()[k]);
 			}
     	} else {
-    		// if there is no really itemStates
+    		// if there is no really itemAttributes
     		buffer.putInt(0);
     	}
     	buffer.putInt(fieldX);

@@ -777,11 +777,11 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 									/** send the complete Item to all players of the channel */
 									if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 										/** first send to server for the itemList */
-										GameWindow.gw.send(ClientMessages.addItem(woodItem.getId(), woodItem.getItemCode(), woodItem.getCount(), woodItem.getCapacity(), woodItem.getEntity().getX(), woodItem.getEntity().getY(), woodItem.getEntity().getMX(), woodItem.getEntity().getMY(), woodItem.getName(), woodItem.getEntity().getTileSet().getFileName(), woodItem.getEntity().getName(), woodItem.getStates()));
+										GameWindow.gw.send(ClientMessages.addItem(woodItem.getId(), woodItem.getItemCode(), woodItem.getCount(), woodItem.getCapacity(), woodItem.getEntity().getX(), woodItem.getEntity().getY(), woodItem.getEntity().getMX(), woodItem.getEntity().getMY(), woodItem.getName(), woodItem.getEntity().getTileSet().getFileName(), woodItem.getEntity().getName(), woodItem.getAttributes()));
 										for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 											ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 											try {
-												channel.send(ClientMessages.addCompleteItem(woodItem.getItemCode(), woodItem.getId(), woodItem.getName(), woodItem.getEntity().getX(), woodItem.getEntity().getY(), woodItem.getCount(), woodItem.getStates()));
+												channel.send(ClientMessages.addCompleteItem(woodItem.getItemCode(), woodItem.getId(), woodItem.getName(), woodItem.getEntity().getX(), woodItem.getEntity().getY(), woodItem.getCount(), woodItem.getAttributes()));
 											} catch (IOException e) {
 												e.printStackTrace();
 											}	

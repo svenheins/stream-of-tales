@@ -44,6 +44,7 @@ import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
 
+import de.svenheins.main.AttributeType;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
@@ -685,6 +686,7 @@ public class WorldPlayer
 		        	itemStates_ADDITEM[i] = message.getFloat();
 		        }
 		        
+//		        System.out.println("Server got ="+itemStates_ADDITEM[AttributeType.LIFEREGENERATION.ordinal()]);
 				this.getRoom().addItem(addItemID, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ));
 				break; }
 			case TAKEITEM:

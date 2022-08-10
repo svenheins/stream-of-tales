@@ -9,12 +9,14 @@ import java.util.Random;
 
 import javax.swing.JComponent;
 import de.svenheins.functions.MyMath;
+import de.svenheins.main.AttributeType;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
+import de.svenheins.main.Priority;
 import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.EntityManager;
@@ -24,6 +26,7 @@ import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
 
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.ItemInfluence;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.TileSet;
@@ -64,6 +67,11 @@ public class MoveThread implements Runnable {
 				/** check and handle collision here */
 				if(this.moveWithCollisions(GamePanel.gp.getPlayerEntity())) {
 					/** player collided */
+					System.out.println("Collision");
+					float[] damageAttributes = new float[AttributeType.values().length];
+					damageAttributes[AttributeType.LIFEREGENERATION.ordinal()] = -3.0f;
+					ItemInfluence slowDamage = new ItemInfluence(System.currentTimeMillis(), System.currentTimeMillis()+3000, damageAttributes, Priority.LOW);
+					GamePanel.gp.getPlayerEntity().addItemInfluence(slowDamage);
 				} else {
 					/** no collision */
 				}
@@ -201,11 +209,18 @@ public class MoveThread implements Runnable {
 	/** this entity moves with colliding with objectMap-objects */
 	public boolean moveWithCollisions(Entity e) {
 		boolean hasCollided = false;
+		float addMX = 0;
+		float addMY = 0;
+		if (e instanceof PlayerEntity) {
+			addMX = ((PlayerEntity) e).getAttributes()[AttributeType.MX.ordinal()];
+			addMY = ((PlayerEntity) e).getAttributes()[AttributeType.MY.ordinal()];
+//			System.out.println("mx, my = "+ addMX +" "+addMY);
+		}
 		/** check collision here */
-		if ((e.getMX() != 0 || e.getMY() != 0) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
+		if ((e.getMX() != 0 || e.getMY() != 0 || addMX != 0 || addMY != 0 ) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
 			/** playerPosition */
-			float movementX = duration * e.getMX()/1000;
-			float movementY = duration * e.getMY()/1000;
+			float movementX = duration * (e.getMX()+addMX)/1000;
+			float movementY = duration * (e.getMY()+addMY)/1000;
 			int newX = (int) (e.getX() + (movementX));
 			int newY = (int) (e.getY() + (movementY));
 			

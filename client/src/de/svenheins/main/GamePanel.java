@@ -256,8 +256,10 @@ public class GamePanel extends JPanel {
 		this.setZoomFactor(1.0f);
 		this.setRotationDegree(0);
 		this.setDeleteModus(false);
-		this.setPaintType(110);
-		this.setPaintLayer("cobble");
+		this.setPaintLayer("empty");
+		this.setPaintType(0);
+//		this.setPaintType(110);
+//		this.setPaintLayer("cobble");
 		
 		/** set all Managers and GUI elements to a standard state */
 		configGUI();
@@ -289,7 +291,7 @@ public class GamePanel extends JPanel {
 		editorGUISpacePolygon.add((new Polygon(new int[]{GameStates.width -250 , GameStates.width -250 ,GameStates.width -25, GameStates.width -25}, new int[]{25-5 , 25+GameStates.tileSetHeight+5 ,25+GameStates.tileSetHeight+5, 25-5}, 4) ));
 		Space editorGUISpace = new Space(editorGUISpacePolygon, 0, 0, "editorGUISpace", BigInteger.valueOf(0), new int[]{0, 0, 0}, true, 0.6f, 1.0f, 1.0f, "empty");
 		
-		EditorGUI floorEditor = new EditorGUI("floor", "cobble", 110, editorGUISpace);
+		EditorGUI floorEditor = new EditorGUI("floor", "empty", 0, editorGUISpace);
 		floorEditor.add(cobbleButtonGUI);
 		floorEditor.add(grassButtonGUI);
 		floorEditor.add(snowButtonGUI);
@@ -351,12 +353,11 @@ public class GamePanel extends JPanel {
 	/** config can be started allways (also for reset) */
 	public void configGUI() {
 		Button cobbleButtonGUI = EditorGUIManager.get("floor").get(BigInteger.valueOf(0));
-//		cobbleButtonGUI.setAnimation(AnimationManager.manager.getAnimation(cobbleButtonGUI.getName()+"active", cobbleButtonGUI.getTileSet(), GameStates.button_active_start, GameStates.button_active_end, cobbleButtonGUI.getAnimation().getTimeBetweenAnimation()));
-		cobbleButtonGUI.setActive();
+//		cobbleButtonGUI.setActive();
 		EditorGUIManager.get("floor").deactivateOthers(cobbleButtonGUI);
-		EditorGUIManager.get("floor").setStrValue("cobble");
-		EditorGUIManager.get("floor").setIntValue(110);
-		
+//		EditorGUIManager.get("floor").setStrValue("cobble");
+//		EditorGUIManager.get("floor").setIntValue(110);
+//		
 		Button playerMeGUIButton = PlayerListGUIManager.get("playerList").get(BigInteger.valueOf(0));
 //		playerMeGUIButton.setAnimation(AnimationManager.manager.getAnimation(playerMeGUIButton.getName()+"passive", playerMeGUIButton.getTileSet(), GameStates.button_std_start, GameStates.button_std_end, playerMeGUIButton.getAnimation().getTimeBetweenAnimation()));
 		playerMeGUIButton.setInactive();
@@ -390,7 +391,7 @@ public class GamePanel extends JPanel {
 		SimpleAgent simpleAgent;
 		BigInteger runningID = BigInteger.valueOf(0);
 		TileSet tileSet_SA = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
-		for (int i = 0; i <1; i++ ){
+		for (int i = 0; i <0; i++ ){
 			float x = 400+ (int) (Math.random()*100) -100; 
 			float y = -32+ (int) (Math.random()*200) -100;
 			agent = new NormalAgent(tileSet_SA, "normalAgent", runningID, x, y, GameStates.animationDelay);
@@ -423,7 +424,7 @@ public class GamePanel extends JPanel {
 			simpleAgent.addGoal(additionalGoal2);
 			simpleAgent.addGoal(additionalGoal3);
 			
-			AgentManager.add(agent);
+//			AgentManager.add(agent);
 //			AgentManager.add(stupidAgent);
 //			AgentManager.add(simpleAgent);
 		}

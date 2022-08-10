@@ -609,7 +609,8 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 	
 	/** painting on point with the actual paintLayer on the corresponding paintType */
 	public void paintTiles(Point point) {
-		
+		/** only paint if the paintLayer is not "empty" */
+		if (!GamePanel.gp.getPaintLayer().equals("empty")) {
 			Point correctedPoint = new Point( (int) (point.x/GamePanel.gp.getZoomFactor()) +GamePanel.gp.getViewPointX(), (int) (point.y/GamePanel.gp.getZoomFactor())+GamePanel.gp.getViewPointY());
 			point = correctedPoint;
 			
@@ -927,7 +928,9 @@ public class MouseHandler implements MouseListener, MouseMotionListener{
 					GameWindow.gw.gameInfoConsole.appendInfo("outside of paint area");
 				}
 			}
-		
+		} else {
+			/** paintLayer is "empty" -> do nothing */
+		}
 	}
 	
 	public void determineAnimation(PlayerEntity entity, Point p) {

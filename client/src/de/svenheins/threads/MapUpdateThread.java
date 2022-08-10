@@ -84,6 +84,7 @@ public class MapUpdateThread implements Runnable {
 						}
 					}
 				}
+				
 			}
 			try {
 				Thread.sleep(sleepingTime);

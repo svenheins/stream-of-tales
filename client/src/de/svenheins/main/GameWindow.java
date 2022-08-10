@@ -852,6 +852,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	}
 	
 	public void initLocalMapFileList(String playerName) {
+		
 		this.resetMapManagers();
 		for (ObjectMapManager oManager : objectMapManagers.values()) {
 			oManager.initLocalMapFileList(playerName);
@@ -995,5 +996,6 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //		System.out.println(mapFile);
 		if (!this.sendItemList.contains(itemID)) this.sendItemList.add(itemID);
 	}
+
 
 }

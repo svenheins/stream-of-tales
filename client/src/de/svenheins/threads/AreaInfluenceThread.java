@@ -39,7 +39,7 @@ public class AreaInfluenceThread implements Runnable {
 						/** the influence is either continuous, has started and NOT yet ended OR the influence is instantaneous */
 						/** ACTIVE INFLUENCE AREA!!! */
 						/** check if player is target of the influence */
-						if (areaInfluence.getEntity().collides(GamePanel.gp.getPlayerEntity())) {
+						if (areaInfluence.getLocalObject().collides(GamePanel.gp.getPlayerEntity())) {
 							if ( (!areaInfluence.isExclusive() && GamePanel.gp.getPlayerEntity().getGroupName().equals(areaInfluence.getGroupName())) ||
 									(areaInfluence.isExclusive() && !GamePanel.gp.getPlayerEntity().getGroupName().equals(areaInfluence.getGroupName()))) {
 								/** player is in the relevant group, that is targeted by the influence */
@@ -55,8 +55,8 @@ public class AreaInfluenceThread implements Runnable {
 						
 						/** check if the agents are target of the influence */
 						for (Agent agent: AgentManager.agentList.values()) {
-							if (areaInfluence.getEntity().collides(agent)) {
-								MyMath.addFloatArrays(agent.getTempTotalAreaInfluences(), areaInfluence.getAttributes());
+							if (areaInfluence.getLocalObject().collides(agent)) {
+								agent.setTempTotalAreaInfluences(MyMath.addFloatArrays(agent.getTempTotalAreaInfluences(), areaInfluence.getAttributes()));
 							} else {
 								/** out of boundaries -> agent is not a target of the influence */
 							}

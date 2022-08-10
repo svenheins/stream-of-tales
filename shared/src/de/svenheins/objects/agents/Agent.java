@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
+import de.svenheins.main.AttributeType;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
 import de.svenheins.managers.ObjectMapManager;
@@ -152,20 +153,20 @@ public abstract class Agent extends PlayerEntity {
 	}
 	
 	public void nextPathElement() {
-		if (pathList.size() >0 && pathList != null) {
+		if (pathList.size() > 0 && pathList != null) {
 //			System.out.println("old position: x="+pathList.get(0).getX()+" y="+pathList.get(0).getY());
 			this.pathList.remove(0);
-			
 		}
 	}
 	
 	public void nextGoal() {
-		this.setMovement(0, 0);
+		System.out.println("next goal!");
+		this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
 		this.setContinuousState(EntityStates.STANDING);
 		if (goalList != null && goalList.size()>0) {
 //			System.out.println("old position: x="+pathList.get(0).getX()+" y="+pathList.get(0).getY());
 			this.actualGoal = goalList.get(0);
-//			System.out.println("actualGoal: x="+actualGoal.getPosition().getX()+" y="+actualGoal.getPosition().getY());
+			System.out.println("actualGoal: x="+actualGoal.getPosition().getX()+" y="+actualGoal.getPosition().getY());
 			this.restartPathCalculation();
 			this.goalList.remove(0);
 //			for (int i = 0; i < goalList.size(); i ++) {
@@ -198,7 +199,7 @@ public abstract class Agent extends PlayerEntity {
 	}
 	
 	public void restartPathCalculation() {
-		this.setMovement(0, 0);
+		this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
 		this.setContinuousState(EntityStates.STANDING);
 		pathList = new ArrayList<WorldPosition>(); // defines the way to the actualGoal
 		pathCalculationComplete = false;

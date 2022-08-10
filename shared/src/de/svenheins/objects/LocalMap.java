@@ -4,10 +4,6 @@ package de.svenheins.objects;
 
 import java.awt.Point;
 import java.awt.image.BufferedImage;
-
-import javax.rmi.CORBA.Tie;
-
-
 import de.svenheins.main.GameStates;
 import de.svenheins.main.TileType;
 import de.svenheins.managers.TileMapManager;

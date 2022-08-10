@@ -5,11 +5,7 @@ import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.logging.Level;
-
 import com.sun.sgs.app.ManagedReference;
-
-import de.svenheins.World;
 import de.svenheins.functions.MyMath;
 
 public class ServerAgentEntrepreneur extends ServerAgent {

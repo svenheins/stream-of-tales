@@ -10,8 +10,9 @@ public class AreaInfluence {
 	/** begin and end time of the influence */
 	private long timeBegin;
 	private long timeEnd;
-	/** entity is a short visual effect for the influence and the position, height, width, mx, my*/
-	private Entity entity;
+//	/** entity is a short visual effect for the influence and the position, height, width, mx, my*/
+//	private Entity entity;
+	private LocalObject localObject;
 	/** groupName defines the group, that is effected by the influence */
 	private String groupName;
 	/** exclude group or include? */
@@ -21,11 +22,11 @@ public class AreaInfluence {
 	/** priority */
 	private Priority priority;
 	
-	public AreaInfluence(BigInteger id, long timeBegin, long timeEnd, Entity entity, String groupName, boolean exclusive, float[] attributes, Priority priority) {
+	public AreaInfluence(BigInteger id, long timeBegin, long timeEnd, LocalObject localObject, String groupName, boolean exclusive, float[] attributes, Priority priority) {
 		this.setId(id);
 		this.setTimeBegin(timeBegin);
 		this.setTimeEnd(timeEnd);
-		this.setEntity(entity);
+		this.setLocalObject(localObject);
 		this.setGroupName(groupName);
 		this.setExclusive(exclusive);
 		this.setAttributes(attributes);	
@@ -44,12 +45,7 @@ public class AreaInfluence {
 	public void setTimeEnd(long timeEnd) {
 		this.timeEnd = timeEnd;
 	}
-	public Entity getEntity() {
-		return entity;
-	}
-	public void setEntity(Entity entity) {
-		this.entity = entity;
-	}
+
 	public String getGroupName() {
 		return groupName;
 	}
@@ -86,4 +82,14 @@ public class AreaInfluence {
 	public void setId(BigInteger id) {
 		this.id = id;
 	}
+
+	
+	public LocalObject getLocalObject() {
+		return localObject;
+	}
+
+	public void setLocalObject(LocalObject localObject) {
+		this.localObject = localObject;
+	}
+
 }

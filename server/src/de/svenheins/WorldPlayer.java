@@ -102,6 +102,7 @@ public class WorldPlayer
     
     private boolean initializingEntities;
     private boolean initializingItems;
+    private boolean initializingAreaInfluences;
     
     private boolean readyForNextMessage= true;
     
@@ -148,6 +149,7 @@ public class WorldPlayer
         player.setSession(session, channelRef);
         player.setInitializingEntities(false);
         player.setInitializingItems(false);
+        player.setInitializingAreaInfluences(false);
 //        player.setId(id);
         
         String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
@@ -179,6 +181,7 @@ public class WorldPlayer
         ready = false;
         initializingEntities= false;
         initializingItems= false;
+        initializingAreaInfluences = false;
     }
 
     /**
@@ -376,6 +379,16 @@ public class WorldPlayer
 					this.getRoom().addPlayerInitializingItems(this.getId());
 					
 					setInitializingItems(true);					
+				}
+				
+				break;
+			}
+			case INITAREAINFLUENCES: {
+				if(!this.isInitializingAreaInfluences()) {
+					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
+					this.getRoom().addPlayerInitializingAreaInfluences(this.getId());
+					
+					setInitializingAreaInfluences(true);					
 				}
 				
 				break;
@@ -982,7 +995,8 @@ public class WorldPlayer
 //		}
 		
 		BigInteger maxItemID = this.getRoom().getMaxItemIndex();
-        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my, maxItemID));
+		BigInteger maxAreaInfluenceID = this.getRoom().getMaxAreaInfluenceIndex();
+        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my, maxItemID, maxAreaInfluenceID));
 //      getSession().send(ServerMessages.sendContainer(playerId, inventory));
         boolean foundItem;
         int fieldX;
@@ -1278,5 +1292,13 @@ public class WorldPlayer
 	
 	public void setReadyForNextMessage(boolean b) {
 		readyForNextMessage = b;
+	}
+
+	public boolean isInitializingAreaInfluences() {
+		return initializingAreaInfluences;
+	}
+
+	public void setInitializingAreaInfluences(boolean initializingAreaInfluences) {
+		this.initializingAreaInfluences = initializingAreaInfluences;
 	}
 }

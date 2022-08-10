@@ -48,12 +48,15 @@ import de.svenheins.managers.SpriteManager;
 import de.svenheins.managers.TileSetManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.ServerMessages;
+import de.svenheins.objects.AreaInfluence;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.InteractionTile;
+import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
 import de.svenheins.objects.ServerAgentEntrepreneur;
+import de.svenheins.objects.ServerAreaInfluence;
 import de.svenheins.objects.ServerContainer;
 import de.svenheins.objects.ServerEntity;
 import de.svenheins.objects.ServerItem;
@@ -100,6 +103,8 @@ public class WorldRoom extends WorldObject
     
     private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerItem>>> itemList;
     private BigInteger maxItemIndex;
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>> areaInfluenceList;
+    private BigInteger maxAreaInfluenceIndex;
     
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerList;
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerUseList;
@@ -117,6 +122,8 @@ public class WorldRoom extends WorldObject
     /** the set of players, that are just initializing */
     private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingEntities = new HashMap<BigInteger, Iterator<BigInteger>>();
     private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingItems = new HashMap<BigInteger, Iterator<BigInteger>>();
+    private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingAreaInfluences = new HashMap<BigInteger, Iterator<BigInteger>>();
+    
     
     /** The set of corresponding player-entities in this room. */
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerPlayer>>> serverPlayers;// = new HashMap<BigInteger, ManagedReference<ServerPlayer>>();
@@ -157,6 +164,11 @@ public class WorldRoom extends WorldObject
         itemList = dm.createReference(tempItemList);
 //        BigInteger tempMaxItemID = BigInteger.valueOf(0);
         maxItemIndex = BigInteger.valueOf(0);
+        
+        ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>> tempAreaInfluenceList = new ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>();
+        areaInfluenceList = dm.createReference(tempAreaInfluenceList);
+//        BigInteger tempMaxItemID = BigInteger.valueOf(0);
+        maxAreaInfluenceIndex = BigInteger.valueOf(0);
         
         ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
         containerList = dm.createReference(tempContainerList);
@@ -231,6 +243,34 @@ public class WorldRoom extends WorldObject
 			/*** check if player does exist */
 			if (players.get(playerIds) != null) {
 				this.players.get(playerIds).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.ITEM, itemID));
+			} else {
+				// player does not exist
+			}
+		}
+	}
+    
+    /** add itemID into room */
+    public void addAreaInfluence(BigInteger areaInfluenceID, ServerAreaInfluence serverAreaInfluence) {
+    	DataManager dataManager = AppContext.getDataManager();
+        dataManager.markForUpdate(this);
+//        ManagedReference<BigInteger> tempItemID = dataManager.createReference(itemID);
+        if (maxAreaInfluenceIndex.compareTo(areaInfluenceID) < 0) {
+        	maxAreaInfluenceIndex = areaInfluenceID;
+        }
+        ManagedReference<ServerAreaInfluence> tempServerAreaInfluence = dataManager.createReference(serverAreaInfluence);
+        if (!areaInfluenceList.get().containsKey(areaInfluenceID)) {
+        	areaInfluenceList.getForUpdate().put(areaInfluenceID, tempServerAreaInfluence);
+//        	System.out.println("itemlist size: "+itemList.get().size());
+        }
+    }
+    
+    /** only remove the item for the players who cannot see the item */
+    public void removeAreaInfluence(BigInteger areaInfluenceID) {
+    	this.getAreaInfluenceList().getForUpdate().remove(areaInfluenceID);
+		for (BigInteger playerIds : players.keySet()) {
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.AREAINFLUENCE, areaInfluenceID));
 			} else {
 				// player does not exist
 			}
@@ -528,6 +568,7 @@ public class WorldRoom extends WorldObject
 	        this.updateSendLogout(player.getId());
 	        this.playerInitializingEntities.remove(player.getId());
 	        this.playerInitializingItems.remove(player.getId());
+	        this.playerInitializingAreaInfluences.remove(player.getId());
 	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
 	        if (ServerTextureManager.manager.containsPlayer(playerName)) {
 	        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
@@ -687,6 +728,34 @@ public class WorldRoom extends WorldObject
     	return objectListTemp;    	
     }
     
+    /** return next count Entities*/
+    public AreaInfluence[] getNextCountAreaInfluences(int count, Iterator<BigInteger> itKeys) {
+    	AreaInfluence[] objectListTemp = new AreaInfluence[count];
+    	int objectCounter = 0;
+    	/** for each entity add the corresponding id to the intList */
+    	AreaInfluence realAreaInfluence;
+		BigInteger actualID;
+    	for (int i = 0; i<count; i++) {
+    		if (itKeys.hasNext()) {
+    			actualID = itKeys.next();
+				ServerAreaInfluence areaInfluence = areaInfluenceList.get().get(actualID).get();
+//				System.out.println("got item id "+item.getId());
+//				TileSet tileSet = TileSetManager.manager.getTileSetByPath(item.getItemEntity().get().getTileSetName(), item.getItemEntity().get().getTileSetPathName());
+				realAreaInfluence = new AreaInfluence(areaInfluence.getId(), areaInfluence.getTimeBegin(), areaInfluence.getTimeEnd(), new LocalObject(areaInfluence.getId(), areaInfluence.getName(), areaInfluence.getX(), areaInfluence.getY(), areaInfluence.getHeight(), areaInfluence.getWidth(), areaInfluence.getMX(), areaInfluence.getMY(), areaInfluence.getZIndex(), areaInfluence.getSpeed()), areaInfluence.getGroupName(), areaInfluence.isExclusive(), areaInfluence.getAttributes(), areaInfluence.getPriority());
+//						AreaInfluence.getAreaInfluence(areaInfluence.getItemCode(), item.getId(), item.getName(), item.getCount(), item.getCapacity(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
+				objectListTemp[objectCounter] = realAreaInfluence;
+				objectCounter++;
+    		} else {
+    			AreaInfluence[] objectList = new AreaInfluence[objectCounter];
+    			for (int j = 0; j < objectCounter; j++){
+    				objectList[j] = objectListTemp[j];
+    			}
+    			return objectList;
+    		}
+		}
+    	return objectListTemp;    	
+    }
+    
     public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>> getEntities() {
     	return entities;
     }
@@ -773,6 +842,40 @@ public class WorldRoom extends WorldObject
 	    		if (timestamp - si.getCreationTime() > GameStates.maximumLifeDurationItems) {
 //	    			System.out.println("difference: " + (timestamp - si.getCreationTime()));
 	    			removeItem(si.getId());
+	    		}
+	    		
+			}
+    	}
+    	
+    }
+    
+    /**
+     * Updates all objects in the WorldRoom
+     * @param delta: time that passed until the last update-process
+     */
+    public void updateAreaInfluences(int begin, int end, Iterator<BigInteger> itKeys) {
+    	long timeNow;
+//		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
+//    	Iterator<BigInteger> itKeys = entities.get().keySet().iterator();
+    	BigInteger actualID;
+//    	for(int i = 0; i< begin; i++) {
+//    		actualID = itKeys.next();
+//    	}
+    	
+//		Entity realEntity;
+//		for (BigInteger entId : entities.get().keySet()) {
+		for (int i = begin; i < end; i++ ) {
+			if (itKeys.hasNext()) {
+				actualID = itKeys.next();
+	//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
+				ServerAreaInfluence sae = areaInfluenceList.get().get(actualID).getForUpdate(); 
+	//					EntityManager.get(EntityManager.idList.get(i)); 
+	//    		ServerEntity se = entity.getForUpdate();
+	    		
+	    		timeNow = System.currentTimeMillis();
+	    		if ( (sae.getTimeBegin() < timeNow) || (sae.getTimeEnd() < timeNow) || (sae.getTimeBegin() == sae.getTimeEnd())) {
+//	    			System.out.println("difference: " + (timestamp - si.getCreationTime()));
+	    			removeAreaInfluence(sae.getId());
 	    		}
 	    		
 			}
@@ -1101,6 +1204,81 @@ public class WorldRoom extends WorldObject
 		return itemList;
 	}
 	
+	public HashMap<BigInteger, Iterator<BigInteger>> getPlayerInitializingAreaInfluences() {
+		return playerInitializingAreaInfluences;
+	}
+	
+	public void addPlayerInitializingAreaInfluences(BigInteger playerID) {
+		if (!this.playerInitializingAreaInfluences.containsKey(playerID)) {
+			this.playerInitializingAreaInfluences.put(playerID, this.getAreaInfluenceList().get().keySet().iterator());
+		}
+	}
+	
+	public void removePlayerInitializingAreaInfluences(BigInteger playerID) {
+		if (this.playerInitializingAreaInfluences.containsKey(playerID)) {
+			this.playerInitializingAreaInfluences.remove(this.players.get(playerID));
+		}
+	}
+	
+	/** send count next entities to player, who need init */
+	public void initializePlayersAreaInfluences() {
+		AreaInfluence[] areaInfluenceArray;
+//		System.out.println("sending");
+		for (BigInteger playerIds : playerInitializingAreaInfluences.keySet()) {
+//			System.out.println("ID: "+playerIds);
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+//				System.out.println("got player!");
+				Iterator<BigInteger> itKeys = playerInitializingAreaInfluences.get(playerIds);
+				
+//				System.out.println("itKeys has next ? : "+itKeys.hasNext());
+				areaInfluenceArray = getNextCountAreaInfluences(10, itKeys);
+				int realLength = 0;
+				for (int i = 0; i < areaInfluenceArray.length; i++) {
+					if ( areaInfluenceArray[i] == null) {
+						realLength = i;
+						break;
+					}
+					realLength = i+1;
+				}
+//				System.out.println("realLength = "+realLength);
+				AreaInfluence[] realAreaInfluences = new AreaInfluence[realLength];
+				for (int i = 0; i <realLength; i++) {
+					realAreaInfluences[i] = areaInfluenceArray[i];
+				}
+				
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluences(realAreaInfluences));
+				if (itKeys.hasNext()) { 
+					this.playerInitializingAreaInfluences.put(playerIds, itKeys);
+				} else {
+					this.playerInitializingAreaInfluences.remove(playerIds);
+					this.players.get(playerIds).get().setReady(true);
+					this.players.get(playerIds).get().setInitializingAreaInfluences(false);
+				}				
+				
+//				Item singleItem = null;
+//				if (itemArray != null && itemArray.length>= 1) {
+//					singleItem = itemArray[0];
+//					System.out.println("got item!");
+//				}
+//				if (singleItem != null) {
+//					System.out.println("itemID: "+singleItem.getId());
+//					this.players.get(playerIds).get().getSession().send(ServerMessages.addCompleteItem(singleItem.getItemCode(), singleItem.getId(), singleItem.getName(), singleItem.getItemEntity().getX(), singleItem.getItemEntity().getY(), singleItem.getCount(), singleItem.getStates()));
+//					if (itKeys.hasNext()) { 
+//						this.playerInitializingItems.put(playerIds, itKeys);
+//					} else {
+//						this.playerInitializingItems.remove(playerIds);
+//						this.players.get(playerIds).get().setReady(true);
+//						this.players.get(playerIds).get().setInitializingItems(false);
+//					}
+//				}
+			} else {
+				this.playerInitializingAreaInfluences.remove(playerIds);
+			}
+		}
+		
+	}
+	
 	/** add an item to the player Container */
 	public void addItemToContainer(String playerName, OBJECTCODE containerType, ServerItem serverItem, int i, int j) {
 		switch (containerType) {
@@ -1146,5 +1324,17 @@ public class WorldRoom extends WorldObject
 	
 	public void deleteMapObject( BigInteger playerID, InteractionTile interactionTile, String objectMapName, String objectOverlayMap) {
 		players.get(playerID).get().getSession().send(ServerMessages.sendDeleteMapObject(interactionTile, objectMapName, objectOverlayMap));
+	}
+
+	public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>> getAreaInfluenceList() {
+		return areaInfluenceList;
+	}
+
+	public BigInteger getMaxAreaInfluenceIndex() {
+		return maxAreaInfluenceIndex;
+	}
+
+	public void setMaxAreaInfluenceIndex(BigInteger maxAreaInfluenceIndex) {
+		this.maxAreaInfluenceIndex = maxAreaInfluenceIndex;
 	}
 }

@@ -151,8 +151,11 @@ public class MoveThread implements Runnable {
 //						e.getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
 						if(this.moveWithCollisions(e)) {
 							/** collided -> restart path calculation */
-//							System.out.println("Agent collided!!!");
-							e.restartPathCalculationAfterCollision(GameWindow.gw.getObjectMapManagers().get("tree1"), GameWindow.gw.getObjectMapManagers().get("tree2"));
+							System.out.println("Agent collided!!!");
+							if ( (e.getMX() != 0 || e.getMY() != 0) && e.isPathCalculationComplete() == true) {
+								e.setMovement(-e.getAttributes()[AttributeType.MX.ordinal()], -e.getAttributes()[AttributeType.MY.ordinal()]);
+								e.restartPathCalculationAfterCollision(GameWindow.gw.getObjectMapManagers().get("tree1"), GameWindow.gw.getObjectMapManagers().get("tree2"));
+							}
 							if (e instanceof NormalAgent) {
 //								System.out.println("is agent in direct mode? -"+ ((NormalAgent) e).isDirectModus());
 							}

@@ -2,18 +2,13 @@ package de.svenheins.objects;
 
 
 
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.math.BigInteger;
 import java.util.logging.Logger;
 
 import com.sun.sgs.app.AppContext;
-import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
 
 import de.svenheins.WorldRoom;
-import de.svenheins.main.EntityStates;
-import de.svenheins.main.GameStates;
 import de.svenheins.messages.ITEMCODE;
 
 

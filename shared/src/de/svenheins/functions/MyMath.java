@@ -214,4 +214,31 @@ public class MyMath {
 			return null;
 		}
 	}
+	
+	/** calculate 2D vector length */
+	public static float calculateNorm(float vectorx, float vectory) {
+		return (float) Math.sqrt(vectorx*vectorx + vectory*vectory);
+	}
+	
+	/** calculate scalarproduct of two vectors */
+	public static float calculateScalarProduct(float vector1x, float vector1y, float vector2x, float vector2y){
+		return (vector1x*vector2x+vector1y*vector2y);
+	}
+	
+	/** calculate an angle */
+	public static float calculateAngleInRad(float vector1x, float vector1y, float vector2x, float vector2y) {
+		return (float) (Math.acos(calculateScalarProduct(vector1x, vector1y, vector2x, vector2y)/(calculateNorm(vector1x, vector1y)*calculateNorm(vector2x, vector2y))));
+	}
+	
+	
+	/** caculate a by some triangle data vectorA (direction), vectorB (exact), c 
+	 * c will be maxSpeed in the game, vectorA is (newMX, newMY) the direction of the goal and vectorB is the areaInfluence (mx, my) */
+	public static float calculateTriangleA(float vectorAx, float vectorAy, float vectorBx, float vectorBy, float c) {
+		float gamma = calculateAngleInRad(vectorAx, vectorAy, vectorBx, vectorBy);
+		float b = calculateNorm(vectorBx, vectorBy);
+		float sinGamma = (float) Math.sin(gamma);
+		return (float) ( (b/((b/c)*sinGamma)) * Math.sin( Math.PI-Math.asin((b/c)*sinGamma)-gamma));
+	}
+	
+	
 }

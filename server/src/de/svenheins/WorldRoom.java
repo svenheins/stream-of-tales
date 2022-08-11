@@ -253,15 +253,33 @@ public class WorldRoom extends WorldObject
     public void addAreaInfluence(BigInteger areaInfluenceID, ServerAreaInfluence serverAreaInfluence) {
     	DataManager dataManager = AppContext.getDataManager();
         dataManager.markForUpdate(this);
-//        ManagedReference<BigInteger> tempItemID = dataManager.createReference(itemID);
-        if (maxAreaInfluenceIndex.compareTo(areaInfluenceID) < 0) {
-        	maxAreaInfluenceIndex = areaInfluenceID;
-        }
+//        if (maxAreaInfluenceIndex.compareTo(areaInfluenceID) < 0) {
+//        	maxAreaInfluenceIndex = areaInfluenceID;
+//        }
+        
+        areaInfluenceID = maxAreaInfluenceIndex.add(BigInteger.valueOf(1));
+        maxAreaInfluenceIndex = areaInfluenceID;
+        
         ManagedReference<ServerAreaInfluence> tempServerAreaInfluence = dataManager.createReference(serverAreaInfluence);
         if (!areaInfluenceList.get().containsKey(areaInfluenceID)) {
         	areaInfluenceList.getForUpdate().put(areaInfluenceID, tempServerAreaInfluence);
 //        	System.out.println("itemlist size: "+itemList.get().size());
         }
+        
+        ServerAreaInfluence e = serverAreaInfluence;
+        e.setId(areaInfluenceID);
+        WorldObject worldObject = e.getWorldObject().get();
+        LocalObject localObject = new LocalObject(e.getId(), worldObject.getName(), worldObject.getX(), worldObject.getY(), worldObject.getWidth(), worldObject.getHeight(), worldObject.getMX(), worldObject.getMY(), worldObject.getZIndex(), worldObject.getSpeed());
+        AreaInfluence areaInfluence = new AreaInfluence(e.getId(), e.getTimeBegin(), e.getTimeEnd(), localObject, e.getGroupName(), e.isExclusive(), e.getAttributes(), e.getPriority());
+        
+        for (BigInteger playerIds : players.keySet()) {
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluence(areaInfluence));
+			} else {
+				// player does not exist
+			}
+		}
     }
     
     /** only remove the item for the players who cannot see the item */
@@ -739,9 +757,10 @@ public class WorldRoom extends WorldObject
     		if (itKeys.hasNext()) {
     			actualID = itKeys.next();
 				ServerAreaInfluence areaInfluence = areaInfluenceList.get().get(actualID).get();
+				WorldObject worldObject = areaInfluence.getWorldObject().get();
 //				System.out.println("got item id "+item.getId());
 //				TileSet tileSet = TileSetManager.manager.getTileSetByPath(item.getItemEntity().get().getTileSetName(), item.getItemEntity().get().getTileSetPathName());
-				realAreaInfluence = new AreaInfluence(areaInfluence.getId(), areaInfluence.getTimeBegin(), areaInfluence.getTimeEnd(), new LocalObject(areaInfluence.getId(), areaInfluence.getName(), areaInfluence.getX(), areaInfluence.getY(), areaInfluence.getHeight(), areaInfluence.getWidth(), areaInfluence.getMX(), areaInfluence.getMY(), areaInfluence.getZIndex(), areaInfluence.getSpeed()), areaInfluence.getGroupName(), areaInfluence.isExclusive(), areaInfluence.getAttributes(), areaInfluence.getPriority());
+				realAreaInfluence = new AreaInfluence(areaInfluence.getId(), areaInfluence.getTimeBegin(), areaInfluence.getTimeEnd(), new LocalObject(areaInfluence.getId(), worldObject.getName(), worldObject.getX(), worldObject.getY(), worldObject.getHeight(), worldObject.getWidth(), worldObject.getMX(), worldObject.getMY(), worldObject.getZIndex(), worldObject.getSpeed()), areaInfluence.getGroupName(), areaInfluence.isExclusive(), areaInfluence.getAttributes(), areaInfluence.getPriority());
 //						AreaInfluence.getAreaInfluence(areaInfluence.getItemCode(), item.getId(), item.getName(), item.getCount(), item.getCapacity(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
 				objectListTemp[objectCounter] = realAreaInfluence;
 				objectCounter++;
@@ -869,6 +888,8 @@ public class WorldRoom extends WorldObject
 				actualID = itKeys.next();
 	//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
 				ServerAreaInfluence sae = areaInfluenceList.get().get(actualID).getForUpdate(); 
+				
+				System.out.println("ServerAreaInfluence: group="+sae.getGroupName()+" exclusive?-"+sae.isExclusive());
 	//					EntityManager.get(EntityManager.idList.get(i)); 
 	//    		ServerEntity se = entity.getForUpdate();
 	    		
@@ -1247,7 +1268,7 @@ public class WorldRoom extends WorldObject
 					realAreaInfluences[i] = areaInfluenceArray[i];
 				}
 				
-				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluences(realAreaInfluences));
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluenceArray(realAreaInfluences));
 				if (itKeys.hasNext()) { 
 					this.playerInitializingAreaInfluences.put(playerIds, itKeys);
 				} else {

@@ -72,6 +72,18 @@ public class WorldObject
         this.id = BigInteger.valueOf(0);
     }
     
+    public WorldObject(float x, float y, float width, float height, float mx, float my) {
+        this.name = "";
+        this.description = "";
+        this.x = x;
+        this.y = y;
+        this.id = BigInteger.valueOf(0);
+        this.width = width;
+        this.height = height;
+        this.mx = mx;
+        this.my = my;
+    }
+    
 //    public WorldObject clone() {
 //    	try {
 //			return (WorldObject) super.clone();

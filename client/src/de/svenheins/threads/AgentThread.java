@@ -1,14 +1,12 @@
 package de.svenheins.threads;
 
-import java.math.BigInteger;
-
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GameWindow;
 import de.svenheins.managers.AgentManager;
 
 public class AgentThread implements Runnable {
-	private final int sleepingTime = 5;
+	private final int sleepingTime = 1;
 	
 	@Override
 	public void run() {

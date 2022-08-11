@@ -43,6 +43,7 @@ public class InitializePlayersTask  implements Task, Serializable, ManagedObject
 		
 		this.room.get().initializePlayersEntities();
 		this.room.get().initializePlayersItems();
+		this.room.get().initializePlayersAreaInfluences();
 		
 //		this.index += this.packageSize;
 //		if (this.index >= this.end) this.index = this.begin;

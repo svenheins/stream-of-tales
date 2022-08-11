@@ -19,8 +19,6 @@ import de.svenheins.managers.TileMapManager;
 import de.svenheins.managers.UndergroundMapManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.IngameConsole;
-import de.svenheins.objects.LocalMap;
-import de.svenheins.objects.LocalUndergroundMap;
 
 
 import java.awt.Color;

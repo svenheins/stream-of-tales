@@ -221,7 +221,7 @@ public class ServerMessages extends Messages{
     
     
     /** send all entityObjects */
-    public static ByteBuffer sendAreaInfluences(AreaInfluence[] localObjects) {
+    public static ByteBuffer sendAreaInfluenceArray(AreaInfluence[] localObjects) {
     	byte[] bytes;
     	ByteBuffer buffer = null;
         int attributeLength = 0;
@@ -282,6 +282,62 @@ public class ServerMessages extends Messages{
     			buffer.putInt(0);
     		}
     	}  
+        
+        buffer.flip();	
+        return buffer;
+    }
+    
+    /** send all entityObjects */
+    public static ByteBuffer sendAreaInfluence(AreaInfluence areaInfluence) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+        int attributeLength = 4 + (areaInfluence.getAttributes().length*4);
+        int areaInfluenceGroupNamesLength =4+areaInfluence.getGroupName().length();
+        int areaInfluenceExclusive = 4;
+        int areaInfluencePriorityLength = 1;
+        int IDLength = 8;
+        int timeBeginTimeEndLength = 16;
+        int xyLength = 8;
+        int widthHeightLength = 8;
+        int mxmyLength = 8;
+        int countLength = 4; 
+        AreaInfluence e = areaInfluence;
+    	
+    	bytes = new byte[1 + areaInfluencePriorityLength + areaInfluenceGroupNamesLength + areaInfluenceExclusive + IDLength + timeBeginTimeEndLength + xyLength + widthHeightLength + mxmyLength+ countLength +attributeLength];
+        buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.ADDAREAINFLUENCE.ordinal()); // 1
+        
+		LocalObject localObject = e.getLocalObject();
+    	BigInteger id = e.getId();
+    	
+    	buffer.put((byte) e.getPriority().ordinal()); // 1
+        buffer.putLong(id.longValue()); // 8 Bytes 
+        buffer.putLong(e.getTimeBegin());
+        buffer.putLong(e.getTimeEnd());
+        buffer.putInt(e.getGroupName().length()); // 4
+    	buffer.put(e.getGroupName().getBytes()); // playerName.length() 
+    	
+    	int exclusive;
+    	if (e.isExclusive()) exclusive = 1;
+		else exclusive = 0;
+    	buffer.putInt(exclusive); // 4
+    	
+    	buffer.putFloat(localObject.getX()); // 4
+    	buffer.putFloat(localObject.getY()); // 4
+    	buffer.putFloat(localObject.getWidth()); // 4
+    	buffer.putFloat(localObject.getHeight()); // 4
+    	buffer.putFloat(localObject.getMX()); // 4
+    	buffer.putFloat(localObject.getMY()); // 4
+//            buffer.putInt(e.getCount()); // 4
+		if (e.getAttributes() != null) {
+			buffer.putInt(e.getAttributes().length);
+			for (int j = 0; j < e.getAttributes().length; j++) {
+            	buffer.putFloat(e.getAttributes()[j]);
+            }
+		}
+		else {
+			buffer.putInt(0);
+		}
         
         buffer.flip();	
         return buffer;

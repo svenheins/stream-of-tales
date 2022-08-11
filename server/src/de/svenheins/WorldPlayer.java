@@ -46,6 +46,7 @@ import com.sun.sgs.app.NameNotBoundException;
 
 import de.svenheins.main.AttributeType;
 import de.svenheins.main.GameStates;
+import de.svenheins.main.Priority;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
@@ -62,6 +63,7 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.ServerAgentEntrepreneur;
+import de.svenheins.objects.ServerAreaInfluence;
 import de.svenheins.objects.ServerContainer;
 import de.svenheins.objects.ServerEntity;
 import de.svenheins.objects.ServerItem;
@@ -352,7 +354,7 @@ public class WorldPlayer
 //				float[] object_state = getRoom().getObjectState(objCode, this, object_id);
 //				getSession().send(ServerMessages.sendObjectState(objCode, object_id, object_state));
 //				break;
-			case INITENTITIES:
+			case INITENTITIES:{
 				if(!this.isInitializingEntities()) {
 					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
 					this.getRoom().addPlayerInitializingEntities(this.getId());
@@ -372,7 +374,7 @@ public class WorldPlayer
 //					}
 					
 				}
-				break;
+				break;}
 			case INITITEMS:{
 				if(!this.isInitializingItems()) {
 					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
@@ -393,34 +395,34 @@ public class WorldPlayer
 				
 				break;
 			}
-			case INITSPACES:
+			case INITSPACES:{
 				this.initSpaces();
-				break;
+				break;}
 
-			case INITPLAYERS:
+			case INITPLAYERS:{
 				this.initPlayers();
 				break;
-				
-			case INITME:
+			}
+			case INITME: {
 				this.initMe();
-				break; 
-			case LOGOUT:
+				break; }
+			case LOGOUT: {
 				this.disconnected(true);
 				break;
-				
-			case JOINSPACECHANNEL:
+			}
+			case JOINSPACECHANNEL: {
 				BigInteger spaceId = BigInteger.valueOf(message.getLong());
 				this.joinSpaceChannel(spaceId);
-				break;
-			case LEAVESPACECHANNEL:
+				break; }
+			case LEAVESPACECHANNEL: {
 				BigInteger spaceIdLeave = BigInteger.valueOf(message.getLong());
 				this.leaveSpaceChannel(spaceIdLeave);
-				break;
-			case PLAYERDATA:
+				break; }
+			case PLAYERDATA: {
 				BigInteger playerId = BigInteger.valueOf(message.getLong());
 				this.sendPlayerData(playerId);
-				break;
-			case EDIT_PLAYER_ADDONS:
+				break; }
+			case EDIT_PLAYER_ADDONS: {
 				/** ID */
 				BigInteger objectId_player = BigInteger.valueOf(message.getLong()); // 8
 		        
@@ -448,8 +450,8 @@ public class WorldPlayer
 		    	this.getRoom().sendEditPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
 		    	
 		    	
-				break;
-			case OBJECTSTATE:
+				break; }
+			case OBJECTSTATE: {
 				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
 //				byte[] bigByte = new byte[message.getInt()];
 //				for (int i =0; i<bigByte.length; i++) {
@@ -477,9 +479,9 @@ public class WorldPlayer
 	    		}
 	    		
 				break;
-				
+			}
 				/** parse upload message */
-			case UPLOAD_OBJECT:
+			case UPLOAD_OBJECT: {
 				OBJECTCODE objCodeUpload = OBJECTCODE.values()[message.getInt()];
 				if(objCodeUpload == OBJECTCODE.SPACE) {
 					BigInteger id = BigInteger.valueOf(message.getLong());
@@ -540,8 +542,8 @@ public class WorldPlayer
 		    		//Space spaceAddManager = new Space()
 				}
 				
-				break;
-			case INITTEXTURES:
+				break; }
+			case INITTEXTURES: {
 //				if (!ServerTextureManager.manager.containsPlayer(thisPlayerName) || ServerTextureManager.manager.getLengthOfUploadTexture(thisPlayerName)>0) {
 				ServerTextureManager.manager.createPlayerUploadTexture(thisPlayerName);	
 				logger.log(Level.INFO,
@@ -556,9 +558,9 @@ public class WorldPlayer
 //			                new Object[] { thisPlayerName});
 //				}
 					
-				break;
+				break; }
 				/** parse upload Texture */
-			case UPLOAD_TEXTURE:
+			case UPLOAD_TEXTURE: {
 				byte[] nameBytes = new byte[message.getInt()];
 	    		message.get(nameBytes);
 	    		String name = new String(nameBytes); // name
@@ -598,8 +600,8 @@ public class WorldPlayer
 	    			this.getRoom().sendTextureToPlayers(name, playerName);
 	    		}
 	    		
-				break;
-			case READY_FOR_NEXT_TEXTURE_PACKET:
+				break; }
+			case READY_FOR_NEXT_TEXTURE_PACKET: {
 				byte[] playerNameBytes_Ready = new byte[message.getInt()];
 				message.get(playerNameBytes_Ready);
 				String namePlayer = new String(playerNameBytes_Ready); // name
@@ -613,13 +615,13 @@ public class WorldPlayer
 	    		getSession().send(ServerMessages.uploadTexture(textureName, oldPacket+1, ServerTextureManager.manager.getNumberOfPacketsUploadTexture(thisPlayerName) , imagePacket.length, imagePacket, getSession().getName()));
 	    		
 	    		break;
-
-			case READY_FOR_NEXT_TEXTURE:
+				}
+			case READY_FOR_NEXT_TEXTURE: {
 				
 				sendAvailableTextures();
 				
-				break;
-			case SEND_MISSING_TEXTURES:
+				break; }
+			case SEND_MISSING_TEXTURES: {
 				if (this.isReadyForNextMessage()) {
 					this.setReadyForNextMessage(false);
 					ArrayList<String> textureNames = new ArrayList<String>();
@@ -641,8 +643,8 @@ public class WorldPlayer
 			    	getSession().send(ServerMessages.sendTextureStart(thisPlayerName, texture));
 				}
 
-				break;
-			case EDIT_SPACE_ADDONS:
+				break; }
+			case EDIT_SPACE_ADDONS: {
 				/** get the message */
 				BigInteger id = BigInteger.valueOf(message.getLong()); // 8 Bytes
 				byte[] textureNameBytes = new byte[message.getInt()];
@@ -662,7 +664,7 @@ public class WorldPlayer
 		    	//SpaceManager.editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	this.getRoom().sendEditSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	
-				break;
+				break; }
 			case ADDITEM: {
 				BigInteger addItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
 				ITEMCODE itemCode_ADDITEM = getItemCode(message); // 1 Byte
@@ -702,7 +704,7 @@ public class WorldPlayer
 //		        System.out.println("Server got ="+itemStates_ADDITEM[AttributeType.LIFEREGENERATION.ordinal()]);
 				this.getRoom().addItem(addItemID, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ));
 				break; }
-			case TAKEITEM:
+			case TAKEITEM: {
 				BigInteger takeItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
 				if (this.getRoom().getItemList().get().containsKey(takeItemID)) {
 					getSession().send(ServerMessages.sendTakeItem(takeItemID));
@@ -713,14 +715,14 @@ public class WorldPlayer
 //					logger.log(Level.INFO, "taking item {0} by player {1} was not successful, because item does noch exist",
 //		    	            new Object[] { takeItemID, thisPlayerName});
 				}
-				break;
-			case TOOKITEM:
+				break; }
+			case TOOKITEM: {
 				BigInteger tookItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
 //				logger.log(Level.INFO, "took item {0} by player {1}",
 //	    	            new Object[] { tookItemID, thisPlayerName});
 				this.getRoom().removeItem(tookItemID);
 				break;
-				
+			}
 			case ADDITEMTOCONTAINER: {
 				OBJECTCODE containerType = getObjectCode(message); // 1
 				BigInteger addItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
@@ -858,7 +860,37 @@ public class WorldPlayer
 		        }    
 				break;
 			}
-			
+			case ADDAREAINFLUENCE: {
+				Priority priority = getPriority(message); // 1 Byte
+				BigInteger id = BigInteger.valueOf(message.getLong()); // 8 Bytes
+
+		        long timeBegin = message.getLong();
+		        long timeEnd = message.getLong();
+		        byte[] groupNameBytes = new byte[message.getInt()];
+				message.get(groupNameBytes);
+				String groupName = new String(groupNameBytes); // name
+				
+				boolean exclusive;
+				if (message.getInt() == 1) exclusive = true; else exclusive = false;
+				
+				float x = message.getFloat(); // 4
+				float y= message.getFloat(); // 4
+				float width = message.getFloat(); // 4
+				float height= message.getFloat(); // 4
+				float mx= message.getFloat(); // 4
+				float my= message.getFloat(); // 4
+				int attributeLength = message.getInt(); // 4
+				float[] attributes = new float[attributeLength]; // 4*Length
+		        for (int i = 0; i < attributeLength; i ++) {
+		        	attributes[i] = message.getFloat();
+		        }
+		        
+		        WorldObject worldObject = new WorldObject(x, y, width, height, mx, my);
+		        ServerAreaInfluence serverAreaInfluence = new ServerAreaInfluence(id, timeBegin, timeEnd, groupName, exclusive, worldObject, attributes, priority);
+		        
+		        System.out.println("Server got areaInfluence with mx="+attributes[AttributeType.MX.ordinal()]+" width="+worldObject.getWidth());
+				this.getRoom().addAreaInfluence(id, serverAreaInfluence);
+				break; }
 			case DELETE_MAPOBJECT:
 			{
 				int localX = message.getInt();
@@ -1232,6 +1264,20 @@ public class WorldPlayer
         ITEMCODE itemCode = ITEMCODE.values()[itemByte];
         
         return itemCode;
+    }
+    
+    private static Priority getPriority(ByteBuffer packet) 
+    {
+        byte priorityByte = packet.get();
+        if ((priorityByte < 0) || (priorityByte > Priority.values().length - 1)) {
+        	//TODO: exception is better
+        	System.out.println("Unknown es value: " + priorityByte);
+//            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        Priority priority = Priority.values()[priorityByte];
+        
+        return priority;
     }
     
     /**

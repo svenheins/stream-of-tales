@@ -406,7 +406,7 @@ public class GamePanel extends JPanel {
 		SimpleAgent simpleAgent;
 		BigInteger runningID = BigInteger.valueOf(0);
 		TileSet tileSet_SA = new TileSet(GameStates.standardTileNamePlayer, "standardPlayer", 32, 64);
-		for (int i = 0; i <1; i++ ){
+		for (int i = 0; i < 0; i++ ){
 			float x = 400+ (int) (Math.random()*100) -100;
 			float y = 200+ (int) (Math.random()*200) -100;
 			agent = new NormalAgent(tileSet_SA, "normalAgent", runningID, x, y, GameStates.animationDelay);
@@ -455,9 +455,11 @@ public class GamePanel extends JPanel {
 		}
 		
 		float[] tempAttributes = new float[AttributeType.values().length];
-		tempAttributes[AttributeType.MX.ordinal()]= 80.0f;
+		tempAttributes[AttributeType.MX.ordinal()]= 20.0f;
 		AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+120000, new LocalObject(BigInteger.valueOf(0), "", 0,0,500,500, 0,0,0,0), "movers", true, tempAttributes, Priority.LOW);
-		AreaInfluenceManager.add(areaInfluence1);
+//		AreaInfluenceManager.add(areaInfluence1);
+//		GameWindow.gw.send(ClientMessages.addAreaInfluence(areaInfluence1));//(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
+		
 		float[] tempAttributes2 = new float[AttributeType.values().length];
 		tempAttributes2[AttributeType.MX.ordinal()]= -80.0f;
 		AreaInfluence areaInfluence2 = new AreaInfluence(BigInteger.valueOf(1), System.currentTimeMillis(), System.currentTimeMillis()+120000, new LocalObject(BigInteger.valueOf(0), "", 250,0,500,500, 0,0,0,0), "movers", true, tempAttributes2, Priority.LOW);

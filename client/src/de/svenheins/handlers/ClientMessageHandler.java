@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 import com.sun.sgs.client.ClientChannel;
 
+import de.svenheins.main.AttributeType;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
@@ -910,6 +911,43 @@ public class ClientMessageHandler {
     		}
     		break;}
 
+    	case ADDAREAINFLUENCE: {
+    		GameWindow.gw.gameInfoConsole.appendInfo("Got an areaInfluence");
+    		System.out.println("Got an areaInfluence");
+
+			Priority priority = getPriority(packet);
+    		BigInteger addCompleteAreaInfluenceId = BigInteger.valueOf(packet.getLong());
+    		long timeBegin = packet.getLong();
+    		long timeEnd = packet.getLong();
+    		byte[] groupNameAddCompleteGroupNameBytes = new byte[packet.getInt()];
+			packet.get(groupNameAddCompleteGroupNameBytes);
+			String addCompleteGroupName = new String(groupNameAddCompleteGroupNameBytes); // name
+			int exclusiveInt = packet.getInt();
+			boolean exclusive;
+			if (exclusiveInt == 1) exclusive = true; else exclusive = false;
+    		float addCompleteAreaInfluenceX = packet.getFloat(); 
+    		float addCompleteAreaInfluenceY = packet.getFloat();
+    		float addCompleteAreaInfluenceWidth = packet.getFloat(); 
+    		float addCompleteAreaInfluenceHeight = packet.getFloat();
+    		float addCompleteAreaInfluenceMX = packet.getFloat(); 
+    		float addCompleteAreaInfluenceMY = packet.getFloat();
+//    			int addCompleteAreaInfluenceCount = packet.getInt();
+			int attributeLength = packet.getInt();
+			float[] attributes = new float[attributeLength];
+			for(int i = 0; i< attributeLength; i++) {
+				attributes[i] = packet.getFloat();
+			}
+			
+			System.out.println("areaInfluence mx = "+attributes[AttributeType.MX.ordinal()]+" width= "+addCompleteAreaInfluenceWidth);
+			AreaInfluence areaInfluenceInit = new AreaInfluence(addCompleteAreaInfluenceId, timeBegin, timeEnd, new LocalObject(addCompleteAreaInfluenceId, "", addCompleteAreaInfluenceX, addCompleteAreaInfluenceY, addCompleteAreaInfluenceWidth, addCompleteAreaInfluenceHeight, addCompleteAreaInfluenceMX, addCompleteAreaInfluenceMY, 0, 0),addCompleteGroupName, exclusive, attributes, priority);
+//    					Item.getItem(itemCode, addCompleteItemId, addCompleteItemName, addCompleteItemCount, 1, addCompleteItemX, addCompleteItemY, System.currentTimeMillis(), states);
+    		if (AreaInfluenceManager.add(areaInfluenceInit)) {
+    			System.out.println("Successfully added areaInfluence");
+    		} else {
+    			System.out.println("Could not added areaInfluence");
+    		}    		
+
+    		break;}
     	case READY_FOR_NEXT_TEXTURE_PACKET:
     		byte[] nameBytes = new byte[packet.getInt()];
 			packet.get(nameBytes);

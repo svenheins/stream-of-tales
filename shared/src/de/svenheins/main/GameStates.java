@@ -223,6 +223,8 @@ public class GameStates {
 	
 	/** agent properties */
 	public static float agentGoalDistance = 32.0f;
+	public static float agentGoalDecelerationResetDistance = 64.0f;
+	public static float agentGoalDecelerationMinValue = 0.05f;
 	
 	/** agent path properties */
 	public static float pathMinAcceptanceDistance = 4.0f;

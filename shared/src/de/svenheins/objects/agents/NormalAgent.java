@@ -19,12 +19,15 @@ import de.svenheins.objects.agents.goals.Goal;
 public class NormalAgent extends Agent {
 	private boolean directModus;
 	private long timestampPathCalculation;
+	/** deceleration factor between 0.0f (standing still) and 1.0f (maxSPeed) */
+	private float deceleration;
 	
 	public NormalAgent(TileSet tileSet, String name, BigInteger id, float x,
 			float y, long animationDelay) {
 		super(tileSet, name, id, x, y, animationDelay);
-		this.setMaxSpeed(100.0f);
+		this.setMaxSpeed(200.0f);
 		this.setDirectModus(true);
+		this.setDeceleration(1.0f);
 	}
 
 	@Override
@@ -56,6 +59,8 @@ public class NormalAgent extends Agent {
 				}
 				updateGoals();
 			}
+		} else {
+			this.setGoal(false);
 		}
 	}
 
@@ -156,12 +161,29 @@ public class NormalAgent extends Agent {
 //					}
 //				}
 				
+				float distanceGoal = getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2));
+//				float decceleration = 1.0f;
 				/** adapt speed */
 				if (isDirectModus()) {
+					if ( distanceGoal < actualVelocity) {
+						this.setDeceleration(Math.max(GameStates.agentGoalDecelerationMinValue, this.getDeceleration()*(distanceGoal/(actualVelocity))));
+//					if ( distanceGoal < GameStates.agentGoalDecelerationResetDistance) {
+//						this.setDeceleration(this.getDeceleration()*(distanceGoal/ GameStates.agentGoalDecelerationResetDistance));
 					
+//					int decelerationWeight = Math.max(2, (int)(actualVelocity/2));
+//					tempVelocity = tempVelocity*((decelerationWeight*actualVelocity)/(actualVelocity+(decelerationWeight-1)*getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2))));
+//					} else if (actualVelocity > 50 || distanceGoal > 100){
+//						this.setDeceleration(1.0f);
+//					}
+					} else if (distanceGoal >= GameStates.agentGoalDecelerationResetDistance){
+						this.setDeceleration(1.0f);
+					}
 				} else {
-					if ( getDistance(this.getActualPathElement().getX(), this.getActualPathElement().getY()-(this.getHeight()/2)) < actualVelocity/20) {
-						tempVelocity = tempVelocity*1.5f;
+					if ( distanceGoal < actualVelocity) {
+						this.setDeceleration(this.getDeceleration()*(distanceGoal/(actualVelocity)));
+//					tempVelocity = tempVelocity*1.5f;
+					} else {
+						this.setDeceleration(1.0f);
 					}
 				}
 							
@@ -175,9 +197,9 @@ public class NormalAgent extends Agent {
 					vectorAy = lengthA*(newMY / MyMath.calculateNorm(newMX, newMY));
 					moveDirectionX = vectorAx - areaInfluenceMX;
 					moveDirectionY = vectorAy - areaInfluenceMY;
-					this.setMovement(moveDirectionX, moveDirectionY);
+					this.setMovement(this.getDeceleration()*moveDirectionX, this.getDeceleration()*moveDirectionY);
 				} else {
-					this.setMovement( maxSpeed*(newMX/tempVelocity), maxSpeed*(newMY/tempVelocity));
+					this.setMovement( this.getDeceleration()*maxSpeed*(newMX/tempVelocity), this.getDeceleration()*maxSpeed*(newMY/tempVelocity));
 				}
 
 			} else
@@ -557,5 +579,13 @@ public class NormalAgent extends Agent {
 
 	public void setTimestampPathCalculation(long timestampPathCalculation) {
 		this.timestampPathCalculation = timestampPathCalculation;
+	}
+
+	public float getDeceleration() {
+		return deceleration;
+	}
+
+	public void setDeceleration(float deceleration) {
+		this.deceleration = deceleration;
 	}
 }

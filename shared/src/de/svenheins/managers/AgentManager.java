@@ -2,17 +2,9 @@ package de.svenheins.managers;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-
-import de.svenheins.main.EntityStates;
-import de.svenheins.main.GameStates;
-import de.svenheins.objects.LocalObject;
-import de.svenheins.objects.PlayerEntity;
-import de.svenheins.objects.TileSet;
-import de.svenheins.objects.ZIndexObjectComparator;
 import de.svenheins.objects.agents.Agent;
 
 public class AgentManager {
@@ -75,18 +67,37 @@ public class AgentManager {
 	public static void runNextAgent(ObjectMapManager objectMapManager1, ObjectMapManager objectMapManager2) {
 		Agent agent = null;
 		BigInteger agentID = null;
-		if (updateAgentList.hasNext()) {
-			agentID = updateAgentList.next();
-			agent = agentList.get(agentID);
-		} else {
-			updateAgentList = agentList.keySet().iterator();
+		/** take the next agent, who has a valid Goal */
+//		for (int i = 0; i < agentList.size(); i++) {
 			if (updateAgentList.hasNext()) {
 				agentID = updateAgentList.next();
 				agent = agentList.get(agentID);
+				if (agent.hasGoal()) {
+					
+				} else {
+					if (updateAgentList.hasNext()) {
+						agentID = updateAgentList.next();
+						agent = agentList.get(agentID);
+					}
+				}
 			} else {
-				// empty agentList
+				updateAgentList = agentList.keySet().iterator();
+				if (updateAgentList.hasNext()) {
+					agentID = updateAgentList.next();
+					agent = agentList.get(agentID);
+					if (agent.hasGoal()) {
+						
+					} else {
+						if (updateAgentList.hasNext()) {
+							agentID = updateAgentList.next();
+							agent = agentList.get(agentID);
+						}
+					}
+				} else {
+					// empty agentList
+				}
 			}
-		}
+//		}
 		
 		if (agent != null) {
 			agent.run(objectMapManager1, objectMapManager2);

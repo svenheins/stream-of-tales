@@ -1,15 +1,17 @@
 package de.svenheins.objects;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.logging.Logger;
 
 import com.sun.sgs.app.AppContext;
+import com.sun.sgs.app.ManagedObject;
 import com.sun.sgs.app.ManagedReference;
 
 import de.svenheins.WorldRoom;
 import de.svenheins.main.Priority;
 
-public class ServerAreaInfluence extends WorldObject{
+public class ServerAreaInfluence implements Serializable, ManagedObject {
 	
 	/**
 	 * 

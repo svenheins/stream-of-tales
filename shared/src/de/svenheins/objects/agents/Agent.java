@@ -1,6 +1,5 @@
 package de.svenheins.objects.agents;
 
-import java.awt.Point;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,7 +42,7 @@ public abstract class Agent extends PlayerEntity {
 		satisfaction = 0;
 		this.range = 10000;
 		this.setVisible(true);
-		goal = false;
+		goal = true;
 		pathCalculationComplete = false;
 	}
 	
@@ -164,6 +163,7 @@ public abstract class Agent extends PlayerEntity {
 		this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
 		this.setContinuousState(EntityStates.STANDING);
 		if (goalList != null && goalList.size()>0) {
+			this.setGoal(true);
 //			System.out.println("old position: x="+pathList.get(0).getX()+" y="+pathList.get(0).getY());
 			this.actualGoal = goalList.get(0);
 			System.out.println("actualGoal: x="+actualGoal.getPosition().getX()+" y="+actualGoal.getPosition().getY());
@@ -174,6 +174,7 @@ public abstract class Agent extends PlayerEntity {
 //			}
 		} else {
 			this.setActualGoal(null);
+			this.setGoal(false);
 			System.out.println("no more goals!");
 		}
 	}

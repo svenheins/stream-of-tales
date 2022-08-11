@@ -5,12 +5,8 @@ import java.awt.Point;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-import javax.swing.JComponent;
-import de.svenheins.functions.MyMath;
 import de.svenheins.main.AttributeType;
-import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
@@ -18,9 +14,9 @@ import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.main.Priority;
 import de.svenheins.managers.AgentManager;
-import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ItemManager;
+import de.svenheins.managers.ObjectMapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
@@ -29,7 +25,6 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.ItemInfluence;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
-import de.svenheins.objects.TileSet;
 import de.svenheins.objects.agents.Agent;
 import de.svenheins.objects.agents.NormalAgent;
 
@@ -37,8 +32,6 @@ public class MoveThread implements Runnable {
 
 	private long duration, last; 
 	private long millis, frames;
-	
-	private boolean changeDirection;
 	
 //	private JComponent comp;
 	
@@ -275,18 +268,22 @@ public class MoveThread implements Runnable {
 				int rightLocalYLimit = (int) Math.floor( (float) ( drPointX.y - urLatticePointYX )/ GameStates.mapTileSetHeight);
 				int it_RightLatticeY = urLatticePointYX;
 				for (int k = it_RightLocalY; k<= rightLocalYLimit; k++) {
-					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) ) ||
-							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) )) {
-						/** collision!!! */
-//						System.out.println("collision +x!");
-						xCollides = true;
-						break;
-					}
-					/** increment variables */
-					it_RightLocalY++;
-					if (it_RightLocalY >= GameStates.mapHeight) {
-						it_RightLocalY = 0;
-						it_RightLatticeY += GameStates.mapTotalHeight;
+					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
+					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
+					if (tree1Manager != null && tree2Manager != null) {
+						if ((tree1Manager.checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) ) ||
+								(tree2Manager.checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) )) {
+							/** collision!!! */
+	//						System.out.println("collision +x!");
+							xCollides = true;
+							break;
+						}
+						/** increment variables */
+						it_RightLocalY++;
+						if (it_RightLocalY >= GameStates.mapHeight) {
+							it_RightLocalY = 0;
+							it_RightLatticeY += GameStates.mapTotalHeight;
+						}
 					}
 				}
 			} else if (movementX < 0) {
@@ -295,18 +292,22 @@ public class MoveThread implements Runnable {
 				int leftLocalYLimit = (int) Math.floor( (float) ( dlPointX.y - ulLatticePointYX )/ GameStates.mapTileSetHeight);
 				int it_LeftLatticeY = ulLatticePointYX;
 				for (int k = it_LeftLocalY; k<= leftLocalYLimit; k++) {
-					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) ) ||
-							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) )) {
-						/** collision!!! */
-//						System.out.println("collision +x!");
-						xCollides = true;
-						break;
-					}
-					/** increment variables */
-					it_LeftLocalY++;
-					if (it_LeftLocalY >= GameStates.mapHeight) {
-						it_LeftLocalY = 0;
-						it_LeftLatticeY += GameStates.mapTotalHeight;
+					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
+					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
+					if (tree1Manager != null && tree2Manager != null) {
+						if ((tree1Manager.checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) ) ||
+								(tree2Manager.checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) )) {
+							/** collision!!! */
+	//						System.out.println("collision +x!");
+							xCollides = true;
+							break;
+						}
+						/** increment variables */
+						it_LeftLocalY++;
+						if (it_LeftLocalY >= GameStates.mapHeight) {
+							it_LeftLocalY = 0;
+							it_LeftLatticeY += GameStates.mapTotalHeight;
+						}
 					}
 				}
 			} else {
@@ -320,18 +321,22 @@ public class MoveThread implements Runnable {
 				int upperLocalXLimit = (int) Math.floor( (float) ( urPointY.x - ulLatticePointXY )/ GameStates.mapTileSetWidth);
 				int it_UpperLatticeX = ulLatticePointXY;
 				for (int k = it_UpperLocalX; k<= upperLocalXLimit; k++) {
-					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) ) ||
-							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) )) {
-						/** collision!!! */
-//						System.out.println("collision y!");
-						yCollides = true;
-						break;
-					}
-					/** increment variables */
-					it_UpperLocalX++;
-					if (it_UpperLocalX >= GameStates.mapWidth) {
-						it_UpperLocalX = 0;
-						it_UpperLatticeX += GameStates.mapTotalWidth;
+					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
+					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
+					if (tree1Manager != null && tree2Manager != null) {
+						if ((tree1Manager.checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) ) ||
+								(tree2Manager.checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) )) {
+							/** collision!!! */
+	//						System.out.println("collision y!");
+							yCollides = true;
+							break;
+						}
+						/** increment variables */
+						it_UpperLocalX++;
+						if (it_UpperLocalX >= GameStates.mapWidth) {
+							it_UpperLocalX = 0;
+							it_UpperLatticeX += GameStates.mapTotalWidth;
+						}
 					}
 				}
 			} else if (movementY > 0) {
@@ -340,18 +345,22 @@ public class MoveThread implements Runnable {
 				int lowerLocalXLimit = (int) Math.floor( (float) ( drPointY.x - dlLatticePointXY )/ GameStates.mapTileSetWidth);
 				int it_LowerLatticeX = dlLatticePointXY;
 				for (int k = it_LowerLocalX; k<= lowerLocalXLimit; k++) {
-					if ((GameWindow.gw.getObjectMapManagers().get("tree1").checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) ) ||
-							(GameWindow.gw.getObjectMapManagers().get("tree2").checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) )) {
-						/** collision!!! */
-//						System.out.println("collision y!");
-						yCollides = true;
-						break;
-					}
-					/** increment variables */
-					it_LowerLocalX++;
-					if (it_LowerLocalX >= GameStates.mapWidth) {
-						it_LowerLocalX = 0;
-						it_LowerLatticeX += GameStates.mapTotalWidth;
+					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
+					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
+					if (tree1Manager != null && tree2Manager != null) {
+						if ((tree1Manager.checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) ) ||
+								(tree2Manager.checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) )) {
+							/** collision!!! */
+	//						System.out.println("collision y!");
+							yCollides = true;
+							break;
+						}
+						/** increment variables */
+						it_LowerLocalX++;
+						if (it_LowerLocalX >= GameStates.mapWidth) {
+							it_LowerLocalX = 0;
+							it_LowerLatticeX += GameStates.mapTotalWidth;
+						}
 					}
 				}
 			} else {

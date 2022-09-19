@@ -6,6 +6,7 @@ import de.svenheins.functions.MyMath;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.handlers.ConsoleInputHandler;
+import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.main.menu.MainMenu;
 import de.svenheins.managers.ClientTextureManager;
@@ -813,6 +814,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	
 	public void setGameMaster(String playerName) {
 		if (this.isLoggedIn()) {
+			GamePanel.gp.setPaintLayer("empty");
+			GamePanel.gp.setPaintType(0);
+			GamePanel.gp.configGUI();
 			/** create map folder for the chosen player */
 		    boolean createMapFolderSccess = (new File(GameStates.standardMapFolder+playerName)).mkdirs();
 		    if (!createMapFolderSccess) {

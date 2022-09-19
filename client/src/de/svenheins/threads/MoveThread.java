@@ -60,11 +60,11 @@ public class MoveThread implements Runnable {
 				/** check and handle collision here */
 				if(this.moveWithCollisions(GamePanel.gp.getPlayerEntity())) {
 					/** player collided */
-					System.out.println("Collision");
-					float[] damageAttributes = new float[AttributeType.values().length];
-					damageAttributes[AttributeType.LIFEREGENERATION.ordinal()] = -3.0f;
-					ItemInfluence slowDamage = new ItemInfluence(System.currentTimeMillis(), System.currentTimeMillis()+3000, damageAttributes, Priority.LOW);
-					GamePanel.gp.getPlayerEntity().addItemInfluence(slowDamage);
+//					System.out.println("Collision");
+//					float[] damageAttributes = new float[AttributeType.values().length];
+//					damageAttributes[AttributeType.LIFEREGENERATION.ordinal()] = -3.0f;
+//					ItemInfluence slowDamage = new ItemInfluence(System.currentTimeMillis(), System.currentTimeMillis()+3000, damageAttributes, Priority.LOW);
+//					GamePanel.gp.getPlayerEntity().addItemInfluence(slowDamage);
 				} else {
 					/** no collision */
 				}
@@ -125,16 +125,15 @@ public class MoveThread implements Runnable {
 //						}
 					}
 				}
-				/** EntityManager move */
-				List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
-				for (BigInteger i: idListTempEntities) {
-					Entity e= EntityManager.get(i);
-					if (e != null) { 
-//						this.determineAnimation(e);
-						e.move(duration);
-					}
-					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
-				}
+//				/** EntityManager move */
+//				List<BigInteger> idListTempEntities = new ArrayList<BigInteger>(EntityManager.idList);
+//				for (BigInteger i: idListTempEntities) {
+//					Entity e= EntityManager.get(i);
+//					if (e != null) { 
+//						e.move(duration);
+//					}
+//					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
+//				}
 				
 				List<BigInteger> idListTempAgents = new ArrayList<BigInteger>(AgentManager.idList);
 				for (BigInteger i: idListTempAgents) {
@@ -153,8 +152,6 @@ public class MoveThread implements Runnable {
 //								System.out.println("is agent in direct mode? -"+ ((NormalAgent) e).isDirectModus());
 							}
 						}
-						
-						
 					}
 					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
 				}
@@ -169,11 +166,8 @@ public class MoveThread implements Runnable {
 						if(System.currentTimeMillis()-e.getLastSeen() >= 500) {
 							e.setVisible(false);
 						} else {
-	//					if(e.getHorizontalMovement() != 0) e.moveOnX(duration);
-	//					if(e.getVerticalMovement()!=0) e.moveOnY(duration);
 							if (e != null) { 
 								e.setVisible(true);
-//								this.determineAnimation(e);
 								e.move(duration);
 							}
 						}
@@ -185,7 +179,7 @@ public class MoveThread implements Runnable {
 				GameWindow.gw.gameInfoConsole.update();
 
 				if (millis >1000 && GamePanel.gp.showStats ==true) {
-					System.out.println("MoveShip-Frames: "+ frames);
+					System.out.println("Move-Frames: "+ frames);
 					frames = 0;
 					millis =0;
 				}

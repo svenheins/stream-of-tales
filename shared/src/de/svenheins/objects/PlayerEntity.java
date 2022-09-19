@@ -57,7 +57,7 @@ public class PlayerEntity extends Entity {
 		
 		totalBaseAttributes[AttributeType.MAXLIFE.ordinal()] = GameStates.playerStartAttributeMaxLife;
 		attributes[AttributeType.MAXLIFE.ordinal()] = GameStates.playerStartAttributeMaxLife;
-		attributes[AttributeType.LIFE.ordinal()] = GameStates.playerStartAttributeMaxLife/2;
+		attributes[AttributeType.LIFE.ordinal()] = GameStates.playerStartAttributeMaxLife;
 		totalBaseAttributes[AttributeType.MAXMANA.ordinal()] = GameStates.playerStartAttributeMaxMana;
 		attributes[AttributeType.MAXMANA.ordinal()] = GameStates.playerStartAttributeMaxMana;
 		attributes[AttributeType.MANA.ordinal()] = GameStates.playerStartAttributeMaxMana;
@@ -66,9 +66,9 @@ public class PlayerEntity extends Entity {
 	}
 	
 	public void move(long duration) {
-		super.move(duration);
-		float movementX = duration * this.getAttributes()[AttributeType.MX.ordinal()]/1000;
-		float movementY = duration * this.getAttributes()[AttributeType.MY.ordinal()]/1000;
+//		super.move(duration);
+		float movementX = duration * (this.getMX()+this.getAttributes()[AttributeType.MX.ordinal()])/1000;
+		float movementY = duration * (this.getMY()+this.getAttributes()[AttributeType.MY.ordinal()])/1000;
 		// Always update
 		if(GameStates.getWidth()>0 && GameStates.getHeight()>0) {
 			setX(this.getX()+movementX);

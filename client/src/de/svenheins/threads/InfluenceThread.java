@@ -1,5 +1,9 @@
 package de.svenheins.threads;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.swing.text.AbstractDocument.AttributeContext;
 
 import de.svenheins.main.AttributeType;
@@ -8,6 +12,8 @@ import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.InteractionManager;
+import de.svenheins.managers.PlayerManager;
+import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.agents.Agent;
 
 public class InfluenceThread implements Runnable {
@@ -32,6 +38,16 @@ public class InfluenceThread implements Runnable {
 				for (Agent agent : AgentManager.agentList.values()) {
 					agent.updateAttributes(duration);
 				}
+				
+//				/** players */
+//				List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
+//				for (BigInteger i: idListTempPlayers) {
+//					PlayerEntity e= PlayerManager.get(i);
+//					if (e != null) {
+//						e.updateAttributes(duration);
+//					}
+//				}
+				
 			}
 			
 			try {

@@ -16,8 +16,8 @@ public class GameStates {
 	public static String standardTilePathItems = "tilesets/items/";
 	public static String standardTileNamePlayer = standardTilePathPlayers+"player_normal_richguy.png";
 	public static String standardTilePathMaps = "tilesets/maps/";
-	public static String tileSetFile = standardTilePathMaps + "tileSet2.png";
-	public static String tileSetFileUnderground = standardTilePathMaps + "tileSetUnderground_128.png";
+	public static String tileSetFile = standardTilePathMaps + "meinTileSet.png";
+	public static String tileSetFileUnderground = standardTilePathMaps + "tileSetUnderground_128_2.png";
 	public static String standardMapFolder = "./ressources/maps/";
 	
 	/** standard filenames */
@@ -202,7 +202,7 @@ public class GameStates {
 	public static int ugrMapTotalHeight = ugrMapHeight*ugrMapTileSetHeight;
 	
 	public static int overlayOffsetY = -2*mapTileSetWidth;
-	public static int distanceOfSecondTreeLayer = 6;
+	public static int distanceOfSecondTreeLayer = 0;
 	
 	/** tileType properties */
 	public static int treeTile = 501;

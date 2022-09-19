@@ -3,6 +3,7 @@ package de.svenheins.threads;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import de.svenheins.functions.MyMath;
 import de.svenheins.main.AttributeType;
@@ -11,8 +12,10 @@ import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.managers.AgentManager;
 import de.svenheins.managers.AreaInfluenceManager;
+import de.svenheins.managers.PlayerManager;
 import de.svenheins.objects.AreaInfluence;
 import de.svenheins.objects.ItemInfluence;
+import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.agents.Agent;
 
 public class AreaInfluenceThread implements Runnable {
@@ -61,6 +64,18 @@ public class AreaInfluenceThread implements Runnable {
 								/** out of boundaries -> agent is not a target of the influence */
 							}
 						}
+						
+						
+//						List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
+//						for (BigInteger i: idListTempPlayers) {
+//							PlayerEntity e= PlayerManager.get(i);
+//							if (e != null) {
+//								if (areaInfluence.getLocalObject().collides(e)) {
+//									e.setTempTotalAreaInfluences(MyMath.addFloatArrays(e.getTempTotalAreaInfluences(), areaInfluence.getAttributes()));
+////									System.out.println("player " + e.getName() + " gets " + e.getTempTotalAreaInfluences()[AttributeType.MX.ordinal()]);
+//								}
+//							}
+//						}
 					} else {
 						/** the influence has not yet started, or has already ended and is not istantaneous
 						 * -> do nothing, because the removal happens later */
@@ -98,6 +113,17 @@ public class AreaInfluenceThread implements Runnable {
 					agent.setTotalAreaInfluences(agent.getTempTotalAreaInfluences());
 					agent.setTempTotalAreaInfluences(new float[AttributeType.values().length]);
 				}
+				
+//				/** for all other players update areaInfluence */
+//				List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(PlayerManager.idList);
+//				for (BigInteger i: idListTempPlayers) {
+//					PlayerEntity e= PlayerManager.get(i);
+//					if (e != null) {
+//						e.setTotalAreaInfluences(e.getTempTotalAreaInfluences());
+//						e.setTempTotalAreaInfluences(new float[AttributeType.values().length]);
+////						System.out.println("player " + e.getName() + " HAS " + e.getTotalAreaInfluences()[AttributeType.MX.ordinal()]);
+//					}
+//				}
 			}
 			
 			try {

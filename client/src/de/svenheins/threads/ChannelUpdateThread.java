@@ -18,6 +18,7 @@ import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.objects.Player;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
+import de.svenheins.main.AttributeType;
 
 public class ChannelUpdateThread implements Runnable {
 	private long duration = 0;
@@ -61,11 +62,11 @@ public class ChannelUpdateThread implements Runnable {
 	public void channelUpdateRun() {
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
 			playerEntity = GamePanel.gp.getPlayerEntity();
-			if (playerEntity.getMX() != 0 || playerOldMX != 0 || playerEntity.getMY() != 0 || playerOldMY != 0 || playerEntity.hasChangedStates()) {
+			if (playerEntity.getMX() != 0 || playerOldMX != 0 || playerEntity.getMY() != 0 || playerOldMY != 0 || playerEntity.getAttributes()[AttributeType.MX.ordinal()] != 0 || playerEntity.getAttributes()[AttributeType.MY.ordinal()] != 0 || playerEntity.hasChangedStates()) {
 				for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 					ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 					try {
-						channel.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX(), playerEntity.getMY()}));
+						channel.send(ClientMessages.editObjectState(OBJECTCODE.PLAYER, playerEntity.getId(),  new float[]{playerEntity.getX(), playerEntity.getY(), playerEntity.getMX() + playerEntity.getAttributes()[AttributeType.MX.ordinal()], playerEntity.getMY()+ playerEntity.getAttributes()[AttributeType.MY.ordinal()]}));
 						/** now send the updated animation if necessary */
 						if (GamePanel.gp.getPlayerEntity().hasChangedStates()) {
 							/** if we don't have to wait for a singleAnimation, send the new animation */

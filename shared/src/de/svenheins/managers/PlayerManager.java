@@ -101,7 +101,9 @@ public class PlayerManager{
 		    	playerEntity.setHeight(height);
 		    	playerEntity.setCountry(country);
 		    	playerEntity.setGroupName(groupName);
-		    	playerEntity.setExperience(experience);				
+		    	playerEntity.setExperience(experience);	
+		    	/** set to old attributes */
+		    	playerEntity.setAttributes(entity.getAttributes());
 		    	System.out.println("updated player");
 				
 				PlayerManager.playerList.put(objectId, playerEntity);

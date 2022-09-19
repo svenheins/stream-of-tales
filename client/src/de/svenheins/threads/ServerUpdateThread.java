@@ -68,9 +68,9 @@ public class ServerUpdateThread implements Runnable {
 					float[] tempAttributes = new float[AttributeType.values().length];
 					tempAttributes[AttributeType.MX.ordinal()]= 20.0f;
 					LocalObject localObject = new LocalObject(BigInteger.valueOf(0), "", 0,0,500,500, 0,0,0,0);
-					AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+120000, localObject, "movers", true, tempAttributes, Priority.LOW);
+					AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+6000000, localObject, "movers", true, tempAttributes, Priority.LOW);
 //					AreaInfluenceManager.add(areaInfluence1);
-					GameWindow.gw.send(ClientMessages.addAreaInfluence(areaInfluence1));//(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
+//					GameWindow.gw.send(ClientMessages.addAreaInfluence(areaInfluence1));//(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
 					
 					
 					

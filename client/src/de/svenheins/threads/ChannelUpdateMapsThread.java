@@ -1,29 +1,21 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.threads;
 
 import java.awt.Point;
-import java.io.File;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.sun.sgs.client.ClientChannel;
 
-import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
-import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
-import de.svenheins.managers.MapManager;
-import de.svenheins.managers.ObjectMapManager;
-import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
-import de.svenheins.messages.OBJECTCODE;
-import de.svenheins.objects.LocalMap;
-import de.svenheins.objects.Player;
 import de.svenheins.objects.PlayerEntity;
-import de.svenheins.objects.Space;
 
 public class ChannelUpdateMapsThread implements Runnable {
 	private long duration = 0;
@@ -31,19 +23,23 @@ public class ChannelUpdateMapsThread implements Runnable {
 	private PlayerEntity playerEntity;
 	private float playerOldMX = 0;
 	private float playerOldMY = 0;
-	private final int sleepingTime = 20;
+	private final int sleepingTime = 75;
+	
+
 	
 	@Override
 	public void run() {
 		while (GUI.running) {
 			duration = System.currentTimeMillis() - oldTime;
-			if(GameModus.modus == GameModus.GAME && (GameWindow.gw.isGameMaster())) {
+			if(GameModus.modus == GameModus.GAME && (GameWindow.gw.isMapMaster())) {
 //				System.out.println(GameWindow.gw.getSendMapList().size());
 				if (GameWindow.gw.getSendMapList().size() > 0) {
-					String mapFileName = GameWindow.gw.takeFirstSendMap();
-					GameWindow.gw.gameInfoConsole.appendInfo("got "+mapFileName);
+					String mapFileNameWithRoom = GameWindow.gw.takeFirstSendMap();
+					String room = mapFileNameWithRoom.split("/")[0];
+					String mapFileName = mapFileNameWithRoom.split("/")[1];
+					GUI.gui.gameInfoConsole.appendInfo("got "+mapFileName);
 					if (mapFileName != null) {
-						channelSendUpdateMapsRun(mapFileName);
+						channelSendUpdateMapsRun(room, mapFileName);
 					}
 				}
 			}
@@ -61,15 +57,15 @@ public class ChannelUpdateMapsThread implements Runnable {
 	}
 	
 	/** send a single map-file to all channels, that i'm a member of */
-	public void channelSendUpdateMapsRun(String mapFileName) {
+	public void channelSendUpdateMapsRun(String room, String mapFileName) {
 		if (GameWindow.gw.isLoggedIn() && GamePanel.gp.isInitializedPlayer()) {
-			byte[] sendMapFileByte = getMapFromFileName(mapFileName);
+			byte[] sendMapFileByte = getMapFromFileName(room, mapFileName);
 			int sizeOfSendFileByte = sendMapFileByte.length;
 			for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
 				ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
 				try {
-					GameWindow.gw.gameInfoConsole.appendInfo("Sending File "+mapFileName+" with bytes: "+sizeOfSendFileByte +" bytes");
-					channel.send(ClientMessages.sendMap(GameWindow.gw.getPlayerName(), sizeOfSendFileByte, sendMapFileByte, mapFileName, GameWindow.gw.getSendMapList().size()) );
+					GUI.gui.gameInfoConsole.appendInfo("Sending File "+mapFileName+" with bytes: "+sizeOfSendFileByte +" bytes");
+					channel.send(ClientMessages.sendMap(GameWindow.gw.getPlayerName(),room, sizeOfSendFileByte, sendMapFileByte, mapFileName, GameWindow.gw.getSendMapList().size()) );
 				} catch (IOException e) {
 					e.printStackTrace();
 				}	
@@ -78,9 +74,10 @@ public class ChannelUpdateMapsThread implements Runnable {
 	}
 
 	
-	public byte[] getMapFromFileName(String mapFile) {
+	public byte[] getMapFromFileName(String room, String mapFile) {
 		byte[] retMapByte = null;
 		String playerName = GameWindow.gw.getPlayerName();
+//		String room = GamePanel.gp.getPlayerEntity().getRoom();
 		String paintLayer;
 		String strSplit[] = mapFile.split("_");
 		int x = Integer.parseInt(strSplit[1]);
@@ -89,33 +86,36 @@ public class ChannelUpdateMapsThread implements Runnable {
 		
 		if (mapFile.startsWith("cobble")) {
 			paintLayer = "cobble";
-			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("grass")) {
 			paintLayer = "grass";
-			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
+		} else if (mapFile.startsWith("hole")) {
+			paintLayer = "hole";
+			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("snow")) {
 			paintLayer = "snow";
-			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("desert")) {
 			paintLayer = "desert";
-			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("tree1")) {
 			paintLayer = "tree1";
-			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("tree2")) {
 			paintLayer = "tree2";
-			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("overlayTree1")) {
 			paintLayer = "overlayTree1";
-			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("overlayTree2")) {
 			paintLayer = "overlayTree2";
-			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getObjectMapManagers().get(paintLayer).LocalMap2ByteArray(playerName, room, paintLayer, p);
 		} else if (mapFile.startsWith("underground")) {
 			paintLayer = "underground";
-			retMapByte = GameWindow.gw.getUndergroundMapManagers().get(paintLayer).LocalUndergroundMap2ByteArray(playerName, paintLayer, p);
+			retMapByte = GameWindow.gw.getUndergroundMapManagers().get(paintLayer).LocalUndergroundMap2ByteArray(playerName, room, paintLayer, p);
 		} else {
-			GameWindow.gw.gameInfoConsole.appendInfo("Didn't find map: "+mapFile);
+			GUI.gui.gameInfoConsole.appendInfo("Didn't find map: "+mapFile);
 		}
 		
 		return retMapByte;

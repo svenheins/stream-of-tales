@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.threads;
 
 
@@ -5,28 +11,36 @@ import java.awt.Point;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
+import de.svenheins.functions.MyMath;
 import de.svenheins.main.AttributeType;
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
-import de.svenheins.main.Priority;
+import de.svenheins.main.PlayerProperty;
+import de.svenheins.main.TileType;
 import de.svenheins.managers.AgentManager;
-import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ItemManager;
+import de.svenheins.managers.MainMenuEntityManager;
 import de.svenheins.managers.ObjectMapManager;
+import de.svenheins.managers.OverlayEntityManager;
+import de.svenheins.managers.PlayerAgentManager;
+import de.svenheins.managers.PlayerAgentManagerManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.messages.ClientMessages;
-
 import de.svenheins.objects.Entity;
-import de.svenheins.objects.ItemInfluence;
+import de.svenheins.objects.LocalMap;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.agents.Agent;
 import de.svenheins.objects.agents.NormalAgent;
+import de.svenheins.objects.items.Item;
+import de.svenheins.objects.items.Stackable;
 
 public class MoveThread implements Runnable {
 
@@ -39,7 +53,7 @@ public class MoveThread implements Runnable {
 	public void setLast(long last) {
 		this.last = last;
 	}
-	
+
 	
 	/**
 	 * @param last
@@ -59,7 +73,10 @@ public class MoveThread implements Runnable {
 			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.GAME) {
 				/** check and handle collision here */
 				if(this.moveWithCollisions(GamePanel.gp.getPlayerEntity())) {
-					/** player collided */
+					PlayerEntity playerEntity = GamePanel.gp.getPlayerEntity();
+					freeStuckedPlayerEntity(playerEntity);
+					
+					
 //					System.out.println("Collision");
 //					float[] damageAttributes = new float[AttributeType.values().length];
 //					damageAttributes[AttributeType.LIFEREGENERATION.ordinal()] = -3.0f;
@@ -67,27 +84,71 @@ public class MoveThread implements Runnable {
 //					GamePanel.gp.getPlayerEntity().addItemInfluence(slowDamage);
 				} else {
 					/** no collision */
+					GamePanel.gp.getPlayerEntity().setCollided(0);
 				}
+				int totalX = GameStates.mapTotalWidth * GamePanel.gp.getMiniMap().getWidth();
+				int totalY = GameStates.mapTotalHeight * GamePanel.gp.getMiniMap().getHeight();
+//				Point moduloPointPlayer = new Point( ( (int) GamePanel.gp.getPlayerEntity().getX() % totalX+totalX) % totalX , ((int) GamePanel.gp.getPlayerEntity().getY() % totalY+totalY) % totalY);
+//				GamePanel.gp.getPlayerEntity().setX(moduloPointPlayer.x);
+//				GamePanel.gp.getPlayerEntity().setY(moduloPointPlayer.y);
+				
+				
+				List<BigInteger> idListTempItems = new ArrayList<BigInteger>(ItemManager.idList);
+				for (BigInteger i : idListTempItems) {
+					Item tempItem = ItemManager.get(i);
+					if (tempItem != null )  {				
+						if (tempItem.isVisible() && GamePanel.gp.getPlayerEntity().getRoom().equals(tempItem.getRoom())) {
+							Entity e = tempItem.getEntity();
+							Point moduloPointItem= new Point( ( (int) e.getX() % totalX+totalX) % totalX , ((int) e.getY() % totalY+totalY) % totalY);
+							e.setX(moduloPointItem.x);
+							e.setY(moduloPointItem.y);
+							
+						} else {
+							// not visible to this player
+						}
+//							GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Item");
+					} else {
+						System.out.println("i got a null item");
+					}
+				}
+				
 
 				/** check if there is enough space inside the inventory */
 				if(GamePanel.gp.getPlayerEntity().getInventory().hasAvailableField()) {
 					/** check if wants to take an item */
 					try {
 						for (BigInteger itemID : ItemManager.idList) {
-							if (itemID != null) {
-								try {
-									if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.playerTileWidth/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.playerTileHeight/4, ItemManager.get(itemID).getEntity().getX()+GameStates.itemTileWidth/2, ItemManager.get(itemID).getEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
-										/** send a item collect request */
-//										EFFEKTIVER nur einmal senden lassen, solange die antwort noch nicht kam!!!
-										if (!GameWindow.gw.getSendItemList().contains(itemID)) {
-											ItemManager.get(itemID).setVisible(false);
-											GameWindow.gw.send(ClientMessages.takeItem(itemID));
-											GameWindow.gw.addSendItemListEntry(itemID);
+							if (itemID != null ) {
+								if (ItemManager.get(itemID) != null) {
+									if (GamePanel.gp.getPlayerEntity().getRoom().equals(ItemManager.get(itemID).getRoom())) {
+										try {
+											if (Point.distance(GamePanel.gp.getPlayerEntity().getX()+GameStates.getPlayerProperty(GamePanel.gp.getPlayerEntity().getTileSet().getName(), PlayerProperty.WIDTH)/2, GamePanel.gp.getPlayerEntity().getY()+3*GameStates.getPlayerProperty(GamePanel.gp.getPlayerEntity().getTileSet().getName(), PlayerProperty.HEIGHT)/4, ItemManager.get(itemID).getEntity().getX()+GameStates.itemTileWidth/2, ItemManager.get(itemID).getEntity().getY()+GameStates.itemTileHeight/2) < GameStates.takeDistance) {
+	//											System.out.println("Get Item: "+itemID.longValue());
+												/** send a item collect request */
+		//										EFFEKTIVER nur einmal senden lassen, solange die antwort noch nicht kam!!!
+												boolean freeField = GamePanel.gp.getPlayerEntity().getInventory().hasEmptyField();
+												if (freeField || (ItemManager.get(itemID) instanceof Stackable)) {
+													if (!freeField) {
+														if (GamePanel.gp.getPlayerEntity().getInventory().getAvailableItemFields().contains(ItemManager.get(itemID).getItemCode())) {
+															if (!GameWindow.gw.getSendItemList().contains(itemID)) {
+																ItemManager.get(itemID).setVisible(false);
+																GameWindow.gw.send(ClientMessages.takeItem(itemID));
+																GameWindow.gw.addSendItemListEntry(itemID);
+															}
+														}
+													} else {
+														if (!GameWindow.gw.getSendItemList().contains(itemID)) {
+															ItemManager.get(itemID).setVisible(false);
+															GameWindow.gw.send(ClientMessages.takeItem(itemID));
+															GameWindow.gw.addSendItemListEntry(itemID);
+														}
+													}
+												}
+											}
+										} catch(java.lang.NullPointerException error) {
+											System.out.println(error);
 										}
-										
 									}
-								} catch(java.lang.NullPointerException error) {
-									System.out.println(error);
 								}
 							}
 						} 
@@ -143,15 +204,23 @@ public class MoveThread implements Runnable {
 //						e.getActualGoal().setEntity(GamePanel.gp.getPlayerEntity());
 						if(this.moveWithCollisions(e)) {
 							/** collided -> restart path calculation */
-							System.out.println("Agent collided!!!");
+//							System.out.println("Agent collided!!!");
 							if ( (e.getMX() != 0 || e.getMY() != 0) && e.isPathCalculationComplete() == true) {
-								e.setMovement(-e.getAttributes()[AttributeType.MX.ordinal()], -e.getAttributes()[AttributeType.MY.ordinal()]);
+								e.setMovement(-e.getTotalAreaInfluences()[AttributeType.MX.ordinal()], -e.getTotalAreaInfluences()[AttributeType.MY.ordinal()]);
 								e.restartPathCalculationAfterCollision(GameWindow.gw.getObjectMapManagers().get("tree1"), GameWindow.gw.getObjectMapManagers().get("tree2"));
+								
 							}
+							freeStuckedPlayerEntity(e);
 							if (e instanceof NormalAgent) {
 //								System.out.println("is agent in direct mode? -"+ ((NormalAgent) e).isDirectModus());
 							}
+						} else {
+							e.setCollided(0);
 						}
+//						Point moduloPointAgent = new Point( ( (int) e.getX() % totalX+totalX) % totalX , ((int) e.getY() % totalY+totalY) % totalY);
+//						e.setX(moduloPointAgent.x);
+//						e.setY(moduloPointAgent.y);
+						
 					}
 					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
 				}
@@ -171,12 +240,68 @@ public class MoveThread implements Runnable {
 								e.move(duration);
 							}
 						}
+						Point moduloPointAgent = new Point( ( (int) e.getX() % totalX+totalX) % totalX , ((int) e.getY() % totalY+totalY) % totalY);
+						e.setX(moduloPointAgent.x);
+						e.setY(moduloPointAgent.y);
 					}
 						//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
 				}
 				
+				/** PlayerAgentsMove */
+				for (PlayerAgentManager playerAgentManager : PlayerAgentManagerManager.playerAgentManagerList.values()) {
+					List<BigInteger> idListTempPlayerAgents = new ArrayList<BigInteger>(playerAgentManager.getIdList());
+					for (BigInteger i: idListTempPlayerAgents) {
+						PlayerEntity tempAgent = playerAgentManager.get(i);
+						if (tempAgent != null && tempAgent.isVisible()) {
+							Entity e= tempAgent;
+							if(e != null) {
+								if(e.getSprite().getImage() != null) {
+									e.move(duration);
+								}
+								Point moduloPointAgent = new Point( ( (int) e.getX() % totalX+totalX) % totalX , ((int) e.getY() % totalY+totalY) % totalY);
+								e.setX(moduloPointAgent.x);
+								e.setY(moduloPointAgent.y);
+							}
+						} else {
+							GUI.gui.gameInfoConsole.appendInfo("I got a NULL Agent");
+						}
+					}
+				}
+				
+				List<BigInteger> idListTempOverlay = new ArrayList<BigInteger>(OverlayEntityManager.idList);
+				for (BigInteger i: idListTempOverlay) {
+					Entity e= OverlayEntityManager.get(i);
+					Random rand = new Random();
+					if (e != null) { 
+						e.move(duration);
+						if (e.getName().equals("cloud")) {
+							if (e.getY() > 2*GameStates.height) {
+								e.setY(e.getY()-(1+rand.nextFloat()*0.5f)*GameStates.height);
+							}
+							if (e.getY() < -GameStates.height) {
+								e.setY(e.getY()+(1+rand.nextFloat()*0.5f)*GameStates.height);
+							}
+							if (e.getX()-GamePanel.gp.getViewPointX()*2 > 2*GameStates.width ) {
+								e.setX(e.getX()-(1+rand.nextFloat()*0.5f)*GameStates.width);
+							}
+							if (e.getX()-GamePanel.gp.getViewPointX()*2+e.getWidth()<-GameStates.width) {
+								e.setX(e.getX()+(1+rand.nextFloat()*0.5f)*GameStates.width);
+								//-e.getHeight()-2*GamePanel.gp.getViewPointY());
+//								e.setX(rand.nextFloat()*GameStates.width - e.getWidth()/2-2*GamePanel.gp.getViewPointX());
+//								if (e.getX() > GameStates.width/2) {
+//									e.setMovement(GameStates.introSpeedMainMenu, GameStates.introSpeedMainMenu);
+//								} else {
+//									e.setMovement(-GameStates.introSpeedMainMenu, GameStates.introSpeedMainMenu);
+//								}
+							}
+						} 
+					}
+					
+						//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
+				}
+				
 				/** InfoConsole Update */
-				GameWindow.gw.gameInfoConsole.update();
+				GUI.gui.gameInfoConsole.update();
 
 				if (millis >1000 && GamePanel.gp.showStats ==true) {
 					System.out.println("Move-Frames: "+ frames);
@@ -185,9 +310,42 @@ public class MoveThread implements Runnable {
 				}
 				
 
+			} else if (GameModus.modus == GameModus.MAINMENU) {
+				/** PlayerManager move */
+//				for (int i = 0; i<EntityManager.size(); i++){
+				List<BigInteger> idListTempPlayers = new ArrayList<BigInteger>(MainMenuEntityManager.idList);
+				for (BigInteger i: idListTempPlayers) {
+					Entity e= MainMenuEntityManager.get(i);
+					Random rand = new Random();
+					if (e != null) { 
+						e.move(duration);
+						if (e.getName().equals("cloud")) {
+							if (e.getY() > GameStates.height || e.getX() > GameStates.width || e.getX()+e.getWidth()<0) {
+								e.setY(-e.getHeight());
+								e.setX(rand.nextFloat()*GameStates.width - e.getWidth()/2);
+								if (e.getX() > GameStates.width/2) {
+									e.setMovement(GameStates.introSpeedMainMenu, GameStates.introSpeedMainMenu);
+								} else {
+									e.setMovement(-GameStates.introSpeedMainMenu, GameStates.introSpeedMainMenu);
+								}
+							}
+						} else if (!e.getName().equals("sky")) {
+							if (e.getY() > GameStates.height) {
+								e.setY(-e.getHeight()-3*e.getHeight());
+								e.setX(GameStates.width/2);
+								e.setMX(0);
+							} else if (e.getY() >-3*e.getHeight() && e.getMX() == 0) {
+								e.setMX(-GameStates.introSpeedMainMenu+2*rand.nextFloat()*GameStates.introSpeedMainMenu);
+							}
+						}
+					}
+					
+						//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
+				}
+				
 			}
 			try {
-				Thread.sleep(5);
+				Thread.sleep(10);
 			}
 			catch(InterruptedException exception) {
 				System.out.println(exception);
@@ -201,16 +359,50 @@ public class MoveThread implements Runnable {
 		boolean hasCollided = false;
 		float addMX = 0;
 		float addMY = 0;
+		int collided = 0;
 		if (e instanceof PlayerEntity) {
 			addMX = ((PlayerEntity) e).getAttributes()[AttributeType.MX.ordinal()];
 			addMY = ((PlayerEntity) e).getAttributes()[AttributeType.MY.ordinal()];
+			collided = ((PlayerEntity)e).getCollided();
+//			System.out.println(collided);
 //			System.out.println("mx, my = "+ addMX +" "+addMY);
+			
 		}
+		
+		/** correct the animation if necessary */
+		if (e.getMX() != 0 || e.getMY() != 0) {
+			if (e.getContinuousState() != EntityStates.WALKING) {
+				e.setContinuousState(EntityStates.WALKING);
+				e.determineAnimation();
+			} else if (e.getAnimation() != null) {
+				if (e.getAnimation().getName() != null) {
+					if (!e.getAnimation().getName().startsWith("walking")) {
+						e.setContinuousState(EntityStates.WALKING);
+						e.determineAnimation();
+					}
+				} else {
+					/** happens quite often, i.e. when singleAnimation is playing and the sprite is moving */
+					e.setContinuousState(EntityStates.WALKING);
+					e.determineAnimation();
+				}
+			} else {
+				/** should not happen too often */
+				e.setContinuousState(EntityStates.WALKING);
+				e.determineAnimation();
+			}
+		}
+		
 		/** check collision here */
-		if ((e.getMX() != 0 || e.getMY() != 0 || addMX != 0 || addMY != 0 ) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
+		if ((e.getMX() != 0 || e.getMY() != 0 || addMX != 0 || addMY != 0 || collided>0) && (GameWindow.gw.getObjectMapManagers().get("tree1") != null && GameWindow.gw.getObjectMapManagers().get("tree2") != null)) {
 			/** playerPosition */
 			float movementX = duration * (e.getMX()+addMX)/1000;
 			float movementY = duration * (e.getMY()+addMY)/1000;
+			
+			/** special treatment for collided entities */
+			if ((e.getMX() == 0 && e.getMY() == 0 && addMX == 0 && addMY == 0) && collided >0) {
+				movementX = duration * (e.getMX()+addMX+collided)/1000;
+			}
+//			System.out.println("MX="+movementX+" MY="+movementY);
 			int newX = (int) (e.getX() + (movementX));
 			int newY = (int) (e.getY() + (movementY));
 			
@@ -220,6 +412,8 @@ public class MoveThread implements Runnable {
 			int localHeight = GameStates.mapTotalHeight;
 			int entityHeight = (int) e.getHeight();
 			int entityWidth = (int) e.getWidth();
+//			if (entityHeight % 2 != 0) entityHeight++; 
+			
 			/** define collisionCorners of PlayerEntity */
 			Point ulPointX = new Point(entityPointX.x, entityPointX.y+entityHeight/2);
 			Point urPointX = new Point(entityPointX.x + entityWidth-1, entityPointX.y+entityHeight/2);
@@ -265,10 +459,18 @@ public class MoveThread implements Runnable {
 					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
 					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
 					if (tree1Manager != null && tree2Manager != null) {
-						if ((tree1Manager.checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) ) ||
-								(tree2Manager.checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY) )) {
+						int tileCollision1 = tree1Manager.checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY);
+						int tileCollision2 = tree2Manager.checkCollision(new Point(urLatticePointXX, it_RightLatticeY), urLocalXX, it_RightLocalY);
+						if ((tileCollision1 != 0 ) || ( tileCollision2 != 0)) {
 							/** collision!!! */
-	//						System.out.println("collision +x!");
+//							System.out.println("collision +x!");
+							TileType tile1 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision1));
+							TileType tile2 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision2));
+							if ((tile1==TileType.HOLE || tile2 == TileType.HOLE) && e.equals(GamePanel.gp.getPlayerEntity())) {
+								GamePanel.gp.getPlayerEntity().setX(urLatticePointXX+urLocalXX*GameStates.mapTileSetWidth);
+								GamePanel.gp.getPlayerEntity().setY(it_RightLatticeY+it_RightLocalY*GameStates.mapTileSetWidth-GamePanel.gp.getPlayerEntity().getHeight()/2);
+								GameWindow.gw.enterRoom(GameWindow.gw.getLowerRoom(GamePanel.gp.getPlayerEntity().getRoom()));
+							}
 							xCollides = true;
 							break;
 						}
@@ -289,10 +491,18 @@ public class MoveThread implements Runnable {
 					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
 					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
 					if (tree1Manager != null && tree2Manager != null) {
-						if ((tree1Manager.checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) ) ||
-								(tree2Manager.checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY) )) {
+						int tileCollision1 = tree1Manager.checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY);
+						int tileCollision2 = tree2Manager.checkCollision(new Point(ulLatticePointXX, it_LeftLatticeY), ulLocalXX, it_LeftLocalY);
+						if (((tileCollision1 != 0 ) || (tileCollision2 != 0 )) && e.equals(GamePanel.gp.getPlayerEntity())) {
 							/** collision!!! */
-	//						System.out.println("collision +x!");
+//							System.out.println("collision +x!");
+							TileType tile1 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision1));
+							TileType tile2 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision2));
+							if (tile1==TileType.HOLE || tile2 == TileType.HOLE) {
+								GamePanel.gp.getPlayerEntity().setX(ulLatticePointXX+ulLocalXX*GameStates.mapTileSetWidth);
+								GamePanel.gp.getPlayerEntity().setY(it_LeftLatticeY+it_LeftLocalY*GameStates.mapTileSetWidth-GamePanel.gp.getPlayerEntity().getHeight()/2);
+								GameWindow.gw.enterRoom(GameWindow.gw.getLowerRoom(GamePanel.gp.getPlayerEntity().getRoom()));
+							}
 							xCollides = true;
 							break;
 						}
@@ -318,10 +528,19 @@ public class MoveThread implements Runnable {
 					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
 					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
 					if (tree1Manager != null && tree2Manager != null) {
-						if ((tree1Manager.checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) ) ||
-								(tree2Manager.checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) )) {
+						int tileCollision1 = tree1Manager.checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) ;
+						int tileCollision2 = tree2Manager.checkCollision(new Point(it_UpperLatticeX, ulLatticePointYY ), it_UpperLocalX, ulLocalYY ) ;
+						if ((tileCollision1 != 0) ||( tileCollision2 != 0)) {
 							/** collision!!! */
-	//						System.out.println("collision y!");
+//							System.out.println("collision y!");
+							TileType tile1 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision1));
+							TileType tile2 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision2));
+							if ((tile1==TileType.HOLE || tile2 == TileType.HOLE) && e.equals(GamePanel.gp.getPlayerEntity())) {
+								GamePanel.gp.getPlayerEntity().setX(it_UpperLatticeX+it_UpperLocalX*GameStates.mapTileSetWidth);
+								GamePanel.gp.getPlayerEntity().setY(ulLatticePointYY+ulLocalYY*GameStates.mapTileSetWidth-GamePanel.gp.getPlayerEntity().getHeight()/2);
+								
+								GameWindow.gw.enterRoom(GameWindow.gw.getLowerRoom(GamePanel.gp.getPlayerEntity().getRoom()));
+							}
 							yCollides = true;
 							break;
 						}
@@ -342,10 +561,19 @@ public class MoveThread implements Runnable {
 					ObjectMapManager tree1Manager = GameWindow.gw.getObjectMapManagers().get("tree1");
 					ObjectMapManager tree2Manager = GameWindow.gw.getObjectMapManagers().get("tree2");
 					if (tree1Manager != null && tree2Manager != null) {
-						if ((tree1Manager.checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) ) ||
-								(tree2Manager.checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) )) {
+						int tileCollision1 = tree1Manager.checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY );
+						int tileCollision2 = tree2Manager.checkCollision(new Point(it_LowerLatticeX, dlLatticePointYY ), it_LowerLocalX, dlLocalYY ) ;
+						if (( tileCollision1 !=0) || (tileCollision2!=0)) {
 							/** collision!!! */
-	//						System.out.println("collision y!");
+//							System.out.println("collision y!");
+							TileType tile1 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision1));
+							TileType tile2 = LocalMap.getTileType(LocalMap.getPaintType(tileCollision2));
+							if ((tile1==TileType.HOLE || tile2 == TileType.HOLE) && e.equals(GamePanel.gp.getPlayerEntity())) {
+								GamePanel.gp.getPlayerEntity().setX(it_LowerLatticeX+it_LowerLocalX*GameStates.mapTileSetWidth);
+								GamePanel.gp.getPlayerEntity().setY(dlLatticePointYY+dlLocalYY*GameStates.mapTileSetWidth-GamePanel.gp.getPlayerEntity().getHeight()/2);
+								
+								GameWindow.gw.enterRoom(GameWindow.gw.getLowerRoom(GamePanel.gp.getPlayerEntity().getRoom()));
+							}
 							yCollides = true;
 							break;
 						}
@@ -360,12 +588,347 @@ public class MoveThread implements Runnable {
 			} else {
 				/** movement Y = 0 */
 			}
-			/** calculate collisions separately for x and y movement */
-			if (!xCollides) e.setX(e.getX()+movementX); else hasCollided = true;
-			if (!yCollides) e.setY(e.getY()+movementY); else hasCollided = true;
+			
+			if (e.equals(GamePanel.gp.getPlayerEntity())) {
+//				System.out.println("correcting mouseposition");
+//				float newMouseX = GamePanel.gp.getMouseCoordinates().x;
+//				float newMouseY = GamePanel.gp.getMouseCoordinates().y;
+				/** calculate collisions separately for x and y movement */
+				if (!xCollides) {
+					e.setX(e.getX()+movementX);
+//					newMouseX += movementX;
+				} else hasCollided = true;
+				if (!yCollides) {
+					e.setY(e.getY()+movementY); 
+//					newMouseY += movementY;
+				} else hasCollided = true;
+//				Point newMousePosition = new Point((int)(newMouseX), (int) (newMouseY)); 
+//				GamePanel.gp.setMouseCoordinates(newMousePosition);
+			} else {
+				/** calculate collisions separately for x and y movement */
+				if (!xCollides) {
+					e.setX(e.getX()+movementX);
+				} else hasCollided = true;
+				if (!yCollides) {
+					e.setY(e.getY()+movementY); 
+				} else hasCollided = true;
+			}
+		}
+//		System.out.println(hasCollided);
+		return hasCollided;
+	}
+	
+	/** check and solve stuck state */
+	public void freeStuckedPlayerEntity(PlayerEntity playerEntity) {
+
+		/** player collided */
+		float addMX = playerEntity.getAttributes()[AttributeType.MX.ordinal()];
+		float addMY = playerEntity.getAttributes()[AttributeType.MY.ordinal()];
+		if (playerEntity.getCollided() < 1) {
+			playerEntity.setCollided(playerEntity.getCollided()+1);
 		}
 		
-		return hasCollided;
+		if (playerEntity.getMX() == 0 && playerEntity.getMY() == 0 && addMX == 0 && addMY == 0) {
+			/** only increase the collision counter, if the player is stuck */
+			playerEntity.setCollided(playerEntity.getCollided()+1);
+		}
+		
+		if (playerEntity.getCollided() > 20) {
+			/** the player is stuck in an object! 
+			 * -> find the next free field and put the player onto it*/
+			
+//			int lPX = (int) Math.floor( (float) candidatePoint.x / (localWidth)) * localWidth;
+//			int lPY = (int) Math.floor( (float) candidatePoint.y / (localHeight)) * localHeight;
+//			int lX = (int) Math.floor( (float) (candidatePoint.x - lPX )/ GameStates.mapTileSetWidth);
+//			int lY = (int) Math.floor( (float) (candidatePoint.y - lPY )/ GameStates.mapTileSetHeight);
+			int playerX = (int) Math.floor( (float) playerEntity.getX() / GameStates.mapTileSetWidth) * GameStates.mapTileSetWidth;
+			int playerY = (int) Math.floor( (float) (playerEntity.getY() + playerEntity.getHeight()/2) / GameStates.mapTileSetHeight) *GameStates.mapTileSetHeight;
+			Point playerPoint = new Point(playerX, playerY);
+			ObjectMapManager objectMapManager1 = GameWindow.gw.getObjectMapManagers().get("tree1");
+			ObjectMapManager objectMapManager2 = GameWindow.gw.getObjectMapManagers().get("tree2");
+			int localWidth = GameStates.mapWidth * GameStates.mapTileSetWidth;
+			int localHeight = GameStates.mapHeight * GameStates.mapTileSetHeight;
+//			int latticePointX = (int) Math.floor( (float) x / (localWidth)) * localWidth;
+//			int latticePointY = (int) Math.floor( (float) y / (localHeight)) * localHeight;
+//			int localX = (int) Math.floor( (float) (x - latticePointX )/ GameStates.mapTileSetWidth);
+//			int localY = (int) Math.floor( (float) (y - latticePointY )/ GameStates.mapTileSetHeight);
+			
+//			ObjectMapManager objectMapManager;
+			boolean stuck = true;
+			int ringDistance = 1;
+			Point candidatePoint;
+			Point goodCandidatePoint = new Point(0, 0);
+			double shortestDistance = Double.MAX_VALUE;
+			int iterationLimit = 200;
+			int iteration = 0;
+			/** while the entity is stuck in an object, find the next available field to place the player in */
+			while(stuck && iteration<iterationLimit ) {
+				// upper side
+				for (int i = -ringDistance; i<= ringDistance; i++) {
+					int j = -ringDistance;
+					
+					candidatePoint = new Point(playerX+i*GameStates.mapTileSetWidth, playerY+j* GameStates.mapTileSetHeight);
+					int lPX = (int) Math.floor( (float) candidatePoint.x / (localWidth)) * localWidth;
+					int lPY = (int) Math.floor( (float) candidatePoint.y / (localHeight)) * localHeight;
+					int lX = (int) Math.floor( (float) (candidatePoint.x - lPX )/ GameStates.mapTileSetWidth);
+					int lY = (int) Math.floor( (float) (candidatePoint.y - lPY )/ GameStates.mapTileSetHeight);
+					Point p = new Point(lPX, lPY);
+					
+					/** check for null objectMapManagers */
+					if (objectMapManager1.get(p) == null || objectMapManager2.get(p) == null) {
+						if (objectMapManager1.get(p) != null) {
+							if (objectMapManager1.get(p).getTile(lX, lY) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						} else if (objectMapManager2.get(p)!= null) {
+							/** objectMapManager2 must be non-null */
+							if (objectMapManager2.get(p).getTile(lX, lY) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						} else {
+							// do nothing because both objectMapmanagers are null
+						}
+							
+					} else {
+						if (objectMapManager1.get(p).getTile(lX, lY) == 0 && objectMapManager2.get(p).getTile(lX, lY) == 0) {
+							/** this tile is ok! */
+							if (shortestDistance < Double.MAX_VALUE) {
+								if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							} else {
+								/** add the first goodPoint here */
+								shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+								goodCandidatePoint = candidatePoint;
+							}
+						}
+					}
+				}
+				// lower side
+				for (int i = -ringDistance; i<= ringDistance; i++) {
+					int j = ringDistance;
+					
+					candidatePoint = new Point(playerX+i*GameStates.mapTileSetWidth, playerY+j* GameStates.mapTileSetHeight);
+					int lPX = (int) Math.floor( (float) candidatePoint.x / (localWidth)) * localWidth;
+					int lPY = (int) Math.floor( (float) candidatePoint.y / (localHeight)) * localHeight;
+					int lX = (int) Math.floor( (float) (candidatePoint.x - lPX )/ GameStates.mapTileSetWidth);
+					int lY = (int) Math.floor( (float) (candidatePoint.y - lPY )/ GameStates.mapTileSetHeight);
+					Point p = new Point(lPX, lPY);
+					/** check for null objectMapManagers */
+					if (objectMapManager1.get(p) == null || objectMapManager2.get(p) == null) {
+						if (objectMapManager1.get(p) != null) {
+							if (LocalMap.getCollisionValue(objectMapManager1.get(p).getTile(lX, lY)) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						} else if (objectMapManager2.get(p) != null) {
+							/** objectMapManager2 must be non-null */
+							if (LocalMap.getCollisionValue(objectMapManager2.get(p).getTile(lX, lY)) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						}
+							
+					} else {
+						if (LocalMap.getCollisionValue(objectMapManager1.get(p).getTile(lX, lY)) == 0 && LocalMap.getCollisionValue(objectMapManager2.get(p).getTile(lX, lY)) == 0) {
+							/** this tile is ok! */
+							if (shortestDistance < Double.MAX_VALUE) {
+								if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							} else {
+								/** add the first goodPoint here */
+								shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+								goodCandidatePoint = candidatePoint;
+							}
+						}
+					}
+				}
+				// left side
+				for (int j = -ringDistance+1; j<= ringDistance-1; j++) {
+					int i = -ringDistance;
+					
+					candidatePoint = new Point(playerX+i*GameStates.mapTileSetWidth, playerY+j* GameStates.mapTileSetHeight);
+					int lPX = (int) Math.floor( (float) candidatePoint.x / (localWidth)) * localWidth;
+					int lPY = (int) Math.floor( (float) candidatePoint.y / (localHeight)) * localHeight;
+					int lX = (int) Math.floor( (float) (candidatePoint.x - lPX )/ GameStates.mapTileSetWidth);
+					int lY = (int) Math.floor( (float) (candidatePoint.y - lPY )/ GameStates.mapTileSetHeight);
+					Point p = new Point(lPX, lPY);
+					/** check for null objectMapManagers */
+					if (objectMapManager1.get(p) == null || objectMapManager2.get(p) == null) {
+						if (objectMapManager1.get(p) != null) {
+							if (LocalMap.getCollisionValue(objectMapManager1.get(p).getTile(lX, lY)) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						} else if (objectMapManager2.get(p) != null) {
+							/** objectMapManager2 must be non-null */
+							if (LocalMap.getCollisionValue(objectMapManager2.get(p).getTile(lX, lY)) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						} else {
+							// both are null
+						}
+							
+					} else {
+						if (LocalMap.getCollisionValue(objectMapManager1.get(p).getTile(lX, lY)) == 0 && LocalMap.getCollisionValue(objectMapManager2.get(p).getTile(lX, lY)) == 0) {
+							/** this tile is ok! */
+							if (shortestDistance < Double.MAX_VALUE) {
+								if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							} else {
+								/** add the first goodPoint here */
+								shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+								goodCandidatePoint = candidatePoint;
+							}
+						}
+					}
+				}
+				// right side
+				for (int j = -ringDistance+1; j<= ringDistance-1; j++) {
+					int i = ringDistance;
+					
+					candidatePoint = new Point(playerX+i*GameStates.mapTileSetWidth, playerY+j* GameStates.mapTileSetHeight);
+					int lPX = (int) Math.floor( (float) candidatePoint.x / (localWidth)) * localWidth;
+					int lPY = (int) Math.floor( (float) candidatePoint.y / (localHeight)) * localHeight;
+					int lX = (int) Math.floor( (float) (candidatePoint.x - lPX )/ GameStates.mapTileSetWidth);
+					int lY = (int) Math.floor( (float) (candidatePoint.y - lPY )/ GameStates.mapTileSetHeight);
+					Point p = new Point(lPX, lPY);
+					/** check for null objectMapManagers */
+					if (objectMapManager1.get(p) == null || objectMapManager2.get(p) == null) {
+						if (objectMapManager1.get(p) != null) {
+							if (LocalMap.getCollisionValue(objectMapManager1.get(p).getTile(lX, lY)) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						} else if (objectMapManager2.get(p) != null){
+							/** objectMapManager2 can be non-null */
+							if (LocalMap.getCollisionValue(objectMapManager2.get(p).getTile(lX, lY)) == 0) {
+								/** this tile is ok! */
+								if (shortestDistance < Double.MAX_VALUE) {
+									if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+										shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+										goodCandidatePoint = candidatePoint;
+									}
+								} else {
+									/** add the first goodPoint here */
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							}
+						} else {
+							// both are NULL 
+						}
+							
+					} else {
+						if (LocalMap.getCollisionValue(objectMapManager1.get(p).getTile(lX, lY)) == 0 && LocalMap.getCollisionValue(objectMapManager2.get(p).getTile(lX, lY)) == 0) {
+							/** this tile is ok! */
+							if (shortestDistance < Double.MAX_VALUE) {
+								if (MyMath.getDistance(candidatePoint, playerPoint) < shortestDistance) {
+									shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+									goodCandidatePoint = candidatePoint;
+								}
+							} else {
+								/** add the first goodPoint here */
+								shortestDistance = MyMath.getDistance(candidatePoint, playerPoint);
+								goodCandidatePoint = candidatePoint;
+							}
+						}
+					}
+				}
+				
+				/** we found a valid spot in this ring round */
+				if (shortestDistance < Double.MAX_VALUE) {
+					stuck = false;
+					playerEntity.setX(goodCandidatePoint.x);
+					playerEntity.setY(goodCandidatePoint.y-playerEntity.getHeight()/2);
+//					if (playerEntity.getWidth() > GameStates.mapTileSetWidth || playerEntity.getHeight()/2 > GameStates.mapTileSetHeight) {
+//						Random randomGen = new Random();
+//						float randomShiftX = randomGen.nextFloat()*500-250;
+//						float randomShiftY = randomGen.nextFloat()*500-250;
+//						playerEntity.setX(goodCandidatePoint.x+randomShiftX);
+//						playerEntity.setY(goodCandidatePoint.y+randomShiftY);
+//					}
+					playerEntity.setCollided(0);
+				} else {
+					ringDistance ++;
+				}
+				
+				/** increase iteration as a maximum limit for this loop */
+				iteration++;
+			}
+			
+		}
 	}
 	
 //	public void determineAnimation(Entity entity) {

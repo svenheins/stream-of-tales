@@ -1,9 +1,14 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects.agents.goals;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 
-import de.svenheins.main.EntityStates;
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.WorldPosition;
 import de.svenheins.objects.items.Item;
@@ -24,11 +29,19 @@ public class Goal {
 	private ArrayList<Item> sellItem;
 	private ArrayList<Item> buyItem;
 	private boolean takeAll;
+	private boolean attackModus;
 	
 	public Goal(WorldPosition position, BigInteger entityID, Entity entity) {
 		this.setPosition(position);
 		this.setGoalEntityID(entityID);
 		this.setEntity(entity);
+		this.setAttackModus(false);
+	}
+	
+	public Goal(Entity entity) {
+		this.setGoalEntityID(entity.getId());
+		this.setEntity(entity);
+		this.setPosition(new WorldPosition(this.getEntity().getX(), this.getEntity().getY()));
 	}
 	
 	public Goal(WorldPosition position) {
@@ -90,5 +103,13 @@ public class Goal {
 
 	public void setEntity(Entity entity) {
 		this.entity = entity;
+	}
+
+	public boolean isAttackModus() {
+		return attackModus;
+	}
+
+	public void setAttackModus(boolean attackModus) {
+		this.attackModus = attackModus;
 	}
 }

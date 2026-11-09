@@ -23,42 +23,36 @@ package de.svenheins;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.sun.sgs.app.AppContext;
 import com.sun.sgs.app.DataManager;
 import com.sun.sgs.app.ManagedReference;
-import com.sun.sgs.app.Task;
 import com.sun.sgs.app.util.ScalableHashMap;
-import com.sun.sgs.app.util.ScalableHashSet;
 
 import de.svenheins.main.GameStates;
-import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.ServerTextureManager;
-import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.SpriteManager;
 import de.svenheins.managers.TileSetManager;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.ServerMessages;
 import de.svenheins.objects.AreaInfluence;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.GrowthSpot;
 import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.PlayerEntity;
-import de.svenheins.objects.ServerAgent;
 import de.svenheins.objects.ServerAgentEmployee;
 import de.svenheins.objects.ServerAgentEntrepreneur;
 import de.svenheins.objects.ServerAreaInfluence;
 import de.svenheins.objects.ServerContainer;
 import de.svenheins.objects.ServerEntity;
+import de.svenheins.objects.ServerGrowthSpot;
 import de.svenheins.objects.ServerItem;
 import de.svenheins.objects.ServerPlayer;
 import de.svenheins.objects.ServerRegion;
@@ -69,6 +63,7 @@ import de.svenheins.objects.Sprite;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldObject;
 import de.svenheins.objects.items.Item;
+import de.svenheins.objects.items.ItemFactoryCollection;
 
 /**
  * Represents a room in the {@link World} example MUD.
@@ -104,16 +99,26 @@ public class WorldRoom extends WorldObject
     private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerItem>>> itemList;
     private BigInteger maxItemIndex;
     private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>> areaInfluenceList;
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>> areaInfluenceSendList;
     private BigInteger maxAreaInfluenceIndex;
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>>> growthSpotList;
+    private final ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>>> growthSpotSendList;
+    private BigInteger maxGrowthSpotIndex;
     
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerList;
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerUseList;
     private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqBodyList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqWeaponList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqHelmetList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqFeetList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqShieldList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqAmuletList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqGloveList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqShirtList;
+    private final ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> containerEqTrousersList;
     
 //    private static List<ManagedReference<ServerSpace>> spacesArray = null;
 
-
-	
 
 	/** The set of players in this room. */
     private final HashMap<BigInteger, ManagedReference<WorldPlayer>> players =
@@ -123,6 +128,7 @@ public class WorldRoom extends WorldObject
     private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingEntities = new HashMap<BigInteger, Iterator<BigInteger>>();
     private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingItems = new HashMap<BigInteger, Iterator<BigInteger>>();
     private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingAreaInfluences = new HashMap<BigInteger, Iterator<BigInteger>>();
+    private final HashMap<BigInteger, Iterator<BigInteger>> playerInitializingGrowthSpots = new HashMap<BigInteger, Iterator<BigInteger>>();
     
     
     /** The set of corresponding player-entities in this room. */
@@ -138,6 +144,8 @@ public class WorldRoom extends WorldObject
 	private BigInteger lastAddedSpaceID;
 
 	private boolean hasReceivedNewSpace;
+	
+	private long worldTime;
 
     /**
      * Creates a new room with the given name and description, initially
@@ -149,6 +157,7 @@ public class WorldRoom extends WorldObject
     public WorldRoom(String name, String description, float x, float y) {
         super(name, description, x, y);
         this.last = System.currentTimeMillis();
+        this.setWorldTime(0);
 //        this.entityIteratorIndex = 0;
         DataManager dm = AppContext.getDataManager();
         ScalableHashMap<BigInteger, ManagedReference<ServerEntity>> tempEntities = new ScalableHashMap<BigInteger, ManagedReference<ServerEntity>>();
@@ -165,10 +174,21 @@ public class WorldRoom extends WorldObject
 //        BigInteger tempMaxItemID = BigInteger.valueOf(0);
         maxItemIndex = BigInteger.valueOf(0);
         
-        ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>> tempAreaInfluenceList = new ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>();
+		ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>> tempAreaInfluenceList = new ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>();
         areaInfluenceList = dm.createReference(tempAreaInfluenceList);
+        ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>> tempAreaInfluenceSendList = new ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>();
+        areaInfluenceSendList = dm.createReference(tempAreaInfluenceSendList);
+        
 //        BigInteger tempMaxItemID = BigInteger.valueOf(0);
         maxAreaInfluenceIndex = BigInteger.valueOf(0);
+        
+        ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>> tempGrowthSpotList = new ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>>();
+        growthSpotList = dm.createReference(tempGrowthSpotList);
+        ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>> tempGrowthSpotSendList = new ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>>();
+        growthSpotSendList = dm.createReference(tempGrowthSpotSendList);
+        
+//        BigInteger tempMaxItemID = BigInteger.valueOf(0);
+        maxGrowthSpotIndex = BigInteger.valueOf(0);
         
         ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
         containerList = dm.createReference(tempContainerList);
@@ -178,6 +198,22 @@ public class WorldRoom extends WorldObject
         
         ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqBodyList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
         containerEqBodyList = dm.createReference(tempContainerEqBodyList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqWeaponList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqWeaponList = dm.createReference(tempContainerEqWeaponList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqHelmetList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqHelmetList = dm.createReference(tempContainerEqHelmetList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqFeetList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqFeetList = dm.createReference(tempContainerEqFeetList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqShieldList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqShieldList = dm.createReference(tempContainerEqShieldList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqAmuletList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqAmuletList = dm.createReference(tempContainerEqAmuletList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqGloveList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqGloveList = dm.createReference(tempContainerEqGloveList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqShirtList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqShirtList = dm.createReference(tempContainerEqShirtList);
+        ScalableHashMap<String, ManagedReference<ServerContainer>> tempContainerEqTrousersList = new ScalableHashMap<String, ManagedReference<ServerContainer>>();
+        containerEqTrousersList = dm.createReference(tempContainerEqTrousersList);
     }
 
 //    /**
@@ -216,7 +252,7 @@ public class WorldRoom extends WorldObject
         refEnt.getForUpdate().setId(entID);
     	logger.log(Level.INFO, "{0} placed in {1}",
                     new Object[] { entity, this });
-        entity.setRoom(this);
+        entity.setWorldRoom(this);
         entities.get().put(refEnt.getId(),refEnt);
 //        entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
     }
@@ -253,33 +289,45 @@ public class WorldRoom extends WorldObject
     public void addAreaInfluence(BigInteger areaInfluenceID, ServerAreaInfluence serverAreaInfluence) {
     	DataManager dataManager = AppContext.getDataManager();
         dataManager.markForUpdate(this);
-//        if (maxAreaInfluenceIndex.compareTo(areaInfluenceID) < 0) {
-//        	maxAreaInfluenceIndex = areaInfluenceID;
-//        }
-        
-        areaInfluenceID = maxAreaInfluenceIndex.add(BigInteger.valueOf(1));
-        maxAreaInfluenceIndex = areaInfluenceID;
+        if (maxAreaInfluenceIndex.compareTo(areaInfluenceID) < 0) {
+        	maxAreaInfluenceIndex = areaInfluenceID;
+        }
+//        System.out.println("room adds areaInfluence: "+areaInfluenceID.longValue());
+//        areaInfluenceID = maxAreaInfluenceIndex.add(BigInteger.valueOf(1));
+//        maxAreaInfluenceIndex = areaInfluenceID;
         
         ManagedReference<ServerAreaInfluence> tempServerAreaInfluence = dataManager.createReference(serverAreaInfluence);
         if (!areaInfluenceList.get().containsKey(areaInfluenceID)) {
+        	/** prepare the areaInfluenceSendList */
+        	if (!areaInfluenceSendList.get().containsKey(areaInfluenceID)) {
+        		areaInfluenceSendList.getForUpdate().put(areaInfluenceID, tempServerAreaInfluence);
+        	}
         	areaInfluenceList.getForUpdate().put(areaInfluenceID, tempServerAreaInfluence);
-//        	System.out.println("itemlist size: "+itemList.get().size());
+//        	System.out.println("areaInfluences: size: "+areaInfluenceList.get().size());
+        	
+        	ServerAreaInfluence e = serverAreaInfluence;
+            e.setId(areaInfluenceID);
+            WorldObject worldObject = e.getWorldObject().get();
+            LocalObject localObject = new LocalObject(e.getId(), worldObject.getName(), e.getRoom(), worldObject.getX(), worldObject.getY(), worldObject.getWidth(), worldObject.getHeight(), worldObject.getMX(), worldObject.getMY(), worldObject.getZIndex(), worldObject.getSpeed());
+            AreaInfluence areaInfluence = new AreaInfluence(e.getId(), e.getTimeBegin(), e.getTimeEnd(), localObject, e.getGroupName(), e.isExclusive(), e.getAttributes(), e.getPriority(), e.getCreator());
+             
+            /** send areaInfluence to all players */
+            for (BigInteger playerIds : players.keySet()) {
+     			/*** check if player does exist */
+     			if (players.get(playerIds) != null) {
+//     				System.out.println("send areaInfluence: "+areaInfluenceID.longValue()+" room = "+e.getRoom());
+     				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluence(areaInfluence, maxAreaInfluenceIndex));
+     			} else {
+     				// player does not exist
+     			}
+     		}
+            areaInfluenceSendList.getForUpdate().remove(areaInfluenceID);
+        } else {
+        	/** error: areaInfluence is already in the manager */
+//        	System.out.println("Error: AreaInfluence is already in the manager!");
         }
         
-        ServerAreaInfluence e = serverAreaInfluence;
-        e.setId(areaInfluenceID);
-        WorldObject worldObject = e.getWorldObject().get();
-        LocalObject localObject = new LocalObject(e.getId(), worldObject.getName(), worldObject.getX(), worldObject.getY(), worldObject.getWidth(), worldObject.getHeight(), worldObject.getMX(), worldObject.getMY(), worldObject.getZIndex(), worldObject.getSpeed());
-        AreaInfluence areaInfluence = new AreaInfluence(e.getId(), e.getTimeBegin(), e.getTimeEnd(), localObject, e.getGroupName(), e.isExclusive(), e.getAttributes(), e.getPriority());
-        
-        for (BigInteger playerIds : players.keySet()) {
-			/*** check if player does exist */
-			if (players.get(playerIds) != null) {
-				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluence(areaInfluence));
-			} else {
-				// player does not exist
-			}
-		}
+       
     }
     
     /** only remove the item for the players who cannot see the item */
@@ -289,6 +337,61 @@ public class WorldRoom extends WorldObject
 			/*** check if player does exist */
 			if (players.get(playerIds) != null) {
 				this.players.get(playerIds).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.AREAINFLUENCE, areaInfluenceID));
+			} else {
+				// player does not exist
+			}
+		}
+	}
+    
+    
+    /** add itemID into room */
+    public void addGrowthSpot(BigInteger growthSpotID, ServerGrowthSpot serverGrowthSpot) {
+    	DataManager dataManager = AppContext.getDataManager();
+        dataManager.markForUpdate(this);
+        if (maxGrowthSpotIndex.compareTo(growthSpotID) < 0) {
+        	maxGrowthSpotIndex = growthSpotID;
+        }
+        
+        ManagedReference<ServerGrowthSpot> tempServerGrowthSpot = dataManager.createReference(serverGrowthSpot);
+        if (!growthSpotList.get().containsKey(growthSpotID)) {
+        	/** prepare the growthSpotSendList */
+        	if (!growthSpotSendList.get().containsKey(growthSpotID)) {
+        		growthSpotSendList.getForUpdate().put(growthSpotID, tempServerGrowthSpot);
+        	}
+        	growthSpotList.getForUpdate().put(growthSpotID, tempServerGrowthSpot);
+//        	System.out.println("areaInfluences: size: "+areaInfluenceList.get().size());
+        	
+        	ServerGrowthSpot e = serverGrowthSpot;
+            e.setId(growthSpotID);
+            
+            GrowthSpot growthSpot = new GrowthSpot(e.getId(), e.getTileType(), e.getLocalX(), e.getLocalY(), e.getMapTileX(), e.getMapTileY(), e.getRoom(), e.getTimeBegin(), e.getTimeEnd(), e.getAttributes(), e.getCreator());
+             
+            /** send areaInfluence to all players */
+            for (BigInteger playerIds : players.keySet()) {
+     			/*** check if player does exist */
+     			if (players.get(playerIds) != null) {
+//     				System.out.println("send areaInfluence: "+areaInfluenceID.longValue()+" room = "+e.getRoom());
+     				this.players.get(playerIds).get().getSession().send(ServerMessages.sendGrowthSpot(growthSpot, maxGrowthSpotIndex));
+     			} else {
+     				// player does not exist
+     			}
+     		}
+            growthSpotSendList.getForUpdate().remove(growthSpotID);
+        } else {
+        	/** error: areaInfluence is already in the manager */
+//        	System.out.println("Error: AreaInfluence is already in the manager!");
+        }
+        
+       
+    }
+    
+    /** only remove the item for the players who cannot see the item */
+    public void removeGrowthSpot(BigInteger growthSpotID) {
+    	this.getGrowthSpotList().getForUpdate().remove(growthSpotID);
+		for (BigInteger playerIds : players.keySet()) {
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendDelete(OBJECTCODE.GROWTHSPOT, growthSpotID));
 			} else {
 				// player does not exist
 			}
@@ -311,7 +414,7 @@ public class WorldRoom extends WorldObject
     	logger.log(Level.INFO, "ServerPlayer {0} placed in {1}",
                     new Object[] { serverPlayer.getName(), this });
 	        
-        serverPlayer.setRoom(this);
+        serverPlayer.setWorldRoom(this);
         serverPlayers.get().put(playerName,refPlayer);
     }
     
@@ -446,12 +549,14 @@ public class WorldRoom extends WorldObject
 	        
 	        PlayerEntity playerEntity = null;
 	        if (!serverPlayers.get().containsKey(playerName)) {
-		        String serverSpriteString = GameStates.standardTileNamePlayer;
+		        String serverSpriteString = GameStates.tileNameStandardPlayer;
 		        Sprite sprite = SpriteManager.manager.getSprite(serverSpriteString);
 		        ServerSprite s_sprite = new ServerSprite(serverSpriteString, sprite.getHeight(), sprite.getWidth());
 		        ServerPlayer s_player;
-		       	s_player = new ServerPlayer(s_sprite, refPlayer.getId(),"shipTileName", GameStates.standardTileNamePlayer, 0, 0, 0, 0);
-		       	s_player.setName(playerName);
+		        String standardRoom = playerName + "0000";
+		       	s_player = new ServerPlayer(s_sprite, playerName, standardRoom, refPlayer.getId(),playerName, GameStates.nameStandardPlayer, GameStates.tileNameStandardPlayer, 0, 0, 0, 0);
+		       	s_player.setHairName("ShortBlondHair");
+//		       	s_player.setName(playerName);
 //		       	s_player.setTileSetPathName(GameStates.standardTileNamePlayer);
 //		       	s_player.setTileSetName("shipTileName");
 		        this.addServerPlayer(s_player, playerName, refPlayer.getId());
@@ -459,17 +564,160 @@ public class WorldRoom extends WorldObject
 		        this.containerList.getForUpdate().put(playerName, s_player.getInventory());
 		        this.containerUseList.getForUpdate().put(playerName, s_player.getInventoryUse());
 		        this.containerEqBodyList.getForUpdate().put(playerName, s_player.getInventoryEqBody());
+		        this.containerEqWeaponList.getForUpdate().put(playerName, s_player.getInventoryEqWeapon());
+		        this.containerEqHelmetList.getForUpdate().put(playerName, s_player.getInventoryEqHelmet());
+		        this.containerEqFeetList.getForUpdate().put(playerName, s_player.getInventoryEqFeet());
+		        this.containerEqShieldList.getForUpdate().put(playerName, s_player.getInventoryEqShield());
+		        this.containerEqAmuletList.getForUpdate().put(playerName, s_player.getInventoryEqAmulet());
+		        this.containerEqGloveList.getForUpdate().put(playerName, s_player.getInventoryEqGlove());
+		        this.containerEqShirtList.getForUpdate().put(playerName, s_player.getInventoryEqShirt());
+		        this.containerEqTrousersList.getForUpdate().put(playerName, s_player.getInventoryEqTrousers());
 		        
+		        String armorName = "";
+		        Entity armorEntity = null;
+		        String weaponName = "";
+		        Entity weaponEntity = null;
+		        String helmetName = "";
+		        Entity helmetEntity = null;
+		        String feetName = "";
+		        Entity feetEntity = null;
+		        String shieldName = "";
+		        Entity shieldEntity = null;
+		        String amuletName = "";
+		        Entity amuletEntity = null;
+		        String gloveName = "";
+		        Entity gloveEntity = null;
+		        String shirtName = "";
+		        Entity shirtEntity = null;
+		        String trousersName = "";
+		        Entity trousersEntity = null;
+		        String hairName = "ShortBlondHair";
+		        if (this.getContainerEqBodyList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	armorName = this.getContainerEqBodyList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	armorEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+armorName), GameStates.itemEquipPrefix+s_player.getTileSetName()+armorName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqWeaponList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	weaponName = this.getContainerEqWeaponList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	weaponEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+weaponName), GameStates.itemEquipPrefix+s_player.getTileSetName()+weaponName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqHelmetList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	helmetName = this.getContainerEqHelmetList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	helmetEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+helmetName), GameStates.itemEquipPrefix+s_player.getTileSetName()+helmetName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqFeetList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	feetName = this.getContainerEqFeetList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	feetEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+feetName), GameStates.itemEquipPrefix+s_player.getTileSetName()+feetName,s_player.getRoom(),  BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqShieldList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	shieldName = this.getContainerEqShieldList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	shieldEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+shieldName), GameStates.itemEquipPrefix+s_player.getTileSetName()+shieldName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqAmuletList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	amuletName = this.getContainerEqAmuletList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	amuletEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+amuletName), GameStates.itemEquipPrefix+s_player.getTileSetName()+amuletName,s_player.getRoom(),  BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqGloveList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	gloveName = this.getContainerEqGloveList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	gloveEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+gloveName), GameStates.itemEquipPrefix+s_player.getTileSetName()+gloveName,s_player.getRoom(),  BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqShirtList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	shirtName = this.getContainerEqShirtList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	shirtEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+shirtName), GameStates.itemEquipPrefix+s_player.getTileSetName()+shirtName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqTrousersList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	trousersName = this.getContainerEqTrousersList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	trousersEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+trousersName), GameStates.itemEquipPrefix+s_player.getTileSetName()+trousersName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+
 		        TileSet tile = TileSetManager.manager.getTileSet(s_player.getTileSetName());
-		        playerEntity = new PlayerEntity(tile, playerName, player.getId(), player.getX(), player.getY(), GameStates.animationDelay);
+		        playerEntity = new PlayerEntity(tile, playerName, s_player.getRoom(), player.getId(), player.getX(), player.getY(), GameStates.animationDelay);
+		        playerEntity.setArmorEntity(armorEntity);
+		        playerEntity.setWeaponEntity(weaponEntity);
+		        playerEntity.setHelmetEntity(helmetEntity);
+		        playerEntity.setFeetEntity(feetEntity);
+		        playerEntity.setShieldEntity(shieldEntity);
+		        playerEntity.setAmuletEntity(amuletEntity);
+		        playerEntity.setGloveEntity(gloveEntity);
+		        playerEntity.setShirtEntity(shirtEntity);
+		        playerEntity.setTrousersEntity(trousersEntity);
+		        playerEntity.updateVisualsHair(hairName);
+		        
 	        } else {
 	        	logger.log(Level.INFO, "{0} with ID {1} exists already in room {2}",
 	                    new Object[] { playerName, refPlayer.getId(), this });
 	        	ServerPlayer s_player = serverPlayers.get().get(playerName).get();
 	        	s_player.setId(refPlayer.getId());
 
-	        	TileSet tile = TileSetManager.manager.getTileSetByPath(s_player.getTileSetName(), s_player.getTileSetPathName());
-		        playerEntity = new PlayerEntity(tile, playerName, s_player.getId(), s_player.getX(), s_player.getY(), GameStates.animationDelay);
+	        	String armorName = "";
+		        Entity armorEntity = null;
+		        String weaponName = "";
+		        Entity weaponEntity = null;
+		        String helmetName = "";
+		        Entity helmetEntity = null;
+		        String feetName = "";
+		        Entity feetEntity = null;
+		        String shieldName = "";
+		        Entity shieldEntity = null;
+		        String amuletName = "";
+		        Entity amuletEntity = null;
+		        String gloveName = "";
+		        Entity gloveEntity = null;
+		        String shirtName = "";
+		        Entity shirtEntity = null;
+		        String trousersName = "";
+		        Entity trousersEntity = null;
+		        if (this.getContainerEqBodyList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	armorName = this.getContainerEqBodyList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	armorEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+armorName), GameStates.itemEquipPrefix+s_player.getTileSetName()+armorName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqWeaponList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	weaponName = this.getContainerEqWeaponList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	weaponEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+weaponName), GameStates.itemEquipPrefix+s_player.getTileSetName()+weaponName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqHelmetList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	helmetName = this.getContainerEqHelmetList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	helmetEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+helmetName), GameStates.itemEquipPrefix+s_player.getTileSetName()+helmetName,s_player.getRoom(),  BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqFeetList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	feetName = this.getContainerEqFeetList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	feetEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+feetName), GameStates.itemEquipPrefix+s_player.getTileSetName()+feetName,s_player.getRoom(),  BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqShieldList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	shieldName = this.getContainerEqShieldList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	shieldEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+shieldName), GameStates.itemEquipPrefix+s_player.getTileSetName()+shieldName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqAmuletList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	amuletName = this.getContainerEqAmuletList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	amuletEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+amuletName), GameStates.itemEquipPrefix+s_player.getTileSetName()+amuletName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqGloveList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	gloveName = this.getContainerEqGloveList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	gloveEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+gloveName), GameStates.itemEquipPrefix+s_player.getTileSetName()+gloveName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqShirtList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	shirtName = this.getContainerEqShirtList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	shirtEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+shirtName), GameStates.itemEquipPrefix+s_player.getTileSetName()+shirtName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+		        if (this.getContainerEqTrousersList().get().get(playerName).get().getItemList().values().iterator().hasNext()) {
+		        	trousersName = this.getContainerEqTrousersList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		        	trousersEntity = new Entity(TileSetManager.manager.getTileSet(GameStates.itemEquipPrefix+s_player.getTileSetName()+trousersName), GameStates.itemEquipPrefix+s_player.getTileSetName()+trousersName, s_player.getRoom(), BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);      	
+		        }
+	        	
+		        
+	        	TileSet tile = TileSetManager.manager.getTileSet(s_player.getTileSetName());//TileSetManager.manager.getTileSetByPath(s_player.getTileSetName(), s_player.getTileSetPathName());
+		        playerEntity = new PlayerEntity(tile, playerName, s_player.getRoom(), s_player.getId(), s_player.getX(), s_player.getY(), GameStates.animationDelay);
+		        
+		        playerEntity.setArmorEntity(armorEntity);
+		        playerEntity.setWeaponEntity(weaponEntity);
+		        playerEntity.setHelmetEntity(helmetEntity);
+		        playerEntity.setFeetEntity(feetEntity);
+		        playerEntity.setShieldEntity(shieldEntity);
+		        playerEntity.setAmuletEntity(amuletEntity);
+		        playerEntity.setGloveEntity(gloveEntity);
+		        playerEntity.setShirtEntity(shirtEntity);
+		        playerEntity.setTrousersEntity(trousersEntity);
+		        playerEntity.updateVisualsHair(s_player.getHairName());
+		        
 //		        ServerContainer s_container = containerList.get().get(playerName).get();
 //		        playerEntity.setInventory(new Con);
 //		        System.out.println(s_player.getX());
@@ -587,6 +835,7 @@ public class WorldRoom extends WorldObject
 	        this.playerInitializingEntities.remove(player.getId());
 	        this.playerInitializingItems.remove(player.getId());
 	        this.playerInitializingAreaInfluences.remove(player.getId());
+	        this.playerInitializingGrowthSpots.remove(player.getId());
 	        String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
 	        if (ServerTextureManager.manager.containsPlayer(playerName)) {
 	        	logger.log(Level.INFO, "Player deleted from ServerTextureManager: {0}", player.getName());
@@ -685,7 +934,7 @@ public class WorldRoom extends WorldObject
     			actualID = itKeys.next();
 				ServerEntity entity = entities.get().get(actualID).get();
 				TileSet tileSet = TileSetManager.manager.getTileSetByPath(entity.getTileSetName(), entity.getTileSetPathName());
-				realEntity = new Entity(tileSet, entity.getName(), entity.getId(), entity.getX(), entity.getY(), GameStates.animationDelay);
+				realEntity = new Entity(tileSet, entity.getName(), worldPlayer.getRoom(), entity.getId(), entity.getX(), entity.getY(), GameStates.animationDelay);
 				objectList[objectCounter] = realEntity;
 				objectCounter++;
     		}
@@ -705,7 +954,7 @@ public class WorldRoom extends WorldObject
     			actualID = itKeys.next();
 				ServerEntity entity = entities.get().get(actualID).get();
 				TileSet tileSet = TileSetManager.manager.getTileSetByPath(entity.getTileSetName(), entity.getTileSetPathName());
-				realEntity = new Entity(tileSet, entity.getName(), entity.getId(), entity.getX(), entity.getY(), GameStates.animationDelay);
+				realEntity = new Entity(tileSet, entity.getName(), entity.getRoom(),  entity.getId(), entity.getX(), entity.getY(), GameStates.animationDelay);
 				objectListTemp[objectCounter] = realEntity;
 				objectCounter++;
     		} else {
@@ -732,7 +981,7 @@ public class WorldRoom extends WorldObject
 				ServerItem item = itemList.get().get(actualID).get();
 //				System.out.println("got item id "+item.getId());
 //				TileSet tileSet = TileSetManager.manager.getTileSetByPath(item.getItemEntity().get().getTileSetName(), item.getItemEntity().get().getTileSetPathName());
-				realItem = Item.getItem(item.getItemCode(), item.getId(), item.getName(), item.getCount(), item.getCapacity(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
+				realItem = ItemFactoryCollection.getItem(item.getItemCode(), item.getId(), item.getName(), item.getComment(), item.getRoom(), item.getCount(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
 				objectListTemp[objectCounter] = realItem;
 				objectCounter++;
     		} else {
@@ -746,7 +995,7 @@ public class WorldRoom extends WorldObject
     	return objectListTemp;    	
     }
     
-    /** return next count Entities*/
+    /** return next count AreaInfluence*/
     public AreaInfluence[] getNextCountAreaInfluences(int count, Iterator<BigInteger> itKeys) {
     	AreaInfluence[] objectListTemp = new AreaInfluence[count];
     	int objectCounter = 0;
@@ -760,12 +1009,40 @@ public class WorldRoom extends WorldObject
 				WorldObject worldObject = areaInfluence.getWorldObject().get();
 //				System.out.println("got item id "+item.getId());
 //				TileSet tileSet = TileSetManager.manager.getTileSetByPath(item.getItemEntity().get().getTileSetName(), item.getItemEntity().get().getTileSetPathName());
-				realAreaInfluence = new AreaInfluence(areaInfluence.getId(), areaInfluence.getTimeBegin(), areaInfluence.getTimeEnd(), new LocalObject(areaInfluence.getId(), worldObject.getName(), worldObject.getX(), worldObject.getY(), worldObject.getHeight(), worldObject.getWidth(), worldObject.getMX(), worldObject.getMY(), worldObject.getZIndex(), worldObject.getSpeed()), areaInfluence.getGroupName(), areaInfluence.isExclusive(), areaInfluence.getAttributes(), areaInfluence.getPriority());
+				realAreaInfluence = new AreaInfluence(areaInfluence.getId(), areaInfluence.getTimeBegin(), areaInfluence.getTimeEnd(), new LocalObject(areaInfluence.getId(), worldObject.getName(), worldObject.getRoom(), worldObject.getX(), worldObject.getY(), worldObject.getHeight(), worldObject.getWidth(), worldObject.getMX(), worldObject.getMY(), worldObject.getZIndex(), worldObject.getSpeed()), areaInfluence.getGroupName(), areaInfluence.isExclusive(), areaInfluence.getAttributes(), areaInfluence.getPriority(), areaInfluence.getCreator());
 //						AreaInfluence.getAreaInfluence(areaInfluence.getItemCode(), item.getId(), item.getName(), item.getCount(), item.getCapacity(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
 				objectListTemp[objectCounter] = realAreaInfluence;
 				objectCounter++;
     		} else {
     			AreaInfluence[] objectList = new AreaInfluence[objectCounter];
+    			for (int j = 0; j < objectCounter; j++){
+    				objectList[j] = objectListTemp[j];
+    			}
+    			return objectList;
+    		}
+		}
+    	return objectListTemp;    	
+    }
+    
+    /** return next count AreaInfluence*/
+    public GrowthSpot[] getNextCountGrowthSpots(int count, Iterator<BigInteger> itKeys) {
+    	GrowthSpot[] objectListTemp = new GrowthSpot[count];
+    	int objectCounter = 0;
+    	/** for each entity add the corresponding id to the intList */
+    	GrowthSpot realGrowthSpot;
+		BigInteger actualID;
+    	for (int i = 0; i<count; i++) {
+    		if (itKeys.hasNext()) {
+    			actualID = itKeys.next();
+				ServerGrowthSpot growthSpot = growthSpotList.get().get(actualID).get();
+//				System.out.println("got item id "+item.getId());
+//				TileSet tileSet = TileSetManager.manager.getTileSetByPath(item.getItemEntity().get().getTileSetName(), item.getItemEntity().get().getTileSetPathName());
+				realGrowthSpot = new GrowthSpot(growthSpot.getId(), growthSpot.getTileType(), growthSpot.getLocalX(), growthSpot.getLocalY(),growthSpot.getMapTileX(), growthSpot.getMapTileY(), growthSpot.getRoom(), growthSpot.getTimeBegin(), growthSpot.getTimeEnd(),growthSpot.getAttributes(),growthSpot.getCreator());
+//						AreaInfluence.getAreaInfluence(areaInfluence.getItemCode(), item.getId(), item.getName(), item.getCount(), item.getCapacity(), item.getItemEntity().get().getX(), item.getItemEntity().get().getY(), item.getCreationTime(), item.getStates());
+				objectListTemp[objectCounter] = realGrowthSpot;
+				objectCounter++;
+    		} else {
+    			GrowthSpot[] objectList = new GrowthSpot[objectCounter];
     			for (int j = 0; j < objectCounter; j++){
     				objectList[j] = objectListTemp[j];
     			}
@@ -865,7 +1142,6 @@ public class WorldRoom extends WorldObject
 	    		
 			}
     	}
-    	
     }
     
     /**
@@ -874,34 +1150,95 @@ public class WorldRoom extends WorldObject
      */
     public void updateAreaInfluences(int begin, int end, Iterator<BigInteger> itKeys) {
     	long timeNow;
-//		entitiesArray = new ArrayList<ManagedReference<ServerEntity>>(entities.values());
-//    	Iterator<BigInteger> itKeys = entities.get().keySet().iterator();
     	BigInteger actualID;
-//    	for(int i = 0; i< begin; i++) {
-//    		actualID = itKeys.next();
-//    	}
-    	
-//		Entity realEntity;
-//		for (BigInteger entId : entities.get().keySet()) {
+//    	System.out.println("ServerAreaInfluenceThread running, size = "+ areaInfluenceList.get().size());
+    	List<BigInteger> deleteIDList = new ArrayList<BigInteger>();
 		for (int i = begin; i < end; i++ ) {
+//			System.out.println("updateAreInfluence: i="+i);
 			if (itKeys.hasNext()) {
 				actualID = itKeys.next();
-	//			ManagedReference<ServerEntity> entity = entitiesArray.get(i);
-				ServerAreaInfluence sae = areaInfluenceList.get().get(actualID).getForUpdate(); 
-				
-				System.out.println("ServerAreaInfluence: group="+sae.getGroupName()+" exclusive?-"+sae.isExclusive());
-	//					EntityManager.get(EntityManager.idList.get(i)); 
-	//    		ServerEntity se = entity.getForUpdate();
+				ServerAreaInfluence sae = areaInfluenceList.get().get(actualID).get(); 
+//				System.out.println("ServerAreaInfluence: group="+sae.getGroupName()+" exclusive?-"+sae.isExclusive());
 	    		
 	    		timeNow = System.currentTimeMillis();
-	    		if ( (sae.getTimeBegin() < timeNow) || (sae.getTimeEnd() < timeNow) || (sae.getTimeBegin() == sae.getTimeEnd())) {
-//	    			System.out.println("difference: " + (timestamp - si.getCreationTime()));
-	    			removeAreaInfluence(sae.getId());
+//	    		if ( ((sae.getTimeBegin() <= timeNow) && (sae.getTimeEnd() >= timeNow)) || (sae.getTimeBegin() == sae.getTimeEnd())) {
+//	    			/** active areaInfluence **/
+//	    		} else {
+//	    			/** areaInfluence is not yet active */
+//	    		}
+	    		
+	    		/** finally remove the instantaneous influence (if applicable) or ended influence*/
+	    		if ( (sae.getTimeBegin() == sae.getTimeEnd()) && timeNow-sae.getTimeEnd() > GameStates.timespanDeleteInstantAreaInfluence) {
+	    			/** instantaneous influence */
+	    			deleteIDList.add(sae.getId());
+	    		} else if (sae.getTimeEnd() < timeNow) {
+	    			/** ended continuous influence */
+	    			deleteIDList.add(sae.getId());
 	    		}
 	    		
+			} else {
+//				System.out.println("Update AreaInfluence: no next id");
 			}
     	}
-    	
+		
+		/** delete all invalid areaInfluences */
+		for ( BigInteger delID : deleteIDList) {
+			/** only remove the areaInfluence if it has been sent to all players before */
+			if (!areaInfluenceSendList.get().containsKey(delID)) {
+//				System.out.println("UpdateAreInfluenceThread: removed areaInfluence with ID="+delID.longValue());
+				removeAreaInfluence(delID);
+			}
+		}
+		
+		if (areaInfluenceList.get().size() <=0) {
+			this.setMaxAreaInfluenceIndex(BigInteger.valueOf(0));
+		}
+    }
+    
+    public void updateGrowthSpots(int begin, int end, Iterator<BigInteger> itKeys) {
+    	long timeNow;
+    	BigInteger actualID;
+    	List<BigInteger> deleteIDList = new ArrayList<BigInteger>();
+		for (int i = begin; i < end; i++ ) {
+//			System.out.println("updateAreInfluence: i="+i);
+			if (itKeys.hasNext()) {
+				actualID = itKeys.next();
+				ServerGrowthSpot sgs = growthSpotList.get().get(actualID).get(); 
+//				System.out.println("ServerAreaInfluence: group="+sae.getGroupName()+" exclusive?-"+sae.isExclusive());
+	    		
+	    		timeNow = System.currentTimeMillis();
+//	    		if ( ((sae.getTimeBegin() <= timeNow) && (sae.getTimeEnd() >= timeNow)) || (sae.getTimeBegin() == sae.getTimeEnd())) {
+//	    			/** active areaInfluence **/
+//	    		} else {
+//	    			/** areaInfluence is not yet active */
+//	    		}
+	    		
+	    		/** finally remove the instantaneous influence (if applicable) or ended influence*/
+	    		if ( (sgs.getTimeBegin() == sgs.getTimeEnd()) && timeNow-sgs.getTimeEnd() > GameStates.timespanDeleteInstantGrowthSpot) {
+	    			/** instantaneous influence */
+	    			deleteIDList.add(sgs.getId());
+	    		} else if (sgs.getTimeEnd() < timeNow) {
+	    			/** ended continuous influence */
+	    			deleteIDList.add(sgs.getId());
+	    		}
+	    		
+			} else {
+//				System.out.println("Update AreaInfluence: no next id");
+			}
+    	}
+		
+		/** delete all invalid areaInfluences */
+		for ( BigInteger delID : deleteIDList) {
+			/** only remove the areaInfluence if it has been sent to all players before */
+			if (!growthSpotSendList.get().containsKey(delID)) {
+//				System.out.println("UpdateAreInfluenceThread: removed areaInfluence with ID="+delID.longValue());
+				removeGrowthSpot(delID);
+			}
+		}
+		
+		if (areaInfluenceList.get().size() <=0) {
+			this.setMaxAreaInfluenceIndex(BigInteger.valueOf(0));
+		}
     }
     
     public void updateSpaces() {
@@ -976,7 +1313,7 @@ public class WorldRoom extends WorldObject
 //    		ServerSpace space = new ServerSpace(SpaceManager.get(SpaceManager.idList.get(i)));
     		ServerSpace space = spaces.get().get(spaceId).get(); //spacesArray.get(i);
 			for (BigInteger playerID : players.keySet()) {
-				if (players.get(playerID).get().isReady()) {
+				if (players.get(playerID).get().isReady() && players.get(playerID).get().getSession().isConnected()) {
 	    			BigInteger object_id = space.getId();
 	    			// get the six object-states: x,y,mx,my,width,height
 	    			float[] object_state = new float[]{space.getX(), space.getY(),space.getHorizontalMovement(),space.getVerticalMovement(), space.getWidth(), space.getHeight()};
@@ -1024,6 +1361,16 @@ public class WorldRoom extends WorldObject
 		}
 	}
 	
+	/** ask playerBID for unknown playerAgents of playerAID */
+	public void askForUnknownPlayerAgentsPlayerAToPlayerB(BigInteger playerAID, BigInteger playerBID, ArrayList<BigInteger> idList) {
+		players.get(playerBID).get().getSession().send(ServerMessages.askForPlayerAgentsPlayerAToPlayerB(playerAID, playerBID, idList));
+	}
+	
+	/** player */
+	public void sendUnknownPlayerAgents(BigInteger toPlayerID, String fromPlayerName, ArrayList<PlayerEntity> agentList) {
+		players.get(toPlayerID).get().getSession().send(ServerMessages.sendUnknownPlayerAgents(toPlayerID, fromPlayerName, agentList));
+	}
+	
 	public void updateSendLogout(BigInteger playerID) {
 		/** TODO: LOGOUT message */
 		for(BigInteger playerIDto: players.keySet()) {
@@ -1032,6 +1379,14 @@ public class WorldRoom extends WorldObject
 			}
 		}
 
+	}
+	
+	public void editPlayerRoom(BigInteger playerID, String playerName, String room) {
+		for(BigInteger playerIDto: players.keySet()) {
+			if (players.get(playerIDto).get().isReady() && playerIDto != playerID) {
+				players.get(playerIDto).get().getSession().send(ServerMessages.editPlayerRoom(playerID, playerName, room));
+			}
+		}
 	}
 	
 	/** send init process if we got new spaces */
@@ -1067,11 +1422,20 @@ public class WorldRoom extends WorldObject
 		}
 	}
 	
-	/** send init process if we got new spaces */
-	public void sendEditPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+//	/** send init process if we got new spaces */
+//	public void sendEditPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+//		for(BigInteger playerIDto: players.keySet()) {
+//			if (players.get(playerIDto).get().isReady() && playerIDto!= id) {
+//				players.get(playerIDto).get().sendEditPlayerAddons(id, playerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+//			}
+//		}
+//	}
+	
+	/** send edit player equipment for individual appearance */
+	public void sendEditPlayerEquipment(BigInteger id, String weaponName, String armorName, String helmetName, String feetName, String shieldName, String amuletName, String gloveName, String shirtName, String trousersName) {
 		for(BigInteger playerIDto: players.keySet()) {
 			if (players.get(playerIDto).get().isReady() && playerIDto!= id) {
-				players.get(playerIDto).get().sendEditPlayerAddons(id, playerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+				players.get(playerIDto).get().sendEditPlayerEquipment(id, weaponName, armorName, helmetName, feetName, shieldName, amuletName, gloveName, shirtName, trousersName);
 			}
 		}
 	}
@@ -1241,7 +1605,23 @@ public class WorldRoom extends WorldObject
 		}
 	}
 	
-	/** send count next entities to player, who need init */
+	public HashMap<BigInteger, Iterator<BigInteger>> getPlayerInitializingGrowthSpots() {
+		return playerInitializingGrowthSpots;
+	}
+	
+	public void addPlayerInitializingGrowthSpots(BigInteger playerID) {
+		if (!this.playerInitializingGrowthSpots.containsKey(playerID)) {
+			this.playerInitializingGrowthSpots.put(playerID, this.getGrowthSpotList().get().keySet().iterator());
+		}
+	}
+	
+	public void removePlayerInitializingGrowthSpots(BigInteger playerID) {
+		if (this.playerInitializingGrowthSpots.containsKey(playerID)) {
+			this.playerInitializingGrowthSpots.remove(this.players.get(playerID));
+		}
+	}
+	
+	/** send count next areaInfluence to player, who need init */
 	public void initializePlayersAreaInfluences() {
 		AreaInfluence[] areaInfluenceArray;
 //		System.out.println("sending");
@@ -1268,7 +1648,7 @@ public class WorldRoom extends WorldObject
 					realAreaInfluences[i] = areaInfluenceArray[i];
 				}
 				
-				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluenceArray(realAreaInfluences));
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendAreaInfluenceArray(realAreaInfluences, maxAreaInfluenceIndex));
 				if (itKeys.hasNext()) { 
 					this.playerInitializingAreaInfluences.put(playerIds, itKeys);
 				} else {
@@ -1277,24 +1657,51 @@ public class WorldRoom extends WorldObject
 					this.players.get(playerIds).get().setInitializingAreaInfluences(false);
 				}				
 				
-//				Item singleItem = null;
-//				if (itemArray != null && itemArray.length>= 1) {
-//					singleItem = itemArray[0];
-//					System.out.println("got item!");
-//				}
-//				if (singleItem != null) {
-//					System.out.println("itemID: "+singleItem.getId());
-//					this.players.get(playerIds).get().getSession().send(ServerMessages.addCompleteItem(singleItem.getItemCode(), singleItem.getId(), singleItem.getName(), singleItem.getItemEntity().getX(), singleItem.getItemEntity().getY(), singleItem.getCount(), singleItem.getStates()));
-//					if (itKeys.hasNext()) { 
-//						this.playerInitializingItems.put(playerIds, itKeys);
-//					} else {
-//						this.playerInitializingItems.remove(playerIds);
-//						this.players.get(playerIds).get().setReady(true);
-//						this.players.get(playerIds).get().setInitializingItems(false);
-//					}
-//				}
 			} else {
 				this.playerInitializingAreaInfluences.remove(playerIds);
+			}
+		}
+		
+	}
+	
+	/** send count next growthSpot to player, who need init */
+	public void initializePlayersGrowthSpots() {
+		GrowthSpot[] growthSpotArray;
+//		System.out.println("sending");
+		for (BigInteger playerIds : playerInitializingGrowthSpots.keySet()) {
+//			System.out.println("ID: "+playerIds);
+			/*** check if player does exist */
+			if (players.get(playerIds) != null) {
+//				System.out.println("got player!");
+				Iterator<BigInteger> itKeys = playerInitializingGrowthSpots.get(playerIds);
+				
+//				System.out.println("itKeys has next ? : "+itKeys.hasNext());
+				growthSpotArray = getNextCountGrowthSpots(10, itKeys);
+				int realLength = 0;
+				for (int i = 0; i < growthSpotArray.length; i++) {
+					if ( growthSpotArray[i] == null) {
+						realLength = i;
+						break;
+					}
+					realLength = i+1;
+				}
+//				System.out.println("realLength = "+realLength);
+				GrowthSpot[] realGrowthSpots = new GrowthSpot[realLength];
+				for (int i = 0; i <realLength; i++) {
+					realGrowthSpots[i] = growthSpotArray[i];
+				}
+				
+				this.players.get(playerIds).get().getSession().send(ServerMessages.sendGrowthSpotArray(realGrowthSpots, maxGrowthSpotIndex));
+				if (itKeys.hasNext()) { 
+					this.playerInitializingGrowthSpots.put(playerIds, itKeys);
+				} else {
+					this.playerInitializingGrowthSpots.remove(playerIds);
+					this.players.get(playerIds).get().setReady(true);
+					this.players.get(playerIds).get().setInitializingGrowthSpots(false);
+				}				
+				
+			} else {
+				this.playerInitializingGrowthSpots.remove(playerIds);
 			}
 		}
 		
@@ -1316,6 +1723,62 @@ public class WorldRoom extends WorldObject
 			}
 			this.containerEqBodyList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
 			this.containerEqBodyList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_WEAPON:
+			if (this.containerEqWeaponList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqWeaponList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqWeaponList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqWeaponList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqWeaponList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_HELMET:
+			if (this.containerEqHelmetList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqHelmetList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqHelmetList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqHelmetList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqHelmetList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_FEET:
+			if (this.containerEqFeetList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqFeetList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqFeetList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqFeetList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqFeetList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_SHIELD:
+			if (this.containerEqShieldList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqShieldList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqShieldList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqShieldList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqShieldList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_AMULET:
+			if (this.containerEqAmuletList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqAmuletList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqAmuletList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqAmuletList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqAmuletList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_GLOVE:
+			if (this.containerEqGloveList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqGloveList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqGloveList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqGloveList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqGloveList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_SHIRT:
+			if (this.containerEqShirtList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqShirtList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqShirtList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqShirtList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqShirtList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
+			break;
+		case CONTAINER_EQUIPMENT_TROUSERS:
+			if (this.containerEqTrousersList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
+				this.containerEqTrousersList.getForUpdate().get(playerName).getForUpdate().getItemList().remove(this.containerEqTrousersList.get().get(playerName).get().getContainerArray()[i][j]);
+			}
+			this.containerEqTrousersList.getForUpdate().get(playerName).getForUpdate().getItemList().put(serverItem.getId(), AppContext.getDataManager().createReference(serverItem));
+			this.containerEqTrousersList.getForUpdate().get(playerName).getForUpdate().getContainerArray()[i][j] = serverItem.getId();
 			break;
 		case CONTAINER_USE:
 			if (this.containerUseList.get().get(playerName).get().getContainerArray()[i][j].equals(BigInteger.valueOf(-1))) {
@@ -1358,4 +1821,65 @@ public class WorldRoom extends WorldObject
 	public void setMaxAreaInfluenceIndex(BigInteger maxAreaInfluenceIndex) {
 		this.maxAreaInfluenceIndex = maxAreaInfluenceIndex;
 	}
+
+	public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerAreaInfluence>>> getAreaInfluenceSendList() {
+		return areaInfluenceSendList;
+	}
+	
+	public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>>> getGrowthSpotList() {
+		return growthSpotList;
+	}
+
+	public BigInteger getMaxGrowthSpotIndex() {
+		return maxGrowthSpotIndex;
+	}
+
+	public void setMaxGrowthSpotIndex(BigInteger maxGrowthSpotIndex) {
+		this.maxGrowthSpotIndex = maxGrowthSpotIndex;
+	}
+
+	public ManagedReference<ScalableHashMap<BigInteger, ManagedReference<ServerGrowthSpot>>> getGrowthSpotSendList() {
+		return growthSpotSendList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqWeaponList() {
+		return containerEqWeaponList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqHelmetList() {
+		return containerEqHelmetList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqShieldList() {
+		return containerEqShieldList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqFeetList() {
+		return containerEqFeetList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqAmuletList() {
+		return containerEqAmuletList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqGloveList() {
+		return containerEqGloveList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqShirtList() {
+		return containerEqShirtList;
+	}
+
+	public ManagedReference<ScalableHashMap<String, ManagedReference<ServerContainer>>> getContainerEqTrousersList() {
+		return containerEqTrousersList;
+	}
+
+	public long getWorldTime() {
+		return worldTime;
+	}
+
+	public void setWorldTime(long worldTime) {
+		this.worldTime = worldTime;
+	}
+
 }

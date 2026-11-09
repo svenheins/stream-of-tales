@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects.agents;
 
 import java.awt.Point;
@@ -6,19 +12,16 @@ import java.util.ArrayList;
 
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
-import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.ObjectMapManager;
-import de.svenheins.objects.Entity;
-import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldLatticePosition;
 import de.svenheins.objects.WorldPosition;
 
 public class SimpleAgent extends Agent {
 
-	public SimpleAgent(TileSet tileSet, String name, BigInteger id, float x,
+	public SimpleAgent(TileSet tileSet, String name, String room,  BigInteger id, float x,
 			float y, long animationDelay) {
-		super(tileSet, name, id, x, y, animationDelay);
+		super(tileSet, name, room, id, x, y, animationDelay);
 //		this.setMY(0.0f);
 //		this.setMY(0.0f);
 		this.setMaxSpeed(150.0f);
@@ -312,8 +315,9 @@ public class SimpleAgent extends Agent {
 	/** check if the tile is valid (no collision-tile) and then check how to rank this tile in the lists */
 	public void checkTile(PathTile originTile, WorldPosition tileWorldPosition, ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
 		WorldLatticePosition tileWorldLatticePosition = WorldLatticePosition.getWorldLatticePosition(tileWorldPosition);
-		if ((collisionMap1.checkCollision(tileWorldLatticePosition.getMapCoordinates(), tileWorldLatticePosition.getLocalX(), tileWorldLatticePosition.getLocalY() ) ) ||
-				(collisionMap2.checkCollision(tileWorldLatticePosition.getMapCoordinates(), tileWorldLatticePosition.getLocalX(), tileWorldLatticePosition.getLocalY() ) )) {
+		int tileCollision1 =collisionMap1.checkCollision(tileWorldLatticePosition.getMapCoordinates(), tileWorldLatticePosition.getLocalX(), tileWorldLatticePosition.getLocalY() ) ;
+		int tileCollision2 =collisionMap2.checkCollision(tileWorldLatticePosition.getMapCoordinates(), tileWorldLatticePosition.getLocalX(), tileWorldLatticePosition.getLocalY() ) ; 
+		if ((tileCollision1!=0) ||	(tileCollision2!=0)) {
 			/** collision!!! */
 			// do nothing
 		} else {
@@ -344,8 +348,9 @@ public class SimpleAgent extends Agent {
 	}
 	
 	public void checkFirstTiles(PathTile tile,ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
-		if ((collisionMap1.checkCollision(tile.getPosition().getMapCoordinates(), tile.getPosition().getLocalX(), tile.getPosition().getLocalY() ) ) ||
-				(collisionMap2.checkCollision(tile.getPosition().getMapCoordinates(), tile.getPosition().getLocalX(), tile.getPosition().getLocalY() ) )) {
+		int tileCollision1 =collisionMap1.checkCollision(tile.getPosition().getMapCoordinates(), tile.getPosition().getLocalX(), tile.getPosition().getLocalY() ) ; 
+		int tileCollision2 = collisionMap2.checkCollision(tile.getPosition().getMapCoordinates(), tile.getPosition().getLocalX(), tile.getPosition().getLocalY() ) ; 
+		if ((tileCollision1!=0) ||(tileCollision2!=0)) {
 			/** collision!!! */
 			// do nothing
 		} else {

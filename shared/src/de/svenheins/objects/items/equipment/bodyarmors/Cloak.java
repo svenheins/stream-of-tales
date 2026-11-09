@@ -1,43 +1,38 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects.items.equipment.bodyarmors;
 
 import java.math.BigInteger;
 
 import de.svenheins.main.AttributeType;
-import de.svenheins.main.GameStates;
-import de.svenheins.objects.Entity;
-import de.svenheins.objects.TileSet;
-import de.svenheins.objects.items.Item;
 import de.svenheins.objects.items.equipment.BodyArmor;
 
 public class Cloak extends BodyArmor{
-	private float[] standardAttributes = new float[AttributeType.values().length];
 
-//	public Cloak(BigInteger id, float x, float y, float[] attributes) {
-//		super(id);
-//		this.setName("Cloak");
-////		TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", this.getName(), GameStates.itemTileWidth, GameStates.itemTileHeight);
-//		TileSet cloakTileSet = new TileSet(GameStates.standardTilePathItems+"cloak.png", this.getName(), Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight);
-//		Entity itemEntity = new Entity(cloakTileSet, this.getName(), id, x, y, GameStates.animationDelayItems);
-//		this.setX(x);
-//		this.setY(y);
-//		this.setEntity(itemEntity);
-//		this.setAttributes(attributes);
-//		
-//	}
-
-	public Cloak(BigInteger id, float x, float y) {
-		super(id);
-		this.setName("Cloak");
-//		TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", this.getName(), GameStates.itemTileWidth, GameStates.itemTileHeight);
-		TileSet cloakTileSet = new TileSet(GameStates.standardTilePathItems+"cloak.png", this.getName(), Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight);
-		Entity itemEntity = new Entity(cloakTileSet, this.getName(), id, x, y, GameStates.animationDelayItems);
-		this.setX(x);
-		this.setY(y);
-		this.setEntity(itemEntity);
-		
-		standardAttributes[AttributeType.ARMOR.ordinal()] = 3.0f;
-		standardAttributes[AttributeType.LIFEREGENERATION.ordinal()] = 3.0f;
-		this.setAttributes(standardAttributes);
-		
+	public Cloak(BigInteger id, String room, float x, float y) {
+		super(id, "Cloak", room, x, y);
 	}
+	
+	public Cloak() {
+		super("Cloak");
+	}
+
+
+@Override
+protected void configStandardAttributes() {
+	standardAttributes[AttributeType.ARMOR.ordinal()] = 3.0f;
+	setLevel(Integer.valueOf(1));
+}
+
+@Override
+protected void defineIngredients() {
+	this.addIngredient("Wood", 10);
+}
+
+
+	
 }

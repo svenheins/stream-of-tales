@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import de.svenheins.main.GameStates;
@@ -16,6 +22,15 @@ public class WorldPosition {
 		this.y = y;
 		this.room = "";
 //		this.room = room;
+	}
+	
+	public WorldPosition(String room, float x,
+			float y) {
+		super();
+
+		this.x = x;
+		this.y = y;
+		this.room = room;
 	}
 	
 	public static WorldPosition getWorldPosition(WorldLatticePosition position) {

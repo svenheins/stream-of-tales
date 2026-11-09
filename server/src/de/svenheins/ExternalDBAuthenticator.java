@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins;
 
 /**	External DataBase Authenticator:  An easy way to authenticate your RDS users against
@@ -21,7 +27,6 @@ import com.sun.sgs.auth.IdentityCredentials;
 import com.sun.sgs.impl.auth.IdentityImpl;
 import com.sun.sgs.impl.auth.NamePasswordCredentials;
 
-import com.mysql.jdbc.Driver;
 
 import java.sql.*;
 //import java.lang.ClassNotFoundException;

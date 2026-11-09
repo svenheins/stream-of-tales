@@ -1,0 +1,16 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
+package de.svenheins.main;
+
+public enum ItemProperty {
+	WIDTHARMOR, HEIGHTARMOR, XARMOR, YARMOR, WIDTHWEAPON, HEIGHTWEAPON, 
+	XWEAPON, YWEAPON, WIDTHHELMET, HEIGHTHELMET, XHELMET, YHELMET,
+	WIDTHFEET, HEIGHTFEET, XFEET, YFEET, WIDTHSHIELD, HEIGHTSHIELD,
+	XSHIELD, YSHIELD, XAMULET, YAMULET, XGLOVE, YGLOVE, XSHIRT, YSHIRT, 
+	XTROUSERS, YTROUSERS, WIDTHAMULET, HEIGHTAMULET, WIDTHGLOVE, HEIGHTGLOVE,
+	WIDTHSHIRT, HEIGHTSHIRT, WIDTHTROUSERS, HEIGHTTROUSERS,
+}

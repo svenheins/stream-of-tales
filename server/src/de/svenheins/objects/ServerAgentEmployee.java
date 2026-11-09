@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.awt.Point;
@@ -19,9 +25,9 @@ public class ServerAgentEmployee extends ServerAgent  {
 	private boolean settled;
 
 
-	public ServerAgentEmployee(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x,
+	public ServerAgentEmployee(ServerSprite sprite, String name, String room, BigInteger id, String tileSetName, String tileSetPathName, float x,
 			float y, float mx, float my) {
-		super(sprite, id, tileSetName, tileSetPathName, x, y, mx, my);
+		super(sprite, name, room, id, tileSetName, tileSetPathName, x, y, mx, my);
 		this.settled = false;
 	}
 
@@ -34,7 +40,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 				/** be lucky and stay here */
 				setDesiredPosition((float)this.getX(), (float)this.getY());
 				setMovement(0, 0);
-				if( ((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).addResident(new Point((int) this.getX(), (int) this.getY()))) {
+				if( ((ServerRegion) this.getWorldRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).addResident(new Point((int) this.getX(), (int) this.getY()))) {
 					/** be happy */
 					this.setSatisfaction(1.0f);
 					this.setSettled(true);
@@ -87,7 +93,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 		float desY = localY;
 		float distance = this.range;
 		float tempDistance =0;
-		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces().get().values()) {
+		for(ManagedReference<ServerSpace> serverSpace : this.getWorldRoom().getSpaces().get().values()) {
 //			if(new Random().nextBoolean()) continue;
 			ServerSpace s_space = serverSpace.get();
 			
@@ -143,7 +149,7 @@ public class ServerAgentEmployee extends ServerAgent  {
 					desY = (float) potentialPoint.y;
 					setDesiredPosition(desX, desY);
 					this.setRegion(s_space.getId());
-					return;
+//					return;
 //						}
 						/** if we come here, no free point was found inside the POLYGON*/
 						
@@ -172,8 +178,8 @@ public class ServerAgentEmployee extends ServerAgent  {
 	public boolean validateGoal() {
 		Point myPosition = new Point ((int) this.getX(), (int) this.getY());
 		if (this.getRegion() != null) {
-			ArrayList<Point> blockedPoints =((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).get()).getBlockedPoints();
-			if (blockedPoints.size() < ((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).get()).getResidents().size()) {
+			ArrayList<Point> blockedPoints =((ServerRegion) this.getWorldRoom().getSpaces().get().get(this.getRegion()).get()).getBlockedPoints();
+			if (blockedPoints.size() < ((ServerRegion) this.getWorldRoom().getSpaces().get().get(this.getRegion()).get()).getResidents().size()) {
 				return false;
 			} else
 				return true;

@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.functions;
 
 import java.awt.Point;
@@ -6,19 +12,19 @@ import java.lang.Math;
 import java.util.Random;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateList;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.operation.distance.DistanceOp;
 
+import de.svenheins.main.GameStates;
+import de.svenheins.objects.WorldPosition;
 import math.geom2d.Point2D;
 import math.geom2d.polygon.SimplePolygon2D;
 
 public class MyMath {
 	public static GeometryFactory geoFactory = new GeometryFactory();
-
+	public static Random random = new Random();
+	
 	/*This function will return the determinant of any two dimensional matrix. For this particular function a two dimensional double matrix needs to be passed as arguments - Avishek Ghosh*/
 
 	public static double determinant(double[][] mat) {
@@ -138,6 +144,14 @@ public class MyMath {
 		return distance;		
 	}
 	
+	/** returns the distance between two points */
+	public static double getDistance(WorldPosition pointA, WorldPosition pointB) {
+		if(pointA.getRoom().equals(pointB.getRoom())) {
+		double distance = Math.sqrt((pointA.getX()-pointB.getX())*(pointA.getX()-pointB.getX())+(pointA.getY()-pointB.getY())*(pointA.getY()-pointB.getY()));
+		return distance;		
+		} else return Double.MAX_VALUE;
+	}
+	
 	/** get nearest Point between polygon and point */
 	public static Point getNearest(Polygon polygon, Point point) {
 		com.vividsolutions.jts.geom.Point co_point = geoFactory.createPoint(new Coordinate(point.x, point.y));
@@ -241,4 +255,93 @@ public class MyMath {
 	}
 	
 	
+	/** trim a gaussian value to 99% percentil (3x standadrDeviation values) */ 
+	public static float getTrimmedGaussian(float mean) {
+		float standardDeviation = GameStates.standardDeviationItemCount*mean;
+		
+		float retValue  = (float) (random.nextGaussian()*standardDeviation+mean);
+		if (retValue < mean -3*standardDeviation) retValue = mean -3*standardDeviation;
+		if (retValue > mean + 3*standardDeviation) retValue =mean +3*standardDeviation;
+		
+		return retValue;
+	}
+	
+	/** same for array (as above)*/
+	public static float[] getTrimmedGaussianArray(float[] means) {
+		float[] retValues = means;
+		for (int i = 0; i < means.length; i++) {
+			if (means[i] != 0) retValues[i] = getTrimmedGaussian(means[i]);
+		}
+		return retValues;
+	}
+	
+	/** normalize an int to a min and max value */
+	public static int normalizeToMinMax(int attribute, int attributeMinimum, int attributeMaximum) {
+		if (attribute > attributeMaximum) return attributeMaximum; else
+		if (attribute < attributeMinimum) return attributeMinimum; else
+			return attribute;
+	}
+	
+	/** calculate distance of 3D double */
+	public static double getDistance3D(double x1, double x2, double x3, double y1, double y2, double y3) {
+		return Math.sqrt((x1-y1)*(x1-y1)+(x2-y2)*(x2-y2)+(x3-y3)*(x3-y3));
+	}
+	
+	/** calculate distance of 3D double */
+	public static double getColorDistance3D(double x1, double x2, double x3, double y1, double y2, double y3) {
+		double minx = Math.min(Math.min(x1, x2), x3);
+		double miny = Math.min(Math.min(y1, y2), y3);
+		double maxx = Math.max(Math.max(x1, x2), x3);
+		double maxy = Math.max(Math.max(y1, y2), y3);
+		double x11 = x1;
+		double x21 = x2;
+		double x31 = x3;
+		double y11 = y1;
+		double y21 = y2;
+		double y31 = y3;
+		if (maxx - minx > 0.25) {
+			if (maxx - x1 > 0.5) x11 = 0;
+			if (x1 - minx < 0.12) x11 = 0;
+		}
+		if (maxx - minx > 0.25) {
+			if (maxx - x2 > 0.5) x21 = 0;
+			if (x2 - minx < 0.12) x21 = 0;
+		}
+		if (maxx - minx > 0.25) {
+			if (maxx - x3 > 0.5) x31 = 0;
+			if (x3 - minx < 0.12) x31 = 0;
+		}
+		if (maxy - miny > 0.25) {
+			if (maxy - y1 > 0.5) y11 = 0;
+			if (y1 - miny < 0.12) y11 = 0;
+		}
+		if (maxy - miny > 0.25) {
+			if (maxy - y2 > 0.5) y21 = 0;
+			if (y2 - miny < 0.12) y21 = 0;
+		}
+		if (maxy - miny > 0.25) {
+			if (maxy - y3 > 0.5) y31 = 0;
+			if (y3 - miny < 0.12) y31 = 0;
+		}
+//		System.out.println(Math.sqrt((x11-y11)*(x11-y11)+(x21-y21)*(x21-y21)+(x31-y31)*(x31-y31)));
+		return Math.sqrt((x11-y11)*(x11-y11)+(x21-y21)*(x21-y21)+(x31-y31)*(x31-y31));
+	}
+	
+	/** calculate distance of 3D double */
+	public static double getQuadraticDistance3D(double x1, double x2, double x3, double y1, double y2, double y3) {
+		double minx = Math.min(Math.min(x1, x2), x3);
+		double miny = Math.min(Math.min(y1, y2), y3);
+		double x11 = x1-minx;
+		double x21 = x2-minx;
+		double x31 = x3-minx;
+		double y11 = y1-miny;
+		double y21 = y2-miny;
+		double y31 = y3-miny;
+		return Math.sqrt((x11*x11-y11*y11)*(x11*x11-y11*y11)+(x21*x21-y21*y21)*(x21*x21-y21*y21)+(x31*x31-y31*y31)*(x31*x31-y31*y31));
+	}
+	
+	/** calculate distance of 3D double */
+	public static double getCubicDistance3D(double x1, double x2, double x3, double y1, double y2, double y3) {
+		return Math.sqrt((x1*x1*x1-y1*y1*y1)*(x1*x1*x1-y1*y1*y1)+(x2*x2*x2-y2*y2*y2)*(x2*x2*x2-y2*y2*y2)+(x3*x3*x3-y3*y3*y3)*(x3*x3*x3-y3*y3*y3));
+	}
 }

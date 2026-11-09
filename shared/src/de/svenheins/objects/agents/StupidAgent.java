@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects.agents;
 
 import java.awt.Point;
@@ -12,9 +18,9 @@ import de.svenheins.objects.WorldPosition;
 
 public class StupidAgent extends Agent {
 
-	public StupidAgent(TileSet tileSet, String name, BigInteger id, float x,
+	public StupidAgent(TileSet tileSet, String name, String room, BigInteger id, float x,
 			float y, long animationDelay) {
-		super(tileSet, name, id, x, y, animationDelay);
+		super(tileSet, name, room, id, x, y, animationDelay);
 		// TODO Auto-generated constructor stub
 		this.setMaxSpeed(150.0f);
 	}
@@ -126,7 +132,7 @@ public class StupidAgent extends Agent {
 	}
 	
 	
-	protected WorldPosition getActualPathElement() {
+	public WorldPosition getActualPathElement() {
 		if (this.getActualGoal() != null)		
 		return this.getActualGoal().getPosition();
 		else return null;

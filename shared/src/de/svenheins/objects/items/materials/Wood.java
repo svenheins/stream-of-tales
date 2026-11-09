@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects.items.materials;
 
 import java.math.BigInteger;
@@ -11,22 +17,29 @@ import de.svenheins.objects.items.Material;
 
 public class Wood extends Material {
 	
+	public Wood() {
+		super(ITEMCODE.WOOD, "Wood");
+		this.setStandardCount(10);
+		this.setCapacity(GameStates.itemMaterialCapacity);
+	}
 
-
-	public Wood(BigInteger id, float x, float y) {
-		super(id);
+	public Wood(BigInteger id, String room, float x, float y) {
+		super(id, room);
 		this.setItemCode(ITEMCODE.WOOD);
 		this.setCount(1);
 		this.setCapacity(GameStates.itemMaterialCapacity);
-		this.setName("wood");
+		this.setName("Wood");
 //		TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", this.getName(), GameStates.itemTileWidth, GameStates.itemTileHeight);
-		TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+"wood2.png", this.getName(), Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight);
-		Entity itemEntity = new Entity(woodTileSet, this.getName(), id, x, y, GameStates.animationDelayItems);
+		TileSet woodTileSet = new TileSet(GameStates.standardTilePathItems+this.getName()+".png", this.getName(), Item.tileSetX, Item.tileSetY, Item.tileSetWidth, Item.tileSetHeight);
+		Entity itemEntity = new Entity(woodTileSet, this.getName(), room, id, x, y, GameStates.animationDelayItems);
 		this.setX(x);
 		this.setY(y);
 		this.setEntity(itemEntity);
+		this.setStandardCount(10);
 	}
 
+	
+	
 	@Override
 	public void place() {
 		// TODO Auto-generated method stub
@@ -61,6 +74,20 @@ public class Wood extends Material {
 	public void remove(int count) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	protected void defineIngredients() {
+		
+	}
+
+	@Override
+	protected void defineCraftList() {
+		this.addCraftItem("WoodenSword", 1);
+		this.addCraftItem("Shovel", 10);
+		this.addCraftItem("Campfire", 1);
+		this.addCraftItem("LeatherGlove", 1);
+		this.addCraftItem("StoneAxe", 1);
 	}
 
 }

@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.managers;
 
 import java.util.ArrayList;
@@ -11,6 +17,7 @@ import de.svenheins.objects.WorldLatticePosition;
 public class InteractionManager {
 	public static HashMap<WorldLatticePosition, InteractionTile> interactionList = new HashMap<WorldLatticePosition, InteractionTile>();
 	public static ArrayList<WorldLatticePosition> idList = new ArrayList<WorldLatticePosition>();
+	public static String sound= "empty";
 	
 	public static int[] interact(InteractionTile iTile) {
 		int[] retValues;
@@ -38,8 +45,6 @@ public class InteractionManager {
 			iTile.setValues(interactionArea.getValues());
 			interactionList.put(position, iTile);
 			idList.add(position);
-//			System.out.println("interactionList.size = "+interactionList.size());
-//			System.out.println("idList size: "+idList.size());
 			
 			retValues = iTile.getValues();
 		}
@@ -53,9 +58,13 @@ public class InteractionManager {
 		WorldLatticePosition position;
 		for (int i = idList.size()-1; i >= 0; i--) {
 			position = idList.get(i);
-			if (timeStamp- interactionList.get(position).getCreationTime() > GameStates.interactionMaximumLifeDuration) {
-				/** delete interaction */
-				remove(position);
+			if (position != null) {
+				if (interactionList.get(position)!= null) {
+					if (timeStamp- interactionList.get(position).getCreationTime() > GameStates.interactionMaximumLifeDuration) {
+						/** delete interaction */
+						remove(position);
+					}
+				}
 			}
 		}
 //		System.out.println("Length of InteractionList = "+interactionList.size());

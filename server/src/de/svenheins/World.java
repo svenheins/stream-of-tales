@@ -22,14 +22,11 @@
 package de.svenheins;
 
 import java.awt.GraphicsEnvironment;
-import java.awt.Polygon;
 import java.io.File;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -52,17 +49,14 @@ import com.sun.sgs.app.TaskManager;
 
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
-import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
 import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.SpriteManager;
+import de.svenheins.managers.TileSetManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
-import de.svenheins.objects.PlayerEntity;
-import de.svenheins.objects.ServerAgent;
-import de.svenheins.objects.ServerAgentEmployee;
 import de.svenheins.objects.ServerAgentEntrepreneur;
 import de.svenheins.objects.ServerEntity;
 import de.svenheins.objects.ServerRegion;
@@ -70,7 +64,7 @@ import de.svenheins.objects.ServerSpace;
 import de.svenheins.objects.ServerSprite;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.Sprite;
-import de.svenheins.objects.TileSet;
+import de.svenheins.objects.items.ItemFactoryCollection;
 
 /**
  * World-Object
@@ -106,6 +100,8 @@ public class World
     private Set<ManagedReference<UpdateWorldTaskSimple>> uwtSimple = new HashSet<ManagedReference<UpdateWorldTaskSimple>>();
     
     private Set<ManagedReference<UpdateWorldItems>> uItemsSimple = new HashSet<ManagedReference<UpdateWorldItems>>();
+    private Set<ManagedReference<UpdateWorldAreaInfluence>> uAreaInfluence = new HashSet<ManagedReference<UpdateWorldAreaInfluence>>();
+    private Set<ManagedReference<UpdateWorldGrowthSpot>> uGrowthSpot = new HashSet<ManagedReference<UpdateWorldGrowthSpot>>();
     
     /** A Set reference to each of the Update Task and the sendTask */
     private Set<ManagedReference<SendUpdatePlayersSpaces>> supsSimple = new HashSet<ManagedReference<SendUpdatePlayersSpaces>>();
@@ -139,7 +135,16 @@ public class World
     
     /**  The timestamp when this task was last run. */
     private long lastTimestamp = System.currentTimeMillis();
-
+    
+    /** global time on the server */
+    private long worldTime = 0; 
+    private long systemNow = System.currentTimeMillis();
+//	private final long seconds = 60*60*24;
+//	private float factorSeconds = seconds/60; 
+//	private long twentyfourTime = (worldTime/1000) % seconds;
+//	private long twentyfourFaster = (long) (twentyfourTime * factorSeconds);
+//	private double piTime = ((double)(twentyfourFaster)/seconds)*Math.PI*2; 
+//	private double light = (Math.sin(piTime)+1)/2;
  
 
     /**
@@ -199,6 +204,7 @@ public class World
     	
     	logger.info("Initializing World");
 
+    	ItemFactoryCollection.init();
     	initializeTileSetManager();
     	
         // Create the Room
@@ -229,7 +235,7 @@ public class World
         
         /** Create ServerAgents (extend Entities) */
         Entity realAgent;
-        String iterativSpriteStringAgent = GameStates.standardTilePathPlayers+"standardShip_green.png";
+        String iterativSpriteStringAgent = GameStates.standardTilePathPlayers+"standardPlayer_20Width52Height_final_red.png";
         Sprite it_spriteAgent = SpriteManager.manager.getSprite(iterativSpriteStringAgent);
 //        TileSet tileSetEnemy = new TileSet("eye12.png", "enemy", 10, 6);
         ServerSprite it_s_spriteAgent = new ServerSprite(iterativSpriteStringAgent, it_spriteAgent.getHeight(), it_spriteAgent.getWidth());
@@ -243,7 +249,7 @@ public class World
         	it_mx = (float) (-10+Math.random()*30);//Math.random()*50+0;
         	it_my = (float) (-10+Math.random()*30);//Math.random()*50+0;
         	entityIDIndex = entityIDIndex.add(BigInteger.valueOf(1));
-        	it_s_entityAgent = new ServerAgentEntrepreneur(it_s_spriteAgent, entityIDIndex, "standardShip_green", iterativSpriteStringAgent, it_x, it_y, it_mx, it_my);
+        	it_s_entityAgent = new ServerAgentEntrepreneur(it_s_spriteAgent, "standardShip_green", "", entityIDIndex,  "standardShip_green", iterativSpriteStringAgent, it_x, it_y, it_mx, it_my);
         	//it_s_entityAgent.setName("enemy");
 //        	it_s_entityAgent.setTileSetName("standardShip_green");
 //        	it_s_entityAgent.setTileSetPathName(iterativSpriteStringAgent);
@@ -301,10 +307,7 @@ public class World
 	        for (int i = 0; i<rowsHexagons*colsHexagons; i++) {
 	        	spaceIds = spaceIds.add(BigInteger.valueOf(1));
 	        	int[] rgb = MyUtil.niceColorGenerator();
-	
-//	            hexaSpace = new Space(hexaString, spaceIds, rgb, true, 1.0f, 6000.0f);
 	        	hexaSpace = new Space( "Rechteck.svg", BigInteger.valueOf(0),GameStates.standardBackgroundTexture , 1.0f);
-//	        	hexaSpace.setTexture("/ressources/images/admin_DUENE.JPG");
 	        	hexaSpace.scale(10000.0f);
 	            setOffX = -hexaSpace.getWidth()/2 -10; //- (hexaSpace.getWidth()*colsHexagons/(2.5f));
 	            setOffY = -hexaSpace.getHeight()/2; //- (hexaSpace.getHeight()*rowsHexagons/(2*2.0f));
@@ -359,7 +362,15 @@ public class World
         /** add item update task */
         UpdateWorldItems uit = new UpdateWorldItems(room, 0, 0, 10);
         addUpdateItemsTask(uit);
+        
+        /** add areaInfluence update task */
+        UpdateWorldAreaInfluence uwait = new UpdateWorldAreaInfluence(room, 0, 0, 10);
+        addUpdateAreaInfluenceTask(uwait);
        
+        /** add growthSpot update task */
+        UpdateWorldGrowthSpot uwgs = new UpdateWorldGrowthSpot(room, 0, 0, 10);
+        addUpdateGrowthSpotTask(uwgs);
+        
         /** create Space-Tasks */
         begin = 0;
         countPackets = 1;//(1+(room.getCountSpaces()/200));
@@ -405,6 +416,9 @@ public class World
         /** create Init tasks */
         InitializePlayersTask initTask = new InitializePlayersTask(room, 0, 0, 0);
         addInitializeTask(initTask);
+        
+        this.setWorldTime(0);
+        logger.info("WorldTime initialized: "+this.getWorldTime());
         
         logger.info("World Initialized");
     }
@@ -471,7 +485,16 @@ public class World
     public void run() throws Exception {
     	        /** Here everything is already initialized, so we can start computing*/
 //		    	initFirstStart();
-	        	
+    			if (TileSetManager.manager.getSize() <= 0){
+    				ItemFactoryCollection.init();
+    				initializeTileSetManager();
+    			}
+    			
+    			/** update time */
+    			worldTime += (System.currentTimeMillis()-systemNow);
+    			this.getRoom().setWorldTime(worldTime);
+    			systemNow = System.currentTimeMillis();
+    			
 	        	/** Start Entity Tasks */
 	        	UpdateWorldTaskSimple uwtReal;
 		    	for(ManagedReference<UpdateWorldTaskSimple> uwt: uwtSimple) {
@@ -489,6 +512,20 @@ public class World
 		    	for(ManagedReference<UpdateWorldItems> uitTemp: uItemsSimple) {
 		    		uit = uitTemp.get();
 		    		uit.run();
+		    	}
+		    	
+		    	/** start areaInfluence task */
+		    	UpdateWorldAreaInfluence uwai;
+		    	for(ManagedReference<UpdateWorldAreaInfluence> uwaiTemp: uAreaInfluence) {
+		    		uwai = uwaiTemp.get();
+		    		uwai.run();
+		    	}
+		    	
+		    	/** start growthSpot task */
+		    	UpdateWorldGrowthSpot uwgs;
+		    	for(ManagedReference<UpdateWorldGrowthSpot> uwgsTemp: uGrowthSpot) {
+		    		uwgs = uwgsTemp.get();
+		    		uwgs.run();
 		    	}
 		    	
 		    	/** Start Space Tasks */
@@ -681,6 +718,32 @@ public class World
 	    return uItemsSimple.add(dataManager.createReference(uit));
 	}
 	
+	/** add an additional UpdateTask (size depends on Entities) */
+	public boolean addUpdateAreaInfluenceTask(UpdateWorldAreaInfluence uwait) {
+	    logger.log(Level.INFO, "{0} placed in {1}",
+	        new Object[] { uwait, this });
+	
+	    // NOTE: we can't directly save the item in the list, or
+	    // we'll end up with a local copy of the item. Instead, we
+	    // must save a ManagedReference to the item.
+	
+	    DataManager dataManager = AppContext.getDataManager();
+	    dataManager.markForUpdate(this);
+	
+	    return uAreaInfluence.add(dataManager.createReference(uwait));
+	}
+	
+	/** add an additional UpdateTask (size depends on Entities) */
+	public boolean addUpdateGrowthSpotTask(UpdateWorldGrowthSpot uwgs) {
+	    logger.log(Level.INFO, "{0} placed in {1}",
+	        new Object[] { uwgs, this });
+	
+	    DataManager dataManager = AppContext.getDataManager();
+	    dataManager.markForUpdate(this);
+	
+	    return uGrowthSpot.add(dataManager.createReference(uwgs));
+	}
+	
 	/** add an additional Space-UpdateTask (size depends on Spaces) */
 	public boolean addUpdateTaskSpaces(UpdateWorldSpaces uws) {
 	    logger.log(Level.INFO, "{0} placed in {1}",
@@ -814,19 +877,59 @@ public class World
 		
 		
 		public void initializeTileSetManager() {
+//			ImageIO.scanForPlugins();
+			
+			
+			
+			TileSetManager.manager.init();
+			
 			// just add all TileSets
-			TileSet tileSet = new TileSet(GameStates.standardTileNamePlayer, "shipTileName", GameStates.playerTileWidth, GameStates.playerTileHeight);
-			TileSet tileSet2 = new TileSet("tilesets/entities/standardShip.png", "shipTileName2", GameStates.playerTileWidth, GameStates.playerTileHeight);
-			TileSet tileSet_green = new TileSet("tilesets/entities/standardShip_green.png", "shipTileName_green", GameStates.playerTileWidth, GameStates.playerTileHeight);
-			TileSet tileSet_yellow = new TileSet("tilesets/entities/standardShip_yellow.png", "shipTileName_yellow", GameStates.playerTileWidth, GameStates.playerTileHeight);
-			TileSet tileSet_blue = new TileSet("tilesets/entities/standardShip_blue.png", "shipTileName_blue", GameStates.playerTileWidth, GameStates.playerTileHeight);
+//			TileSet tileSetStandardPlayer = new TileSet(GameStates.tileNameStandardPlayer, GameStates.nameStandardPlayer, (int)GameStates.getPlayerProperty(GameStates.nameStandardPlayer, PlayerProperty.WIDTH),(int) GameStates.getPlayerProperty(GameStates.nameStandardPlayer, PlayerProperty.HEIGHT));
+//			TileSet tileSetDwarf = new TileSet(GameStates.tileNameDwarf, GameStates.nameDwarf, (int)GameStates.getPlayerProperty(GameStates.nameDwarf, PlayerProperty.WIDTH),(int) GameStates.getPlayerProperty(GameStates.nameDwarf, PlayerProperty.HEIGHT));
+//			
+//			TileSet tileSetAgent = new TileSet(GameStates.standardTileNameAgent, "agentTileName", (int)GameStates.getPlayerProperty(GameStates.nameStandardPlayer, PlayerProperty.WIDTH),(int) GameStates.getPlayerProperty(GameStates.nameStandardPlayer, PlayerProperty.HEIGHT));
+//			TileSet tileSet_SA = new TileSet(GameStates.standardTileNameAgent, "standardAgent", 32, 64);
+//			TileSet tileSet_SA_Player = new TileSet(GameStates.tileNameStandardPlayer, "standardPlayerAgent", 32, 64);
+//			TileSet tileSet_SA_Blue = new TileSet(GameStates.standardTileNameAgentBlue, "standardAgentBlue", 32, 64);
+//			TileSetManager.manager.add(GameStates.nameStandardPlayer, tileSetStandardPlayer);
+//			TileSetManager.manager.add(GameStates.nameDwarf, tileSetDwarf);
+//			TileSetManager.manager.add("standardAgentBlue", tileSet_SA_Blue);
+//			TileSetManager.manager.add("standardPlayerAgent", tileSet_SA_Player);
+//			TileSetManager.manager.add("standardAgent", tileSet_SA);
+//			
+//			/** add itemEquipGraphics */
+//			TileSet tileSetEquipStandardPlayerCloak = new TileSet(GameStates.standardTilePathItems+GameStates.itemEquipPrefix+GameStates.nameStandardPlayer+"Cloak.png", GameStates.itemEquipPrefix+GameStates.nameStandardPlayer+"Cloak", GameStates.getItemProperty(GameStates.nameStandardPlayer, ItemProperty.WIDTHARMOR), GameStates.getItemProperty(GameStates.nameStandardPlayer, ItemProperty.HEIGHTARMOR));
+//			TileSetManager.manager.add(tileSetEquipStandardPlayerCloak.getName(), tileSetEquipStandardPlayerCloak);
+//			/** add itemEquipGraphics */
+//			TileSet tileSetEquipStandardPlayerShoe = new TileSet(GameStates.standardTilePathItems+GameStates.itemEquipPrefix+GameStates.nameStandardPlayer+"Shoe.png", GameStates.itemEquipPrefix+GameStates.nameStandardPlayer+"Shoe", GameStates.getItemProperty(GameStates.nameStandardPlayer, ItemProperty.WIDTHFEET), GameStates.getItemProperty(GameStates.nameStandardPlayer, ItemProperty.HEIGHTFEET));
+//			TileSetManager.manager.add(tileSetEquipStandardPlayerShoe.getName(), tileSetEquipStandardPlayerShoe);
+//			
+//			/** add itemEquipGraphics */
+//			TileSet tileSetEquipDwarfCloak = new TileSet(GameStates.standardTilePathItems+GameStates.itemEquipPrefix+GameStates.nameDwarf+"Cloak.png", GameStates.itemEquipPrefix+GameStates.nameDwarf+"Cloak", GameStates.getItemProperty(GameStates.nameDwarf, ItemProperty.WIDTHARMOR), GameStates.getItemProperty(GameStates.nameDwarf, ItemProperty.HEIGHTARMOR));
+//			TileSetManager.manager.add(tileSetEquipDwarfCloak.getName(), tileSetEquipDwarfCloak);
+//			/** add itemEquipGraphics */
+//			TileSet tileSetEquipDwarfShoe = new TileSet(GameStates.standardTilePathItems+GameStates.itemEquipPrefix+GameStates.nameDwarf+"Shoe.png", GameStates.itemEquipPrefix+GameStates.nameDwarf+"Shoe", GameStates.getItemProperty(GameStates.nameDwarf, ItemProperty.WIDTHFEET), GameStates.getItemProperty(GameStates.nameDwarf, ItemProperty.HEIGHTFEET));
+//			TileSetManager.manager.add(tileSetEquipDwarfShoe.getName(), tileSetEquipDwarfShoe);
+			
+//			TileSet tileSet2 = new TileSet("tilesets/entities/standardShip.png", "standardPlayer", GameStates.standardPlayerTileWidth, GameStates.standardPlayerTileHeight);
+//			TileSet tileSet_green = new TileSet("tilesets/entities/standardShip_green.png", "shipTileName_green", GameStates.playerTileWidth, GameStates.playerTileHeight);
+//			TileSet tileSet_yellow = new TileSet("tilesets/entities/standardShip_yellow.png", "shipTileName_yellow", GameStates.playerTileWidth, GameStates.playerTileHeight);
+//			TileSet tileSet_blue = new TileSet("tilesets/entities/standardShip_blue.png", "shipTileName_blue", GameStates.playerTileWidth, GameStates.playerTileHeight);
 //			TileSet tileSet_player = new TileSet("tilesets/entities/player.png", "playerEntity", 32, 64);
-			PlayerEntity playerEntity2 = new PlayerEntity(tileSet2, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new PlayerEntity(tileSet, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new PlayerEntity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new PlayerEntity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
-			playerEntity2 = new PlayerEntity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+//			PlayerEntity playerEntity2 = new PlayerEntity(tileSet2, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+//			playerEntity2 = new PlayerEntity(tileSet, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+//			playerEntity2 = new PlayerEntity(tileSet_green, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+//			playerEntity2 = new PlayerEntity(tileSet_yellow, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+//			playerEntity2 = new PlayerEntity(tileSet_blue, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
 //			playerEntity2 = new PlayerEntity(tileSet_player, "localPlayer2", BigInteger.valueOf(0), 0, 0, GameStates.animationDelay);
+		}
+
+		public long getWorldTime() {
+			return worldTime;
+		}
+
+		public void setWorldTime(long worldTime) {
+			this.worldTime = worldTime;
 		}
 		
 	 

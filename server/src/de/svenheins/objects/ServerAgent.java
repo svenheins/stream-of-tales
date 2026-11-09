@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 
@@ -19,9 +25,9 @@ public class ServerAgent extends ServerEntity {
 	protected float range;
 	protected BigInteger regionID = null;
 
-	public ServerAgent(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x, float y,
+	public ServerAgent(ServerSprite sprite, String name, String room, BigInteger id, String tileSetName, String tileSetPathName, float x, float y,
 			float mx, float my) {
-		super(sprite, id, tileSetName, tileSetPathName, x, y, mx, my);
+		super(sprite, name, room, id, tileSetName, tileSetPathName, x, y, mx, my);
 		satisfaction = 0;
 		this.range = 10000;
 		goal = false;

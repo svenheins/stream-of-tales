@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.awt.Point;
@@ -13,6 +19,7 @@ public class LocalObject {
 	protected float maxSpeed;
 	protected BigInteger id;
 	protected String name;
+	protected String room;
 	
 	public LocalObject() {
 		float standardValue = 0.0f;
@@ -26,9 +33,10 @@ public class LocalObject {
 		this.zIndex = standardValue;
 		this.maxSpeed = standardValue;
 		this.name = "";
+		this.room = "";
 	}
 	
-	public LocalObject(BigInteger id, String name, float x, float y, float width, float height, float mx, float my, float zIndex, float maxSpeed) {
+	public LocalObject(BigInteger id, String name, String room, float x, float y, float width, float height, float mx, float my, float zIndex, float maxSpeed) {
 		this.setId(id);
 		this.setX(x);
 		this.setY(y);
@@ -39,6 +47,7 @@ public class LocalObject {
 		this.setZIndex(zIndex);
 		this.setMaxSpeed(maxSpeed);
 		this.setName(name);
+		this.setRoom(room);
 	}
 
 	public float getZIndex() {
@@ -145,15 +154,27 @@ public class LocalObject {
 	}
 	
 	public boolean collides(LocalObject otherLocalObject) {
-		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
-		Rectangle r1 = new Rectangle((int) x, (int) y, (int) this.getWidth(), (int) this.getHeight());
-		Rectangle r2 = new Rectangle((int) otherLocalObject.x, (int) otherLocalObject.y, (int) otherLocalObject.getWidth(), (int) otherLocalObject.getHeight());
-		return r1.intersects(r2);
+		if (this.getRoom().equals(otherLocalObject.getRoom())) {
+			//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
+			Rectangle r1 = new Rectangle((int) x, (int) y, (int) this.getWidth(), (int) this.getHeight());
+			Rectangle r2 = new Rectangle((int) otherLocalObject.x, (int) otherLocalObject.y, (int) otherLocalObject.getWidth(), (int) otherLocalObject.getHeight());
+			return r1.intersects(r2);
+		} else {
+			return false;
+		}
 	}
 	
 	public boolean contains(Point p) {
 		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
 		Rectangle r1 = new Rectangle((int) x, (int) y, (int) this.getWidth(), (int) this.getHeight());
 		return r1.contains(p);
+	}
+	
+	public void setRoom(String room) {
+		this.room= room;
+	}
+	
+	public String getRoom() {
+		return this.room;
 	}
 }

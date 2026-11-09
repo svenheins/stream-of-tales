@@ -1,11 +1,16 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.handlers;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.logging.Logger;
 
-//import de.svenheins.World;
-import de.svenheins.main.GamePanel;
+import de.svenheins.main.GUI;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 
@@ -22,16 +27,18 @@ public class ConsoleInputHandler implements KeyListener {
 	
 	@Override
 	public void keyTyped(KeyEvent e) {
-		if(GameWindow.gw.getShowConsole()==true) {
-			GameWindow.gw.gameConsole.update();
+		if(GUI.gui.getShowConsole()==true) {
+			GUI.gui.gameConsole.update();
 			/** the limit was calculated with @-chars (biggest char) */
-			if (e.getKeyCode() != keyDeleteBackwards && !delete && ((GameWindow.gw.gameConsole.getActualCharCount() < ((float)(GameStates.getWidth()-240)/1366)*36) || (e.getKeyChar() =='\n')) )
-				GameWindow.gw.gameConsole.append(e.getKeyChar());
+			
+			// ((float)(GameStates.getWidth()-240)/1366)*36
+			if (e.getKeyCode() != keyDeleteBackwards && !delete && ((GUI.gui.gameConsole.getActualCharCount() < GameStates.consoleMaxCharsPerLine) || (e.getKeyChar() =='\n')) )
+				GUI.gui.gameConsole.append(e.getKeyChar());
 			else if (delete) {
-				GameWindow.gw.gameConsole.setLastLineSend(true);
-				if (GameWindow.gw.gameConsole.isDeleteable()) GameWindow.gw.gameConsole.deleteLast();
+				GUI.gui.gameConsole.setLastLineSend(true);
+				if (GUI.gui.gameConsole.isDeleteable()) GUI.gui.gameConsole.deleteLast();
 			}
-			GameWindow.gw.gameConsole.update();
+			GUI.gui.gameConsole.update();
 		}
 	}
 

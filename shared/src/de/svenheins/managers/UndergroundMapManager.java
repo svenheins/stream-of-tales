@@ -1,27 +1,23 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.managers;
 
 import java.awt.Point;
-import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import javax.imageio.ImageIO;
-
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
 import de.svenheins.objects.LocalUndergroundMap;
@@ -34,17 +30,24 @@ public class UndergroundMapManager {
 	public List<Point> pointList = new ArrayList<Point>();
 	public String paintLayer;
 	public ArrayList<Point> changedList = new ArrayList<Point>();
+	/** stayList is used to prevent GamePanel delete the map in the paint method if its too far away*/
 	public ArrayList<Point> stayList = new ArrayList<Point>();
+	private int mapWidth;
+	private int mapHeight;
 	
-	public UndergroundMapManager(String paintLayer) {
+	public UndergroundMapManager(String paintLayer, int mapWidth, int mapHeight) {
+		this.setMapHeight(mapHeight);
+		this.setMapWidth(mapWidth);
 		this.paintLayer = paintLayer;
 		changedList = new ArrayList<Point>();
 		stayList = new ArrayList<Point>();
+		
 	}
 	
 	public void remove(Point point) {
-		pointList.remove(point);
-		localMapList.remove(point);
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		pointList.remove(moduloPoint);
+		localMapList.remove(moduloPoint);
 	}
 	
 	public boolean add(LocalUndergroundMap localMap){
@@ -60,7 +63,8 @@ public class UndergroundMapManager {
 	
 	public LocalUndergroundMap get(Point point){
 		try {
-			return (LocalUndergroundMap) localMapList.get(point);
+			Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+			return (LocalUndergroundMap) localMapList.get(moduloPoint);
 //			return (Space) spaceList.values().toArray()[index];
 		}
 		catch(IndexOutOfBoundsException e){
@@ -91,20 +95,26 @@ public class UndergroundMapManager {
 	}
 	
 	public boolean contains(Point point) {
-		return pointList.contains(point);
+//		System.out.println("testesttsfigafkga "+GameStates.mapTotalWidth);
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		return pointList.contains(moduloPoint);
 	}
 	
-
 	public void createMap(Point point) {
-		int mapArray[][] = new int[GameStates.ugrMapWidth][GameStates.ugrMapHeight];
-		LocalUndergroundMap map = new LocalUndergroundMap(mapArray,point);
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		int mapArray[][] = new int[GameStates.mapWidth][GameStates.mapHeight];
+		LocalUndergroundMap map = new LocalUndergroundMap(mapArray,moduloPoint);
 		localMapList.put(map.getOrigin(), map);
 		pointList.add(map.getOrigin());
+		this.addChangedList(point);
 	}
 	
+	
+	
 	public LocalUndergroundMap createMapIfNonExistent(Point point) {
-		if ( !pointList.contains(point)) {
-			createMap(point);
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		if ( !pointList.contains(moduloPoint)) {
+			createMap(moduloPoint);
 		}
 		return get(point);
 	}
@@ -1032,36 +1042,51 @@ public class UndergroundMapManager {
 	}
 	
 	
-	public Point getUpperLeftMap(Point origin) {
-		return new Point(origin.x-GameStates.ugrMapWidth*GameStates.ugrMapTileSetWidth, origin.y-GameStates.ugrMapHeight*GameStates.ugrMapTileSetHeight);
+public Point getUpperLeftMap(Point origin) {
+		
+		Point point = new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
 	public Point getUpperMap(Point origin) {
-		return new Point(origin.x, origin.y-GameStates.ugrMapHeight*GameStates.ugrMapTileSetHeight);
+		return new Point(origin.x, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
 	}
 	
 	public Point getUpperRightMap(Point origin) {
-		return new Point(origin.x+GameStates.ugrMapWidth*GameStates.ugrMapTileSetWidth, origin.y-GameStates.ugrMapHeight*GameStates.ugrMapTileSetHeight);
+		Point point =  new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
 	public Point getLeftMap(Point origin) {
-		return new Point(origin.x-GameStates.ugrMapWidth*GameStates.ugrMapTileSetWidth, origin.y);
+		Point point = new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
 	public Point getRightMap(Point origin) {
-		return new Point(origin.x+GameStates.ugrMapWidth*GameStates.ugrMapTileSetWidth, origin.y);
+		Point point = new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
-	public static Point getLowerLeftMap(Point origin) {
-		return new Point(origin.x-GameStates.ugrMapWidth*GameStates.ugrMapTileSetWidth, origin.y+GameStates.ugrMapHeight*GameStates.ugrMapTileSetHeight);
+	public Point getLowerLeftMap(Point origin) {
+		Point point = new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
-	public static Point getLowerMap(Point origin) {
-		return new Point(origin.x, origin.y+GameStates.ugrMapHeight*GameStates.ugrMapTileSetHeight);
+	public Point getLowerMap(Point origin) {
+		Point point = new Point(origin.x, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
 	public Point getLowerRightMap(Point origin) {
-		return new Point(origin.x+GameStates.ugrMapWidth*GameStates.ugrMapTileSetWidth, origin.y+GameStates.ugrMapHeight*GameStates.ugrMapTileSetHeight);
+		Point point =  new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 
 	
@@ -1095,6 +1120,11 @@ public class UndergroundMapManager {
 	
 	public LocalUndergroundMap loadMap(String fileName) {
 		try {
+			File testFile = new File(fileName);
+			if (testFile.exists()) {
+				// OK
+			} else return null;
+			
 			FileInputStream datei=new FileInputStream(fileName);
 			BufferedInputStream buf=new BufferedInputStream(datei);
 			ObjectInputStream readStream = new ObjectInputStream(buf);
@@ -1109,7 +1139,7 @@ public class UndergroundMapManager {
 			readStream.close();
 			
 //			System.out.println(origin.x +" "+origin.y);
-			return new LocalUndergroundMap(localMap, ulArray, urArray, dlArray, drArray, origin, paintLayer);
+			return new LocalUndergroundMap(localMap, ulArray, urArray, dlArray, drArray, origin, paintLayer, true);
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -1138,7 +1168,7 @@ public class UndergroundMapManager {
 //		
 //	}
 	
-	public void loadFromFileSystem(String playerName , int x, int y) {
+	public boolean loadFromFileSystem(String playerName , int x, int y) {
 //		ArrayList<String> listOfFiles = new ArrayList<String>();
 //		File folder = new File(GameStates.standardMapFolder+playerName);
 //		listOfFiles = MyUtil.listFilesForFolder(folder);
@@ -1151,13 +1181,39 @@ public class UndergroundMapManager {
 //				pointList.add(lMap.getOrigin());
 //			}
 //		}
-		String mapFile = localMapFileList.get(new Point(x, y));
+		Point moduloPoint = new Point(((x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		String mapFile = localMapFileList.get(moduloPoint);
 		if (mapFile != null) {
 			LocalUndergroundMap lMap = loadMap(mapFile);
 			localMapList.put(lMap.getOrigin(), lMap);
 			pointList.add(lMap.getOrigin());
+			return true;
+		} else {
+			return false;
 		}
 	}
+	
+	
+	public void createFullMap(Point point, int tile) {
+		int mapArray[][] = new int[GameStates.ugrMapWidth][GameStates.ugrMapHeight];
+		LocalUndergroundMap map = new LocalUndergroundMap(mapArray,point);
+		localMapList.put(map.getOrigin(), map);
+		pointList.add(map.getOrigin());
+		for (int i = 0; i< GameStates.ugrMapWidth; i++) {
+			for (int j = 0; j< GameStates.ugrMapHeight; j++) {
+				mapArray[i][j] = tile;
+					if ( this.get(point) != null) {
+					this.get(point).setUl(i, j, tile);
+					this.get(point).setUr(i, j, tile);
+					this.get(point).setDl(i, j, tile);
+					this.get(point).setDr(i, j, tile);
+				}
+			}
+		}
+		
+//		this.addChangedList(point);
+	}
+	
 	
 	
 	
@@ -1169,9 +1225,9 @@ public class UndergroundMapManager {
 		return this.paintLayer;
 	}
 	
-	public byte[] LocalUndergroundMap2ByteArray(String playerName, String paintLayer, Point p) {
+	public byte[] LocalUndergroundMap2ByteArray(String playerName, String room, String paintLayer, Point p) {
 		FileInputStream fileInputStream=null;
-        File file = new File(GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map");
+        File file = new File(GameStates.standardMapFolder+playerName+"/"+room+"/"+paintLayer+"_"+p.x+"_"+p.y+".map");
         byte[] mapBytes = new byte[(int) file.length()];
 
         try {
@@ -1193,7 +1249,13 @@ public class UndergroundMapManager {
 	}
 	
 	public void addChangedList(Point p) {
-		if (!changedList.contains(p)) this.changedList.add(p);
+		Point moduloPoint = new Point(((p.x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((p.y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		if (!changedList.contains(moduloPoint)) this.changedList.add(moduloPoint);
+	}
+	
+	public void removeStayList(Point p) {
+		Point moduloPoint = new Point(((p.x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((p.y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		if (!stayList.contains(moduloPoint)) this.stayList.remove(moduloPoint);
 	}
 	
 	public void setChangedList(  ArrayList<Point> list) {
@@ -1213,11 +1275,8 @@ public class UndergroundMapManager {
 	}
 	
 	public void addStayList(Point p) {
-		if (!stayList.contains(p)) this.stayList.add(p);
-	}
-	
-	public void removeStayList(Point p) {
-		if (stayList.contains(p)) this.stayList.remove(p);
+		Point moduloPoint = new Point(((p.x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((p.y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		if (!stayList.contains(moduloPoint)) this.stayList.add(moduloPoint);
 	}
 	
 	public void setStayList(  ArrayList<Point> stayList) {
@@ -1228,17 +1287,17 @@ public class UndergroundMapManager {
 		return stayList;
 	}
 	
-	public void initLocalUndergroundMapFileList(String playerName) {
+	public void initLocalUndergroundMapFileList(String playerName, String room) {
 		ArrayList<String> listOfFiles = new ArrayList<String>();
-		File folder = new File(GameStates.standardMapFolder+playerName);
+		File folder = new File(GameStates.standardMapFolder+playerName+"/"+room);
 		listOfFiles = MyUtil.listFilesForFolder(folder);
 		for (String mapFile: listOfFiles) {
 			/** get origins and save the maps under the corresponding origin */
 			/** only load if its the right paintLayer */
 			if (mapFile.startsWith(getPaintLayer())) { // && mapFile.contains("_"+x+"_") && mapFile.contains("_"+y+".")) {
-				LocalUndergroundMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
+				LocalUndergroundMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+room+"/"+mapFile);
 //				localMapList.put(lMap.getOrigin(), lMap);
-				localMapFileList.put(lMap.getOrigin(), GameStates.standardMapFolder+playerName+"/"+mapFile);
+				localMapFileList.put(lMap.getOrigin(), GameStates.standardMapFolder+playerName+"/"+room+"/"+mapFile);
 //				pointList.add(lMap.getOrigin());
 			}
 		}
@@ -1246,5 +1305,21 @@ public class UndergroundMapManager {
 	
 	public void putMapFileName(Point p, String fileName) {
 		localMapFileList.put(p, fileName);
+	}
+	
+	public void setMapWidth(int mapWidth) {
+		this.mapWidth = mapWidth;
+	}
+	
+	public int getMapWidth() {
+		return this.mapWidth;
+	}
+	
+	public void setMapHeight(int mapHeight) {
+		this.mapHeight = mapHeight;
+	}
+	
+	public int getMapHeight() {
+		return this.mapHeight;
 	}
 }

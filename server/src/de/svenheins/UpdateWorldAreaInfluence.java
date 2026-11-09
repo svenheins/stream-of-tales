@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins;
 
 import java.io.Serializable;
@@ -51,7 +57,7 @@ public class UpdateWorldAreaInfluence implements Task, Serializable, ManagedObje
 		this.index += this.packageSize;
 		if (this.index >= this.end) {
 			this.index = this.begin;
-			itKeys = room.get().getItemList().get().keySet().iterator();
+			itKeys = room.get().getAreaInfluenceList().get().keySet().iterator();
 		}
 	}
 

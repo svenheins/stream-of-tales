@@ -1,8 +1,16 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.functions;
 
 
+import java.awt.Point;
 import java.awt.Polygon;
 
+import de.svenheins.main.GameStates;
 import de.svenheins.objects.Space;
 
 public class MyStrings {
@@ -30,4 +38,65 @@ public class MyStrings {
 		String svgString =pre+ "\n\t<g \n \t \t id=\"layer1\">\n"+ Space2String(space)+"\t</g>\n\n</svg>";
 		return svgString;
 	}
+	
+	public static String increaseStringNumerator(String stringWithZeros) {
+		String retString = "";
+		if (stringWithZeros.endsWith("0000")) {
+			retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+"A000";
+		} else {
+			int roomNameLength = stringWithZeros.length();
+			char codeChar = stringWithZeros.charAt(roomNameLength-4);
+			int counter = Integer.parseInt(stringWithZeros.substring(roomNameLength-3, roomNameLength))+1;
+			if (counter > 999 || counter > GameStates.maximumLayersPerWorldType-1) {
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+(++codeChar)+"000";
+			} else if (counter > 99) {
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+codeChar+counter;
+			} else if (counter >9) {
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+codeChar+"0"+counter;
+			} else {
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+codeChar+"00"+counter;
+			}
+		}
+		return retString;
+	}
+	
+	public static String decreaseStringNumerator(String stringWithZeros) {
+		String retString = "";
+		if (stringWithZeros.endsWith("0000")) {
+			retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+"0000";
+		} else	if (stringWithZeros.endsWith("A000")) {
+			retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+"0000";
+		} else {
+			int roomNameLength = stringWithZeros.length();
+			char codeChar = stringWithZeros.charAt(roomNameLength-4);
+			int counter = Integer.parseInt(stringWithZeros.substring(roomNameLength-3, roomNameLength))-1;
+			if (counter < 0 ) {
+				counter = GameStates.maximumLayersPerWorldType-1;
+				if (GameStates.maximumLayersPerWorldType-1 > 99) 
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+(--codeChar)+counter;
+				else if (GameStates.maximumLayersPerWorldType-1 > 9)  
+					retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+(--codeChar)+"0"+counter;
+				else retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+(--codeChar)+"00"+counter;
+			} else if (counter > 99) {
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+codeChar+counter;
+			} else if (counter >9) {
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+codeChar+"0"+counter;
+			} else {
+				retString = stringWithZeros.substring(0, stringWithZeros.length()-4)+codeChar+"00"+counter;
+			}
+		}
+		return retString;
+	}
+	
+	public static Point getPointFromMapFile(String mapFileName) {
+		int posXEnd = mapFileName.lastIndexOf("_");
+		int posXStart = (mapFileName.substring(0, posXEnd)).lastIndexOf("_")+1;
+		int posYStart = posXEnd+1;
+		int posYEnd = mapFileName.lastIndexOf(".");
+		int x = Integer.parseInt(mapFileName.substring(posXStart, posXEnd));
+		int y = Integer.parseInt(mapFileName.substring(posYStart, posYEnd));
+		return new Point(x,y);
+	}
+	
+	
 }

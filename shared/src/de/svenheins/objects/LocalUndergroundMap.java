@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 
@@ -15,6 +21,7 @@ public class LocalUndergroundMap {
 	private Point origin;
 	private long timeStamp;
 	private String paintLayer;
+	private boolean initialized;
  
 	public LocalUndergroundMap(int[][] localMap, Point origin)
 	{
@@ -26,10 +33,10 @@ public class LocalUndergroundMap {
 		urArray = new int[GameStates.ugrMapWidth][ GameStates.ugrMapHeight];
 		dlArray = new int[GameStates.ugrMapWidth][ GameStates.ugrMapHeight];
 		drArray = new int[GameStates.ugrMapWidth][ GameStates.ugrMapHeight];
-
+		this.setInitialized(false);
 	}
 	
-	public LocalUndergroundMap(int[][] localMap, int[][] ulArray, int[][] urArray, int[][] dlArray, int[][] drArray, Point origin, String paintLayer)
+	public LocalUndergroundMap(int[][] localMap, int[][] ulArray, int[][] urArray, int[][] dlArray, int[][] drArray, Point origin, String paintLayer, boolean initialized)
 	{
 		this.localMap=localMap;
 		this.origin = origin;
@@ -40,6 +47,7 @@ public class LocalUndergroundMap {
 		this.urArray = urArray;
 		this.dlArray = dlArray;
 		this.drArray = drArray;
+		this.setInitialized(initialized);
 	}
  
  
@@ -47,7 +55,7 @@ public class LocalUndergroundMap {
 	{
 		if (localMap[x][y] != 0) {
 			int tile=localMap[x][y];
-			return tileMapManager.getTileImage(""+tile);
+			return tileMapManager.getTileImage(tile);
 		} else {
 			return null;
 		}
@@ -174,5 +182,13 @@ public class LocalUndergroundMap {
 	}
 	public void setPaintLayer(String paintLayer) {
 		this.paintLayer = paintLayer;
+	}
+
+	public boolean isInitialized() {
+		return initialized;
+	}
+
+	public void setInitialized(boolean initialized) {
+		this.initialized = initialized;
 	}
 }

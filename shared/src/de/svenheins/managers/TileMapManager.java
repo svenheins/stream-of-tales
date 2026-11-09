@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.managers;
 
 import java.awt.image.BufferedImage;
@@ -10,7 +16,7 @@ import de.svenheins.main.GameStates;
 
 public class TileMapManager {
 //	public ArrayList<BufferedImage> tileSet=new ArrayList<BufferedImage>();
-	public HashMap<String, BufferedImage> tileSet = new HashMap<String, BufferedImage>();
+	public HashMap<Integer, BufferedImage> tileSet = new HashMap<Integer, BufferedImage>();
 	public String tileSetFileName;
 	
 	public TileMapManager(String fileName, int mapTileSetWidth, int mapTileSetHeight) {
@@ -24,7 +30,7 @@ public class TileMapManager {
 			{
 				for(int x=0;x<width;x++)
 				{
-					String tileIndexName = ""+index;
+					Integer tileIndexName = Integer.valueOf(index);
 					BufferedImage tile=readTileset.getSubimage(x*mapTileSetWidth, y*mapTileSetWidth, mapTileSetWidth, mapTileSetWidth);
 					tileSet.put(tileIndexName, tile);
 					index++;
@@ -43,8 +49,8 @@ public class TileMapManager {
 		tileSetFileName = tileName;
 	}
 	
-	public BufferedImage getTileImage(String tile)
+	public BufferedImage getTileImage(int tile)
 	{
-		return tileSet.get(tile); //tileSet.get(tile);
+		return tileSet.get(Integer.valueOf(tile)); //tileSet.get(tile);
 	}
 }

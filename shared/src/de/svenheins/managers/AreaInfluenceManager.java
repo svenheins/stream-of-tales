@@ -1,13 +1,16 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.managers;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-
 import de.svenheins.main.Priority;
 import de.svenheins.objects.AreaInfluence;
-import de.svenheins.objects.items.Item;
 
 public class AreaInfluenceManager {
 	public static HashMap<BigInteger, AreaInfluence> areaInfluenceList = new HashMap<BigInteger, AreaInfluence>();
@@ -109,8 +112,10 @@ public class AreaInfluenceManager {
 	}
 	
 	public static void addFirst(AreaInfluence areaInfluence) {
+//		System.out.println("added first areaInfluence");
 		areaInfluenceList.put(areaInfluence.getId(), areaInfluence);
 		idList.add(0, areaInfluence.getId());
+//		System.out.println("areainfluence.size = "+areaInfluenceList.size());
 //		areaInfluenceList.add(0, areaInfluence);
 	}
 	
@@ -123,6 +128,9 @@ public class AreaInfluenceManager {
 			e.printStackTrace();
 		}
 		
+		if (areaInfluenceList.size() <= 0) {
+			maxIDValue = BigInteger.valueOf(0);
+		}
 	}
 	
 	public static AreaInfluence get(BigInteger id) {

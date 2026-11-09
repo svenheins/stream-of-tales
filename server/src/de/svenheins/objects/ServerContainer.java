@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.math.BigInteger;
@@ -100,7 +106,7 @@ public class ServerContainer extends WorldObject {
 //							try {
 								item.getItemEntity().getForUpdate().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
 								item.getItemEntity().getForUpdate().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);	
-								itemList.put(item.getId(), AppContext.getDataManager().createReference(new ServerItem(item.getId(), item.getItemCode(), item.getName(), item.getItemEntity().get(), item.getCount(), item.getCapacity(), item.getStates())));
+								itemList.put(item.getId(), AppContext.getDataManager().createReference(new ServerItem(item.getId(), item.getItemCode(), item.getName(),item.getComment(), item.getRoom(), item.getItemEntity().get(), item.getCount(), item.getCapacity(), item.getStates())));
 //							} catch (CloneNotSupportedException e) {
 //								e.printStackTrace();
 //							}

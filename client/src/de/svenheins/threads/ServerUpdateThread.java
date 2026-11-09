@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.threads;
 
 
@@ -5,21 +11,17 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import de.svenheins.main.AttributeType;
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameWindow;
-import de.svenheins.main.Priority;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.SpaceManager;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.messages.ClientMessages;
-import de.svenheins.objects.AreaInfluence;
 import de.svenheins.objects.Entity;
-import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 
@@ -28,7 +30,7 @@ public class ServerUpdateThread implements Runnable {
 	private long duration, last; 
 	private long millis, frames;
 		
-
+	
 	public void setLast(long last) {
 		this.last = last;
 	}
@@ -62,14 +64,13 @@ public class ServerUpdateThread implements Runnable {
 					GameWindow.gw.send(ClientMessages.initAreaInfluences());
 					GameWindow.gw.send(ClientMessages.initSpaces());
 					GameWindow.gw.send(ClientMessages.initTextures());
-					GameWindow.gw.send(ClientMessages.initPlayers());
+//					GameWindow.gw.send(ClientMessages.initPlayers());
 					GameWindow.gw.send(ClientMessages.initMe());
 					
-					float[] tempAttributes = new float[AttributeType.values().length];
-					tempAttributes[AttributeType.MX.ordinal()]= 20.0f;
-					LocalObject localObject = new LocalObject(BigInteger.valueOf(0), "", 0,0,500,500, 0,0,0,0);
-					AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+6000000, localObject, "movers", true, tempAttributes, Priority.LOW);
-//					AreaInfluenceManager.add(areaInfluence1);
+//					float[] tempAttributes = new float[AttributeType.values().length];
+//					tempAttributes[AttributeType.MX.ordinal()]= 20.0f;
+//					LocalObject localObject = new LocalObject(BigInteger.valueOf(0), "", 0,0,500,500, 0,0,0,0);
+//					AreaInfluence areaInfluence1 = new AreaInfluence(BigInteger.valueOf(0), System.currentTimeMillis(), System.currentTimeMillis()+6000000, localObject, "movers", true, tempAttributes, Priority.LOW);
 //					GameWindow.gw.send(ClientMessages.addAreaInfluence(areaInfluence1));//(iTile, GameWindow.gw.getGameMasterName(), PlayerManager.get(GameWindow.gw.getGameMasterName()).getId(), "tree1", "overlayTree1"));
 					
 					

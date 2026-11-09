@@ -1,14 +1,23 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.messages;
 
 import java.awt.Polygon;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 
+import de.svenheins.main.AttributeType;
 import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.objects.AreaInfluence;
 //import de.svenheins.managers.TextureManager;
 import de.svenheins.objects.Entity;
+import de.svenheins.objects.GrowthSpot;
 import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.PlayerEntity;
@@ -130,13 +139,15 @@ public class ServerMessages extends Messages{
     	ByteBuffer buffer = null;
     	/** get the length of Bytes that must be reserved for the names */
 		int namesLength = 0;
+		int roomsLength = 0;
 		
 		for (int i = 0; i<localObjects.length; i++) {
 			namesLength += localObjects[i].getName().length();
+			roomsLength += localObjects[i].getRoom().length();
 		}
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + (12)*localObjects.length + namesLength];
+		bytes = new byte[1 + (16)*localObjects.length + namesLength + roomsLength];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITENTITIES.ordinal());	
         Entity[] lEntity = (Entity[]) localObjects;
@@ -145,9 +156,12 @@ public class ServerMessages extends Messages{
     		Entity e = lEntity[i];
         	BigInteger id = e.getId();
     		String name = e.getName();
+    		String room = e.getRoom();
     		buffer.putLong(id.longValue()); // 8
     		buffer.putInt(name.length()); // 4
         	buffer.put(name.getBytes()); // name.length
+        	buffer.putInt(room.length()); // 4
+        	buffer.put(room.getBytes()); // name.length
     	}
     	buffer.flip();
     		
@@ -161,6 +175,8 @@ public class ServerMessages extends Messages{
     	ByteBuffer buffer = null;
         int attributeLength = 0;
         int itemNamesLength = 0;
+        int itemCommentsLength = 0;
+        int itemRoomsLength = 0;
         int itemCodeLength = localObjects.length*1;
         int IDLength = localObjects.length*8;
         int xyLength = localObjects.length*(4+4);
@@ -172,8 +188,10 @@ public class ServerMessages extends Messages{
     			attributeLength += 4; 
     		}
     		itemNamesLength += 4+e.getName().length();
+    		itemCommentsLength += 4+e.getComment().length();
+    		itemRoomsLength += 4+e.getRoom().length();
     	}
-    	bytes = new byte[1 + 4 + itemCodeLength + IDLength + itemNamesLength + xyLength + countLength +attributeLength];
+    	bytes = new byte[1 + 4 + itemCodeLength + IDLength + itemNamesLength + itemCommentsLength+ itemRoomsLength + xyLength + countLength +attributeLength];
         buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITITEMS.ordinal()); // 1
         buffer.putInt(localObjects.length); // 4
@@ -186,7 +204,11 @@ public class ServerMessages extends Messages{
         	buffer.put((byte) e.getItemCode().ordinal()); // 1
             buffer.putLong(id.longValue()); // 8 Bytes
             buffer.putInt(e.getName().length()); // 4
-        	buffer.put(e.getName().getBytes()); // playerName.length() 
+        	buffer.put(e.getName().getBytes()); // name
+        	buffer.putInt(e.getComment().length()); // 4
+        	buffer.put(e.getComment().getBytes()); // comment
+        	buffer.putInt(e.getRoom().length()); // 4
+        	buffer.put(e.getRoom().getBytes()); // room
         	buffer.putFloat(e.getX()); // 4
         	buffer.putFloat(e.getY()); // 4
             buffer.putInt(e.getCount()); // 4
@@ -221,11 +243,13 @@ public class ServerMessages extends Messages{
     
     
     /** send all entityObjects */
-    public static ByteBuffer sendAreaInfluenceArray(AreaInfluence[] localObjects) {
+    public static ByteBuffer sendAreaInfluenceArray(AreaInfluence[] localObjects, BigInteger maxID) {
     	byte[] bytes;
     	ByteBuffer buffer = null;
         int attributeLength = 0;
         int areaInfluenceGroupNamesLength = 0;
+        int areaInfluenceRoomNamesLength = 0;
+        int areaInfluenceCreatorLength = 0;
         int areaInfluenceExclusive = localObjects.length*(4);
         int areaInfluencePriorityLength = localObjects.length*1;
         int IDLength = localObjects.length*8;
@@ -241,10 +265,13 @@ public class ServerMessages extends Messages{
     			attributeLength += 4; 
     		}
     		areaInfluenceGroupNamesLength += 4+e.getGroupName().length();
+    		areaInfluenceRoomNamesLength += 4+e.getLocalObject().getRoom().length();
+    		areaInfluenceCreatorLength += 4+e.getCreator().length();
     	}
-    	bytes = new byte[1 + 4 + areaInfluencePriorityLength + areaInfluenceGroupNamesLength + areaInfluenceExclusive + IDLength + timeBeginTimeEndLength + xyLength + widthHeightLength + mxmyLength+ countLength +attributeLength];
+    	bytes = new byte[1 + 8 + 4 + areaInfluencePriorityLength + areaInfluenceGroupNamesLength + areaInfluenceRoomNamesLength+areaInfluenceCreatorLength+ areaInfluenceExclusive + IDLength + timeBeginTimeEndLength + xyLength + widthHeightLength + mxmyLength+ countLength +attributeLength];
         buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITAREAINFLUENCES.ordinal()); // 1
+        buffer.putLong(maxID.longValue()); // 8 Bytes 
         buffer.putInt(localObjects.length); // 4
         
         /** now put the items in the buffer */
@@ -258,7 +285,11 @@ public class ServerMessages extends Messages{
             buffer.putLong(e.getTimeBegin());
             buffer.putLong(e.getTimeEnd());
             buffer.putInt(e.getGroupName().length()); // 4
-        	buffer.put(e.getGroupName().getBytes()); // playerName.length() 
+        	buffer.put(e.getGroupName().getBytes()); // playerName.length()
+        	buffer.putInt(e.getLocalObject().getRoom().length()); // 4
+        	buffer.put(e.getLocalObject().getRoom().getBytes()); // room
+        	buffer.putInt(e.getCreator().length()); // 4
+        	buffer.put(e.getCreator().getBytes()); // creator
         	
         	int exclusive;
         	if (e.isExclusive()) exclusive = 1;
@@ -288,11 +319,13 @@ public class ServerMessages extends Messages{
     }
     
     /** send all entityObjects */
-    public static ByteBuffer sendAreaInfluence(AreaInfluence areaInfluence) {
+    public static ByteBuffer sendAreaInfluence(AreaInfluence areaInfluence, BigInteger maxID) {
     	byte[] bytes;
     	ByteBuffer buffer = null;
         int attributeLength = 4 + (areaInfluence.getAttributes().length*4);
         int areaInfluenceGroupNamesLength =4+areaInfluence.getGroupName().length();
+        int areaInfluenceRoomNamesLength =4+areaInfluence.getLocalObject().getRoom().length();
+        int areaInfluenceCreatorLength =4+areaInfluence.getCreator().length();
         int areaInfluenceExclusive = 4;
         int areaInfluencePriorityLength = 1;
         int IDLength = 8;
@@ -303,9 +336,10 @@ public class ServerMessages extends Messages{
         int countLength = 4; 
         AreaInfluence e = areaInfluence;
     	
-    	bytes = new byte[1 + areaInfluencePriorityLength + areaInfluenceGroupNamesLength + areaInfluenceExclusive + IDLength + timeBeginTimeEndLength + xyLength + widthHeightLength + mxmyLength+ countLength +attributeLength];
+    	bytes = new byte[1 + 8 + areaInfluencePriorityLength + areaInfluenceGroupNamesLength +areaInfluenceRoomNamesLength+areaInfluenceCreatorLength+ areaInfluenceExclusive + IDLength + timeBeginTimeEndLength + xyLength + widthHeightLength + mxmyLength+ countLength +attributeLength];
         buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.ADDAREAINFLUENCE.ordinal()); // 1
+        buffer.putLong(maxID.longValue()); // 8
         
 		LocalObject localObject = e.getLocalObject();
     	BigInteger id = e.getId();
@@ -316,6 +350,10 @@ public class ServerMessages extends Messages{
         buffer.putLong(e.getTimeEnd());
         buffer.putInt(e.getGroupName().length()); // 4
     	buffer.put(e.getGroupName().getBytes()); // playerName.length() 
+    	buffer.putInt(e.getLocalObject().getRoom().length()); // 4
+    	buffer.put(e.getLocalObject().getRoom().getBytes()); // room
+    	buffer.putInt(e.getCreator().length()); // 4
+    	buffer.put(e.getCreator().getBytes()); // room
     	
     	int exclusive;
     	if (e.isExclusive()) exclusive = 1;
@@ -343,16 +381,206 @@ public class ServerMessages extends Messages{
         return buffer;
     }
     
+    public static ByteBuffer sendGrowthSpotArray(GrowthSpot[] localObjects, BigInteger maxID) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+        int attributeLength = 0;
+        int growthSpotRoomNamesLength = 0;
+        int growthSpotCreatorLength = 0;
+        int IDLength = localObjects.length*8;
+        int tileTypeLength = localObjects.length*4;
+        int timeBeginTimeEndLength = localObjects.length*(8+8);
+        int xyLength = localObjects.length*(4+4);
+        int mapXYLength = localObjects.length*(4+4);
+        int countLength = localObjects.length*(4); 
+        for (int i = 0; i<localObjects.length; i++) {
+        	GrowthSpot e = localObjects[i];
+    		if (e.getAttributes() != null) attributeLength += 4 + (e.getAttributes().length*4); 
+    		else {
+    			attributeLength += 4; 
+    		}
+    		growthSpotRoomNamesLength += 4+e.getRoom().length();
+    		growthSpotCreatorLength += 4+e.getCreator().length();
+    	}
+    	bytes = new byte[1 + 8 + 4 + tileTypeLength+ growthSpotRoomNamesLength+growthSpotCreatorLength+ IDLength + timeBeginTimeEndLength + xyLength + mapXYLength + countLength +attributeLength];
+        buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.INITAREAINFLUENCES.ordinal()); // 1
+        buffer.putLong(maxID.longValue()); // 8 Bytes 
+        buffer.putInt(localObjects.length); // 4
+        
+        /** now put the items in the buffer */
+        for (int i = 0; i<localObjects.length; i++) {
+    		GrowthSpot e = localObjects[i];
+        	BigInteger id = e.getId();
+        	
+            buffer.putLong(id.longValue()); // 8 Bytes 
+            buffer.putInt(e.getTileType()); // 4
+            buffer.putLong(e.getTimeBegin());
+            buffer.putLong(e.getTimeEnd());
+        	buffer.putInt(e.getRoom().length()); // 4
+        	buffer.put(e.getRoom().getBytes()); // room
+        	buffer.putInt(e.getCreator().length()); // 4
+        	buffer.put(e.getCreator().getBytes()); // creator
+        	
+        	buffer.putFloat(e.getLocalX()); // 4
+        	buffer.putFloat(e.getLocalY()); // 4
+        	buffer.putFloat(e.getMapTileX()); // 4
+        	buffer.putFloat(e.getMapTileY()); // 4
+//            buffer.putInt(e.getCount()); // 4
+    		if (e.getAttributes() != null) {
+    			buffer.putInt(e.getAttributes().length);
+    			for (int j = 0; j < e.getAttributes().length; j++) {
+                	buffer.putFloat(e.getAttributes()[j]);
+                }
+    		}
+    		else {
+    			buffer.putInt(0);
+    		}
+    	}  
+        
+        buffer.flip();	
+        return buffer;
+    }
+    
+    /** send all entityObjects */
+    public static ByteBuffer sendGrowthSpot(GrowthSpot growthSpot, BigInteger maxID) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+        int attributeLength = 4 + (growthSpot.getAttributes().length*4);
+        int growthSpotRoomNamesLength =4+growthSpot.getRoom().length();
+        int growthSpotCreatorLength =4+growthSpot.getCreator().length();
+        int IDLength = 8;
+        int tileTypeLength = 4;
+        int timeBeginTimeEndLength = 16;
+        int xyLength = 8;
+        int mapXYLength = 8;
+        int countLength = 4; 
+        GrowthSpot e = growthSpot;
+    	
+    	bytes = new byte[1 + 8 + tileTypeLength + growthSpotRoomNamesLength+growthSpotCreatorLength+ IDLength + timeBeginTimeEndLength + xyLength + mapXYLength + countLength +attributeLength];
+        buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.ADDAREAINFLUENCE.ordinal()); // 1
+        
+        buffer.putLong(maxID.longValue()); // 8
+    	BigInteger id = e.getId();
+    	
+        buffer.putLong(id.longValue()); // 8 Bytes 
+        buffer.putInt(e.getTileType()); // 4 Bytes
+        
+        buffer.putLong(e.getTimeBegin());
+        buffer.putLong(e.getTimeEnd());
+    	buffer.putInt(e.getRoom().length()); // 4
+    	buffer.put(e.getRoom().getBytes()); // room
+    	buffer.putInt(e.getCreator().length()); // 4
+    	buffer.put(e.getCreator().getBytes()); // room
+    	
+    	buffer.putInt(e.getLocalX()); // 4
+    	buffer.putInt(e.getLocalY()); // 4
+    	buffer.putInt(e.getMapTileX()); // 4
+    	buffer.putInt(e.getMapTileY()); // 4
+		if (e.getAttributes() != null) {
+			buffer.putInt(e.getAttributes().length);
+			for (int j = 0; j < e.getAttributes().length; j++) {
+            	buffer.putFloat(e.getAttributes()[j]);
+            }
+		}
+		else {
+			buffer.putInt(0);
+		}
+        
+        buffer.flip();	
+        return buffer;
+    }
+    
+    
+    /** send all entityObjects */
+    public static ByteBuffer askForPlayerAgentsPlayerAToPlayerB(BigInteger playerAID, BigInteger playerBID, ArrayList<BigInteger> idList) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+        int idListSize  = 8*idList.size();
+    	bytes = new byte[1 + 8 + 8 + 4 + idListSize];
+        buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.ASKFORPLAYERAGENTS.ordinal()); // 1
+        buffer.putLong(playerAID.longValue()); // 8 Bytes 
+        buffer.putLong(playerBID.longValue()); // 8 Bytes 
+        buffer.putInt(idList.size()); // 4
+        
+        /** now put the items in the buffer */
+        for (int i = 0; i<idList.size(); i++) {
+        	buffer.putLong(idList.get(i).longValue()); // 8
+    	}  
+        
+        buffer.flip();	
+        return buffer;
+    }
+    
+    /** sendCompletePlayerAgents */
+    public static ByteBuffer sendUnknownPlayerAgents(BigInteger toPlayerID, String fromPlayerName, Collection<PlayerEntity> playerAgents) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+    	/** get the length of Bytes that must be reserved for the names */
+    	int namesLength = 0;
+    	int roomsLength = 0;
+		int tileNameLength = 0;
+		int orientationStateLength = 3*playerAgents.size();
+		int idLength = playerAgents.size()*8;
+		int localObjectLength = playerAgents.size()*(6*4);
+		int attributeLength =  playerAgents.size()*( 4 + AttributeType.values().length*4);
+		for (PlayerEntity plEntity : playerAgents) {
+			tileNameLength += 4 + plEntity.getTileSet().getName().length();
+			namesLength += 4+ plEntity.getName().length();
+			roomsLength += 4+plEntity.getRoom().length();
+		}
+		/** use Object-specific send-routine */
+		/** init bytes */
+		bytes = new byte[1 + 4 + 8+  4 + fromPlayerName.length() +  namesLength + roomsLength+tileNameLength + orientationStateLength + idLength + attributeLength + localObjectLength];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.SENDCOMPLETEPLAYERAGENTS.ordinal());	
+        buffer.putLong(toPlayerID.longValue());
+        buffer.putInt(fromPlayerName.length()); // 4
+    	buffer.put(fromPlayerName.getBytes()); // playerName.length()
+    	buffer.putInt(playerAgents.size()); // 4
+        /** place all playerAgents of the specific class */
+        for (PlayerEntity plEntity : playerAgents) {
+    		PlayerEntity e = plEntity;
+        	BigInteger id = e.getId();
+    		String name = e.getName();
+    		String room = e.getRoom();
+    		buffer.putLong(id.longValue()); // 8
+    		buffer.putInt(name.length()); // 4
+        	buffer.put(name.getBytes()); // name.length
+        	buffer.putInt(room.length()); // 4
+        	buffer.put(room.getBytes()); // room.length
+        	buffer.putInt(e.getTileSet().getName().length()); // 4
+        	buffer.put(e.getTileSet().getName().getBytes()); // name.length
+        	buffer.put((byte) e.getOrientation().ordinal());
+        	buffer.put((byte) e.getSingleState().ordinal());
+        	buffer.put((byte) e.getContinuousState().ordinal());        	
+        	buffer.putFloat(e.getX()); // 4
+        	buffer.putFloat(e.getY()); // 4
+        	buffer.putFloat(e.getWidth()); // 4
+        	buffer.putFloat(e.getHeight()); // 4
+        	buffer.putFloat(e.getMX()); // 4
+        	buffer.putFloat(e.getMY()); // 4
+        	buffer.putInt(e.getAttributes().length); // 4
+        	for ( int j = 0; j < e.getAttributes().length; j++) {
+        		buffer.putFloat(e.getAttributes()[j]);
+        	}
+    	}
+    	buffer.flip();
+    		
+        return buffer;
+    }
     
     /** 
      * 
      * @param id
      * @return 
      */
-    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, float x, float y, int count, float[] attributes) {
+    public static ByteBuffer addCompleteItem(ITEMCODE itemCode, BigInteger id, String name, String room, float x, float y, int count, float[] attributes) {
         int attributeLength = 0;
         if (attributes != null) attributeLength = attributes.length;
-    	byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 + 4 + 4 +4 +attributeLength*4];
+    	byte[] bytes = new byte[1 + 1 + 8 + 4 + name.length() + 4 +room.length() + 4 + 4 + 4 +4 +attributeLength*4];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.ADDCOMPLETEITEM.ordinal()); // 1
         
@@ -360,6 +588,8 @@ public class ServerMessages extends Messages{
         buffer.putLong(id.longValue()); // 8 Bytes
         buffer.putInt(name.length()); // 4
     	buffer.put(name.getBytes()); // playerName.length() 
+    	buffer.putInt(room.length()); // 4
+    	buffer.put(room.getBytes()); // playerName.length() 
     	buffer.putFloat(x); // 4
     	buffer.putFloat(y); // 4
         buffer.putInt(count); // 4
@@ -381,6 +611,7 @@ public class ServerMessages extends Messages{
     	ByteBuffer buffer = null;
     	/** get the length of Bytes that must be reserved for the names */
 		int namesLength = 0;
+		int roomsLength = 0;
 		int texturesNameLength = 0;
     	
 		int polygonBytesAbsolut = 0;
@@ -388,6 +619,7 @@ public class ServerMessages extends Messages{
 		ArrayList<Polygon> polygon;
 		for (int i = 0; i<localObjects.length; i++) {
 			namesLength += localObjects[i].getName().length();
+			roomsLength += localObjects[i].getRoom().length();
 			texturesNameLength += localObjects[i].getTextureName().length();
 			
 			/** reserve 4 + 4 bytes for the polyX and polyY Coordinates */
@@ -406,7 +638,7 @@ public class ServerMessages extends Messages{
 		}
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 44*localObjects.length + namesLength + texturesNameLength + polygonBytesAbsolut];
+		bytes = new byte[1 + 48*localObjects.length + namesLength + roomsLength + texturesNameLength + polygonBytesAbsolut];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITSPACES.ordinal()); 
     	
@@ -415,11 +647,12 @@ public class ServerMessages extends Messages{
         int[] rgb_each;
         Space s;
         BigInteger id;
-        String name;
+        String name, room;
         for (int i = 0; i<localObjects.length; i++) {
     		s = lSpace[i];
         	id = s.getId();
     		name = s.getName();
+    		room = s.getRoom();
     		rgb_each = s.getRGB();
     		int filled;
     		if (s.isFilled()) filled = 1;
@@ -439,6 +672,8 @@ public class ServerMessages extends Messages{
     		buffer.putLong(id.longValue()); // 8
     		buffer.putInt(name.length()); // 4
         	buffer.put(name.getBytes()); // name.length
+        	buffer.putInt(room.length()); // 4
+        	buffer.put(room.getBytes()); // name.length
         	buffer.putInt(rgb_each[0]); // 4
         	buffer.putInt(rgb_each[1]); // 4
         	buffer.putInt(rgb_each[2]); // 4
@@ -480,17 +715,32 @@ public class ServerMessages extends Messages{
     	ByteBuffer buffer = null;
     	/** get the length of Bytes that must be reserved for the names */
 		int namesLength = 0;
+		int roomsLength = 0;
 		int tileNameLength = 0;
 		int tileFileNameLength = 0;
+		int equipmentNameLength = 0;
+//		String standardHair = "equip_"+GameStates.nameStandardPlayer+"BlondHair";
     	
 		for (int i = 0; i<localObjects.length; i++) {
 			namesLength += localObjects[i].getName().length();
+			roomsLength += localObjects[i].getRoom().length();
 			tileNameLength += localObjects[i].getTileSet().getName().length();
 			tileFileNameLength += localObjects[i].getTileSet().getFileName().length();
+			equipmentNameLength += 40;
+			if (localObjects[i].getWeaponEntity() != null) equipmentNameLength += localObjects[i].getWeaponEntity().getName().length();
+			if (localObjects[i].getArmorEntity() != null) equipmentNameLength += localObjects[i].getArmorEntity().getName().length();
+			if (localObjects[i].getHelmetEntity() != null) equipmentNameLength += localObjects[i].getHelmetEntity().getName().length();
+			if (localObjects[i].getFeetEntity() != null) equipmentNameLength += localObjects[i].getFeetEntity().getName().length();
+			if (localObjects[i].getShieldEntity() != null) equipmentNameLength += localObjects[i].getShieldEntity().getName().length();
+			if (localObjects[i].getAmuletEntity() != null) equipmentNameLength += localObjects[i].getAmuletEntity().getName().length();
+			if (localObjects[i].getGloveEntity() != null) equipmentNameLength += localObjects[i].getGloveEntity().getName().length();
+			if (localObjects[i].getShirtEntity() != null) equipmentNameLength += localObjects[i].getShirtEntity().getName().length();
+			if (localObjects[i].getTrousersEntity() != null) equipmentNameLength += localObjects[i].getTrousersEntity().getName().length();
+			if (localObjects[i].getHairEntity() != null) equipmentNameLength += localObjects[i].getHairEntity().getName().length();
 		}
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 36*localObjects.length + namesLength + tileNameLength + tileFileNameLength];
+		bytes = new byte[1 + 40*localObjects.length + namesLength + roomsLength +tileNameLength + tileFileNameLength+ equipmentNameLength];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITPLAYERS.ordinal()); 
     	
@@ -498,8 +748,10 @@ public class ServerMessages extends Messages{
         /** place all objects of the specific class */
         BigInteger id;
         String name;
+        String room;
         String tileName;
         String tileFileName;
+        String weapon, armor, helmet, feet, shield, amulet, glove, shirt, trousers, hair;
         float playerWidth;
         float playerHeight;
         long animationDelay;
@@ -508,32 +760,86 @@ public class ServerMessages extends Messages{
     		p = lPlayer[i];
         	id = p.getId();
     		name = p.getName();
+    		room = p.getRoom();
     		tileName = p.getTileSet().getName();
     		tileFileName = p.getTileSet().getFileName();
     		playerWidth = p.getWidth();
     		playerHeight = p.getHeight();
     		animationDelay = p.getAnimation().getTimeBetweenAnimation();
+    		if (p.getWeaponEntity() != null)
+    		weapon = p.getWeaponEntity().getName();
+    		else weapon = "";
+    		if (p.getArmorEntity() != null)
+    		armor = p.getArmorEntity().getName();
+    		else armor = "";
+    		if (p.getHelmetEntity() != null)
+    		helmet = p.getHelmetEntity().getName();
+    		else helmet = "";
+    		if (p.getFeetEntity() != null)
+    		feet = p.getFeetEntity().getName();
+    		else feet = "";
+    		if (p.getShieldEntity() != null)
+        	shield = p.getShieldEntity().getName();
+        	else shield = "";
+    		if (p.getAmuletEntity() != null)
+            	amulet = p.getAmuletEntity().getName();
+            	else amulet = "";
+    		if (p.getGloveEntity() != null)
+            	glove = p.getGloveEntity().getName();
+            	else glove = "";
+    		if (p.getShirtEntity() != null)
+            	shirt = p.getShirtEntity().getName();
+            	else shirt = "";
+    		if (p.getTrousersEntity() != null)
+            	trousers = p.getTrousersEntity().getName();
+            	else trousers = "";
+    		if (p.getHairEntity() != null)
+            	hair = p.getHairEntity().getName();
+            	else hair = "";
         	
     		buffer.putLong(id.longValue()); // 8
     		buffer.putInt(name.length()); // 4
         	buffer.put(name.getBytes()); // name.length
+        	buffer.putInt(room.length()); // 4
+        	buffer.put(room.getBytes()); // name.length
         	buffer.putInt(tileName.length()); // 4
         	buffer.put(tileName.getBytes()); // tileName.length
         	buffer.putInt(tileFileName.length()); // 4
         	buffer.put(tileFileName.getBytes()); // tileName.length
+        	buffer.putInt(weapon.length()); // 4
+        	buffer.put(weapon.getBytes()); // weapon.length
+        	buffer.putInt(armor.length()); // 4
+        	buffer.put(armor.getBytes()); // armor.length
+        	buffer.putInt(helmet.length()); // 4
+        	buffer.put(helmet.getBytes()); // helmet.length
+        	buffer.putInt(feet.length()); // 4
+        	buffer.put(feet.getBytes()); // feet.length
+        	buffer.putInt(shield.length()); // 4
+        	buffer.put(shield.getBytes()); // shield.length
+        	buffer.putInt(amulet.length()); // 4
+        	buffer.put(amulet.getBytes()); // amulet.length
+        	buffer.putInt(glove.length()); // 4
+        	buffer.put(glove.getBytes()); // glove.length
+        	buffer.putInt(shirt.length()); // 4
+        	buffer.put(shirt.getBytes()); // shirt.length
+        	buffer.putInt(trousers.length()); // 4
+        	buffer.put(trousers.getBytes()); // trousers.length
+        	buffer.putInt(hair.length()); // 4
+        	buffer.put(hair.getBytes()); // trousers.length
+        	
         	buffer.putFloat(playerWidth); // 4 
         	buffer.putFloat(playerHeight); // 4
-        	buffer.putLong(animationDelay); // 4
+        	buffer.putLong(animationDelay); // 8
     	} 	
     	buffer.flip();
     		
         return buffer;
     }
     
-    public static ByteBuffer sendMe(BigInteger id, String tileName, String tilePathName, String groupName, long firstServerLogin, int experience, String country, float x, float y, float mx, float my, BigInteger maxItemID, BigInteger maxAreaInfluenceID) {
+    public static ByteBuffer sendMe(BigInteger id, String tileName, String tilePathName, String groupName, String room, long firstServerLogin, int experience, String country, float x, float y, float mx, float my, BigInteger maxItemID, BigInteger maxAreaInfluenceID, BigInteger maxGrowthSpotID,long worldTime) {
 		/** use Object-specific send-routine */
 		/** init bytes */
-    	byte[] bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4 + 8 + 8];
+    	byte[] bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() +4 + room.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4 + 8 + 8 + 8 + 8];
 //    	bytes = new byte[1 + 8 + 4 + tileName.length() + 4 + tilePathName.length() + 4 + groupName.length() + 8 + 4 + 4 + country.length() + 4 + 4 + 4 + 4 + 8 ];
     	ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.INITME.ordinal()); // 1
@@ -545,6 +851,8 @@ public class ServerMessages extends Messages{
     	buffer.put(tilePathName.getBytes()); // tileName.length
     	buffer.putInt(groupName.length()); // + 4 
     	buffer.put(groupName.getBytes()); // + groupName.length() 
+    	buffer.putInt(room.length()); // + 4 
+    	buffer.put(room.getBytes()); // + groupName.length() 
     	buffer.putLong(firstServerLogin); // + 8 
     	buffer.putInt(experience); // + 4 
     	buffer.putInt(country.length()); // + 4 
@@ -555,6 +863,8 @@ public class ServerMessages extends Messages{
     	buffer.putFloat(my); // + 4
     	buffer.putLong(maxItemID.longValue()); // + 8  
     	buffer.putLong(maxAreaInfluenceID.longValue()); // +8
+    	buffer.putLong(maxGrowthSpotID.longValue()); // +8
+    	buffer.putLong(worldTime); // +8
         buffer.flip();
         return buffer;
     }
@@ -572,6 +882,8 @@ public class ServerMessages extends Messages{
 		int itemEntityTileNameLength = 0; // string
 		int itemEntityTileFileNameLength = 0; //string
 		int itemNameLength = 0; // String
+		int itemCommentLength = 0; // String
+		int itemRoomLength = 0; // String
 		int itemAttributesLength = 0; // float[]
 		int containerArraySize = 8 * inventoryHeight * inventoryWidth;
 		
@@ -592,6 +904,8 @@ public class ServerMessages extends Messages{
 					itemCountLength += 4;
 					itemCapacityLength += 4;
 					itemNameLength += 4 + item.getName().length();
+					itemCommentLength += 4+ item.getComment().length();
+					itemRoomLength += 4 + item.getRoom().length();
 					itemCodeLength += 1;
 					itemCreationTimeCodeLength += 8;
 					itemXLength += 4;
@@ -613,7 +927,7 @@ public class ServerMessages extends Messages{
 		
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 + 8 + 1 +1+/**inventory*/ 4 + 4 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemAttributesLength+ containerArraySize+ itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength];
+		bytes = new byte[1 + 8 + 1 +1+/**inventory*/ 4 + 4 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+itemCommentLength+itemRoomLength+ itemAttributesLength+ containerArraySize+ itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.SENDCONTAINER.ordinal()); // 1
         buffer.putLong(id.longValue()); // + 8 
@@ -634,6 +948,10 @@ public class ServerMessages extends Messages{
 					buffer.putInt(item.getCapacity()); // 4
 					buffer.putInt(item.getName().length()); // 4
 			    	buffer.put(item.getName().getBytes()); // name.length
+			    	buffer.putInt(item.getComment().length()); // 4
+			    	buffer.put(item.getComment().getBytes()); // name.length
+			    	buffer.putInt(item.getRoom().length()); // 4
+			    	buffer.put(item.getRoom().getBytes()); // room.length
 					buffer.put((byte) item.getItemCode().ordinal()); // 1
 					buffer.putLong(item.getCreationTime());
 					/** entity stuff */
@@ -676,6 +994,8 @@ public class ServerMessages extends Messages{
 		int itemEntityTileNameLength = 4 + item.getEntity().getTileSet().getName().length(); // string
 		int itemEntityTileFileNameLength = 4 + item.getEntity().getTileSet().getFileName().length(); //string
 		int itemNameLength = 4 + item.getName().length(); // String
+		int itemCommentLength = 4 + item.getComment().length(); // String
+		int itemRoomLength = 4 + item.getRoom().length(); // String
 		int itemAttributesLength = 4; // float[]
 		if (item.getAttributes() != null) itemAttributesLength += 4*item.getAttributes().length;
 		
@@ -688,7 +1008,7 @@ public class ServerMessages extends Messages{
 		
 		/** use Object-specific send-routine */
 		/** init bytes */
-		bytes = new byte[1 +8+ 1 +/**inventory*/ 8 + itemEntityIDLength+ itemEntityNameLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemAttributesLength+  itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength+4+4];
+		bytes = new byte[1 +8+ 1 +/**inventory*/ 8 + itemEntityIDLength+ itemEntityNameLength+itemRoomLength+ itemEntityTileNameLength+ itemEntityTileFileNameLength+ itemNameLength+ itemCommentLength+itemAttributesLength+  itemCountLength+ itemCapacityLength+ itemCodeLength+ itemCreationTimeCodeLength +itemXLength +itemYLength+4+4];
     	buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.SENDITEMFIELD.ordinal()); // 1
         buffer.putLong(playerID.longValue());
@@ -700,6 +1020,10 @@ public class ServerMessages extends Messages{
 		buffer.putInt(item.getCapacity()); // 4
 		buffer.putInt(item.getName().length()); // 4
     	buffer.put(item.getName().getBytes()); // name.length
+    	buffer.putInt(item.getComment().length()); // 4
+    	buffer.put(item.getComment().getBytes()); // name.length
+    	buffer.putInt(item.getRoom().length()); // 4
+    	buffer.put(item.getRoom().getBytes()); // name.length
 		buffer.put((byte) item.getItemCode().ordinal()); // 1
 		buffer.putLong(item.getCreationTime());
 		/** entity stuff */
@@ -745,8 +1069,8 @@ public class ServerMessages extends Messages{
     }
     
     /** edit player-addons */
-    public static ByteBuffer editPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
-        byte[] bytes = new byte[1 + 8 + 4 + playerName.length() + 4 + tileName.length() +4 + tilePathName.length() + 4 + 4 + 4 + country.length() + 4 + groupName.length() + 4];
+    public static ByteBuffer editPlayerAddons(BigInteger id, String playerName, String room, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+        byte[] bytes = new byte[1 + 8 + 4 + playerName.length() + 4+ room.length() + 4 + tileName.length() +4 + tilePathName.length() + 4 + 4 + 4 + country.length() + 4 + groupName.length() + 4];
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         buffer.put((byte) OPCODE.EDIT_PLAYER_ADDONS.ordinal());
         /** ID */
@@ -754,6 +1078,8 @@ public class ServerMessages extends Messages{
         
         buffer.putInt(playerName.length()); // 4
     	buffer.put(playerName.getBytes()); // playerName.length() 
+    	buffer.putInt(room.length()); // 4
+    	buffer.put(room.getBytes()); // playerName.length() 
     	buffer.putInt(tileName.length()); // 4 
     	buffer.put(tileName.getBytes()); // tileName.length() 
     	buffer.putInt(tilePathName.length()); // 4 
@@ -768,6 +1094,54 @@ public class ServerMessages extends Messages{
         
         buffer.flip();
         return buffer;
+    }
+    
+    /** send updated room of player */
+    public static ByteBuffer editPlayerRoom(BigInteger id, String playerName, String room) {
+    	byte[] bytes;
+    	ByteBuffer buffer = null;
+    	/** get the length of Bytes that must be reserved for the names */
+    	bytes = new byte[1 + 8 + 4 + playerName.length() + 4 + room.length() ];
+    	buffer = ByteBuffer.wrap(bytes);
+        buffer.put((byte) OPCODE.EDIT_PLAYER_ROOM.ordinal());	
+        buffer.putLong(id.longValue());
+        buffer.putInt(playerName.length()); // 4
+    	buffer.put(playerName.getBytes()); // playerName.length()
+    	buffer.putInt(room.length()); // 4
+    	buffer.put(room.getBytes()); // playerName.length()
+		buffer.flip();
+        return buffer;
+    }
+    
+    public static ByteBuffer editPlayerEquipment(BigInteger id, String weaponName, String armorName, String helmetName, String feetName, String shieldName, String amuletName, String gloveName, String shirtName, String trousersName) {
+    	 byte[] bytes = new byte[1 + 8 + 4 + weaponName.length() + 4 + armorName.length()+ 4 + helmetName.length() +4 + feetName.length() + 4 + shieldName.length() + 4 + amuletName.length() + 4 + gloveName.length() + 4 + shirtName.length() + 4 + trousersName.length()];
+         ByteBuffer buffer = ByteBuffer.wrap(bytes);
+         buffer.put((byte) OPCODE.EDIT_PLAYER_EQUIPMENT.ordinal());
+         /** ID */
+         buffer.putLong(id.longValue()); // 8 Bytes
+         
+         buffer.putInt(weaponName.length()); // 4
+         buffer.put(weaponName.getBytes()); // playerName.length() 
+         buffer.putInt(armorName.length()); // 4
+         buffer.put(armorName.getBytes()); // playerName.length() 
+         buffer.putInt(helmetName.length()); // 4
+         buffer.put(helmetName.getBytes()); // playerName.length() 
+         buffer.putInt(feetName.length()); // 4
+         buffer.put(feetName.getBytes()); // playerName.length() 
+         buffer.putInt(shieldName.length()); // 4
+         buffer.put(shieldName.getBytes()); // playerName.length() 
+         buffer.putInt(amuletName.length()); // 4
+         buffer.put(amuletName.getBytes()); // playerName.length() 
+         buffer.putInt(gloveName.length()); // 4
+         buffer.put(gloveName.getBytes()); // playerName.length() 
+         buffer.putInt(shirtName.length()); // 4
+         buffer.put(shirtName.getBytes()); // playerName.length() 
+         buffer.putInt(trousersName.length()); // 4
+         buffer.put(trousersName.getBytes()); // playerName.length() 
+     	
+         
+         buffer.flip();
+         return buffer;
     }
     
     /** edit space-addons */

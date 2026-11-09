@@ -1,50 +1,53 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.managers;
 
 import java.awt.Point;
-import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import javax.imageio.ImageIO;
-
 import de.svenheins.functions.MyUtil;
 import de.svenheins.main.GameStates;
+import de.svenheins.main.TileDimensions;
 import de.svenheins.objects.LocalMap;
 
 public class MapManager {
 	public HashMap<Point, LocalMap> localMapList = new HashMap<Point, LocalMap>();
-	
 	public HashMap<Point, String> localMapFileList = new HashMap<Point, String>();
 	
 	public List<Point> pointList = new ArrayList<Point>();
 	public String paintLayer;
 	public ArrayList<Point> changedList = new ArrayList<Point>();
+	/** stayList is used to prevent GamePanel delete the map in the paint method if its too far away*/
 	public ArrayList<Point> stayList = new ArrayList<Point>();
+	private int mapWidth, mapHeight;
+
 	
-	public MapManager(String paintLayer) {
+	public MapManager(String paintLayer, int mapWidth, int mapHeight) {
+		this.setMapWidth(mapWidth);
+		this.setMapHeight(mapHeight);
 		this.paintLayer = paintLayer;
 		changedList = new ArrayList<Point>();
 		stayList = new ArrayList<Point>();
 	}
 	
 	public void remove(Point point) {
-		pointList.remove(point);
-		localMapList.remove(point);
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		pointList.remove(moduloPoint);
+		localMapList.remove(moduloPoint);
 	}
 	
 	
@@ -61,11 +64,12 @@ public class MapManager {
 	
 	public LocalMap get(Point point){
 		try {
-			return (LocalMap) localMapList.get(point);
+			Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+			return (LocalMap) localMapList.get(moduloPoint);
 //			return (Space) spaceList.values().toArray()[index];
 		}
 		catch(IndexOutOfBoundsException e){
-			//System.out.println("Null-Object returned");
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -92,36 +96,185 @@ public class MapManager {
 	}
 	
 	public boolean contains(Point point) {
-		return pointList.contains(point);
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		return pointList.contains(moduloPoint);
 	}
 	
 
 	public void createMap(Point point) {
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
 		int mapArray[][] = new int[GameStates.mapWidth][GameStates.mapHeight];
-		LocalMap map = new LocalMap(mapArray,point);
+		LocalMap map = new LocalMap(mapArray,moduloPoint);
 		localMapList.put(map.getOrigin(), map);
 		pointList.add(map.getOrigin());
+//		this.addChangedList(point);
 	}
 	
 	public LocalMap createMapIfNonExistent(Point point) {
-		if ( !pointList.contains(point)) {
-			createMap(point);
+		Point moduloPoint = new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		if ( !pointList.contains(moduloPoint)) {
+			createMap(moduloPoint);
 		}
-		return get(point);
+		return get(moduloPoint);
+	}
+	
+	
+	
+	
+	public void paintTilesMapManager(Point mapCoordinates, Point localPoint, int tile) {
+		int localX = localPoint.x;
+		int localY = localPoint.y;
+		
+		if (localX > GameStates.mapWidth-2) localX =GameStates.mapWidth-2; 
+		if (localY > GameStates.mapHeight-2) localY =GameStates.mapHeight-2; 
+		if (localX < 2) localX = 2; 
+		if (localY < 2) localY = 2; 
+		
+		if (this.get(mapCoordinates) != null) {
+			this.get(mapCoordinates).setUl(localX, localY, tile);
+			this.get(mapCoordinates).setIdByCorners(localX, localY, tile);
+			this.adjustSurrounding(this.get(mapCoordinates), localX, localY, tile);
+		}
+	}
+	
+	public void paintTiles(Point mapCoordinates, Point localPoint, int tile) {
+		int localX = localPoint.x;
+		int localY = localPoint.y;
+		
+		if (localX > GameStates.mapWidth-2) localX =GameStates.mapWidth-2; 
+		if (localY > GameStates.mapHeight-2) localY =GameStates.mapHeight-2; 
+		if (localX < 2) localX = 2; 
+		if (localY < 2) localY = 2; 
+		
+		if ( localX % 2 != 0 ) {
+			if (localX < GameStates.mapWidth-1)
+				localX++;
+			else localX--;
+		}
+		if (localY % 2 != 0 ) {
+			if (localY < GameStates.mapHeight-1)
+				localY++;
+			else localY--;
+		}
+		
+		TileDimensions tileDimensions = LocalMap.getTileDimensions(tile);
+//		System.out.println("Painting with "+tileDimensions);
+		this.get(mapCoordinates).setUl(localX, localY, tile);
+		if (tileDimensions == TileDimensions.RowCol2x2) this.get(mapCoordinates).setUl(localX, localY, 0);
+		this.get(mapCoordinates).setUr(localX, localY, tile);
+		this.get(mapCoordinates).setDl(localX, localY, 0);
+		this.get(mapCoordinates).setDr(localX, localY, 0);
+		this.get(mapCoordinates).setIdByCornersObject(localX, localY, tile, tileDimensions);
+		this.adjustSurrounding(this.get(mapCoordinates), localX, localY, tile);
+
+//		/** choose the correct ObjectMapManager */
+//		if (localX % 4 == 0) {
+//			if (this.getPaintLayer().equals("tree1")) {
+//				// OK
+////				/** create Map if not yet created */
+////				if (!this.contains(p)) {
+////					this.createMap(p);
+////				}
+//				
+//				TileDimensions tileDimensions = LocalMap.getTileDimensions(tile);
+////				System.out.println("Painting with "+tileDimensions);
+//				this.get(mapCoordinates).setUl(localX, localY, tile);
+//				if (tileDimensions == TileDimensions.RowCol2x2) this.get(mapCoordinates).setUl(localX, localY, 0);
+//				this.get(mapCoordinates).setUr(localX, localY, tile);
+//				this.get(mapCoordinates).setDl(localX, localY, 0);
+//				this.get(mapCoordinates).setDr(localX, localY, 0);
+//				this.get(mapCoordinates).setIdByCornersObject(localX, localY, tile, tileDimensions);
+//				this.adjustSurrounding(this.get(mapCoordinates), localX, localY, tile);
+//			} else {
+//				// not OK
+//			}
+//			
+//			if (this.getPaintLayer().equals("overlayTree1")) {
+//				// OK
+////				/** create Map if not yet created */
+////				if (!this.contains(p)) {
+////					this.createMap(p);
+////				}
+//				tile = tile -GameStates.mapTileSetWidth*2;
+//				TileDimensions tileDimensions = LocalMap.getTileDimensions(tile);
+////				System.out.println("Painting with "+tileDimensions);
+//				this.get(mapCoordinates).setUl(localX, localY, tile);
+//				if (tileDimensions == TileDimensions.RowCol2x2) this.get(mapCoordinates).setUl(localX, localY, 0);
+//				this.get(mapCoordinates).setUr(localX, localY, tile);
+//				this.get(mapCoordinates).setDl(localX, localY, 0);
+//				this.get(mapCoordinates).setDr(localX, localY, 0);
+//				this.get(mapCoordinates).setIdByCornersObject(localX, localY, tile, tileDimensions);
+//				this.adjustSurrounding(this.get(mapCoordinates), localX, localY, tile);
+//			} else {
+//				// not OK
+//			}
+//		}
+//		if (localX % 4 == 2) {
+//			if (this.getPaintLayer().equals("tree2")) {
+//				// OK
+////				/** create Map if not yet created */
+////				if (!this.contains(p)) {
+////					this.createMap(p);
+////				}
+//				
+//				TileDimensions tileDimensions = LocalMap.getTileDimensions(tile);
+////				System.out.println("Painting with "+tileDimensions);
+//				this.get(mapCoordinates).setUl(localX, localY, tile);
+//				if (tileDimensions == TileDimensions.RowCol2x2) this.get(mapCoordinates).setUl(localX, localY, 0);
+//				this.get(mapCoordinates).setUr(localX, localY, tile);
+//				this.get(mapCoordinates).setDl(localX, localY, 0);
+//				this.get(mapCoordinates).setDr(localX, localY, 0);
+//				this.get(mapCoordinates).setIdByCornersObject(localX, localY, tile, tileDimensions);
+//				this.adjustSurrounding(this.get(mapCoordinates), localX, localY, tile);
+//			} else {
+//				// not OK
+//			}
+//			
+//			if (this.getPaintLayer().equals("overlayTree2")) {
+//				// OK
+////				/** create Map if not yet created */
+////				if (!this.contains(p)) {
+////					this.createMap(p);
+////				}
+//				tile = tile -GameStates.mapTileSetWidth*2;
+//				TileDimensions tileDimensions = LocalMap.getTileDimensions(tile);
+////				System.out.println("Painting with "+tileDimensions);
+//				this.get(mapCoordinates).setUl(localX, localY, tile);
+//				if (tileDimensions == TileDimensions.RowCol2x2) this.get(mapCoordinates).setUl(localX, localY, 0);
+//				this.get(mapCoordinates).setUr(localX, localY, tile);
+//				this.get(mapCoordinates).setDl(localX, localY, 0);
+//				this.get(mapCoordinates).setDr(localX, localY, 0);
+//				this.get(mapCoordinates).setIdByCornersObject(localX, localY, tile, tileDimensions);
+//				this.adjustSurrounding(this.get(mapCoordinates), localX, localY, tile);
+//			} else {
+//				// not OK
+//			}
+//		}
+		
+		
+		
 	}
 	
 	
 	public void adjustSurrounding(LocalMap localMap, int localX, int localY, int paintType) {
 		
+		if (LocalMap.getPaintType(this.getPaintType(localMap, localX, localY-1)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX,localY-1)) == 0)
 		setTileCorners(localMap, localX, localY-1, paintType);
+		if (LocalMap.getPaintType(this.getPaintType(localMap,localX-1,localY)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX-1,localY)) == 0)
 		setTileCorners(localMap, localX-1, localY, paintType);
 		//setTileCorners(localMap, localX, localY);
+		if (LocalMap.getPaintType(this.getPaintType(localMap,localX+1,localY)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX+1,localY)) == 0)
 		setTileCorners(localMap, localX+1, localY, paintType);
+		if (LocalMap.getPaintType(this.getPaintType(localMap,localX,localY+1)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX,localY+1)) == 0)
 		setTileCorners(localMap, localX, localY+1, paintType);
 		
+		if (LocalMap.getPaintType(this.getPaintType(localMap,localX-1,localY-1)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX-1,localY-1)) == 0)
 		setTileCorners(localMap, localX-1, localY-1, paintType);
-		setTileCorners(localMap, localX+1, localY-1, paintType);	
+		if (LocalMap.getPaintType(this.getPaintType(localMap,localX+1,localY-1)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX+1,localY-1)) == 0)
+		setTileCorners(localMap, localX+1, localY-1, paintType);
+		if (LocalMap.getPaintType(this.getPaintType(localMap,localX-1,localY+1)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX-1,localY+1)) == 0)
 		setTileCorners(localMap, localX-1, localY+1, paintType);
+		if (LocalMap.getPaintType(this.getPaintType(localMap,localX+1,localY+1)) == paintType || LocalMap.getPaintType(this.getPaintType(localMap,localX+1,localY+1)) == 0)
 		setTileCorners(localMap, localX+1, localY+1, paintType);
 	}
 	
@@ -544,25 +697,25 @@ public class MapManager {
 		
 		/** delete all tiles in environment **/
 		centerMap.setTile(centerTile.x, centerTile.y, 0 ); // new Tile(0, false, false, false, false));
-		ulMap.setTile(ulTile.x, ulTile.y, 0 ); // new Tile(0, false, false, false, false));
+//		ulMap.setTile(ulTile.x, ulTile.y, 0 ); // new Tile(0, false, false, false, false));
 		ulMap.setDr(ulTile.x, ulTile.y, 0 );
-		uMap.setTile(uTile.x, uTile.y, 0 ); // new Tile(0, false, false, false, false));
+//		uMap.setTile(uTile.x, uTile.y, 0 ); // new Tile(0, false, false, false, false));
 		uMap.setDl(uTile.x, uTile.y, 0 );
 		uMap.setDr(uTile.x, uTile.y, 0 );
-		urMap.setTile(urTile.x, urTile.y, 0 ); // new Tile(0, false, false, false, false));
-		uMap.setDl(urTile.x, urTile.y, 0 );
-		lMap.setTile(lTile.x, lTile.y, 0 ); // new Tile(0, false, false, false, false));
+//		urMap.setTile(urTile.x, urTile.y, 0 ); // new Tile(0, false, false, false, false));
+		urMap.setDl(urTile.x, urTile.y, 0 );
+//		lMap.setTile(lTile.x, lTile.y, 0 ); // new Tile(0, false, false, false, false));
 		lMap.setUr(lTile.x, lTile.y, 0 );
 		lMap.setDr(lTile.x, lTile.y, 0 );
-		rMap.setTile(rTile.x, rTile.y, 0 ); // new Tile(0, false, false, false, false));
+//		rMap.setTile(rTile.x, rTile.y, 0 ); // new Tile(0, false, false, false, false));
 		rMap.setUl(rTile.x, rTile.y, 0 );
 		rMap.setDl(rTile.x, rTile.y, 0 );
-		dlMap.setTile(dlTile.x, dlTile.y, 0 ); // new Tile(0, false, false, false, false));
+//		dlMap.setTile(dlTile.x, dlTile.y, 0 ); // new Tile(0, false, false, false, false));
 		dlMap.setUr(dlTile.x, dlTile.y, 0 );
-		dMap.setTile(dTile.x, dTile.y, 0 ); // new Tile(0, false, false, false, false));
+//		dMap.setTile(dTile.x, dTile.y, 0 ); // new Tile(0, false, false, false, false));
 		dMap.setUr(dTile.x, dTile.y, 0 );
 		dMap.setUl(dTile.x, dTile.y, 0 );
-		drMap.setTile(drTile.x, drTile.y, 0 ); // new Tile(0, false, false, false, false));
+//		drMap.setTile(drTile.x, drTile.y, 0 ); // new Tile(0, false, false, false, false));
 		drMap.setUl(drTile.x, drTile.y, 0 );
 		/** and adjust the surrounding */
 		adjustSurrounding(uMap, uTile.x, uTile.y, paintType);
@@ -993,10 +1146,31 @@ public class MapManager {
 			}
 		}
 	
-		boolean dl = ((dlMap.getUr(dlTile.x, dlTile.y) != 0) || (dMap.getUl(dTile.x, dTile.y) != 0) || (lMap.getDr(lTile.x, lTile.y) != 0) );// && (dlTile.getId()!= 0);
-		boolean dr = ((drMap.getUl(drTile.x, drTile.y) != 0) || (dMap.getUr(dTile.x, dTile.y) != 0) || (rMap.getDl(rTile.x, rTile.y) != 0) );// && (drTile.getId()!= 0);
-		boolean ur = ((urMap.getDl(urTile.x, urTile.y) != 0) || (uMap.getDr(uTile.x, uTile.y) != 0) || (rMap.getUl(rTile.x, rTile.y) != 0) );// && (urTile.getId()!= 0);
-		boolean ul = ((ulMap.getDr(ulTile.x, ulTile.y) != 0) || (uMap.getDl(uTile.x, uTile.y) != 0) || (lMap.getUr(lTile.x, lTile.y) != 0) );// && (ulTile.getId()!= 0);
+		
+		boolean dlUr, dUl, lDr, drUl, dUr, rDl, urDl, uDr, rUl, ulDr, uDl, lUr;
+		if (dlMap != null) dlUr =  (dlMap.getUr(dlTile.x, dlTile.y) != 0); else dlUr = false;
+		if (dMap != null) dUl =  (dMap.getUl(dTile.x, dTile.y) != 0); else dUl = false;
+		if (lMap != null) lDr =  (lMap.getDr(lTile.x, lTile.y) != 0); else lDr = false;
+		if (drMap != null) drUl =  (drMap.getUl(drTile.x, drTile.y) != 0); else drUl = false;
+		if (dMap != null) dUr =  (dMap.getUr(dTile.x, dTile.y) != 0); else dUr = false;
+		if (rMap != null) rDl =  (rMap.getDl(rTile.x, rTile.y) != 0); else rDl = false;
+		if (urMap != null) urDl = (urMap.getDl(urTile.x, urTile.y) != 0) ; else urDl = false;
+		if (uMap != null) uDr = (uMap.getDr(uTile.x, uTile.y) != 0)  ; else uDr = false;
+		if (rMap != null) rUl = (rMap.getUl(rTile.x, rTile.y) != 0); else rUl = false;
+		if (ulMap != null) ulDr = (ulMap.getDr(ulTile.x, ulTile.y) != 0)  ; else ulDr = false;
+		if (uMap != null) uDl = (uMap.getDl(uTile.x, uTile.y) != 0) ; else uDl = false;
+		if (lMap != null) lUr = (lMap.getUr(lTile.x, lTile.y) != 0); else lUr = false;
+		
+		
+		boolean dl = ( dlUr || dUl  || lDr );// && (dlTile.getId()!= 0);
+		boolean dr = ( drUl||  dUr || rDl );// && (drTile.getId()!= 0);
+		boolean ur = ( urDl ||uDr || rUl);// && (urTile.getId()!= 0);
+		boolean ul = (ulDr|| uDl || lUr );// && (ulTile.getId()!= 0);
+		
+//		boolean dl = ((dlMap.getUr(dlTile.x, dlTile.y) != 0) || (dMap.getUl(dTile.x, dTile.y) != 0) || (lMap.getDr(lTile.x, lTile.y) != 0) );// && (dlTile.getId()!= 0);
+//		boolean dr = ((drMap.getUl(drTile.x, drTile.y) != 0) || (dMap.getUr(dTile.x, dTile.y) != 0) || (rMap.getDl(rTile.x, rTile.y) != 0) );// && (drTile.getId()!= 0);
+//		boolean ur = ((urMap.getDl(urTile.x, urTile.y) != 0) || (uMap.getDr(uTile.x, uTile.y) != 0) || (rMap.getUl(rTile.x, rTile.y) != 0) );// && (urTile.getId()!= 0);
+//		boolean ul = ((ulMap.getDr(ulTile.x, ulTile.y) != 0) || (uMap.getDl(uTile.x, uTile.y) != 0) || (lMap.getUr(lTile.x, lTile.y) != 0) );// && (ulTile.getId()!= 0);
 		
 //		boolean dl = ((dlMap.getUr(dlTile.x, dlTile.y) != -1) || dTile.hasUl() || lTile.hasDr());// && (dlTile.getId()!= 0);
 //		boolean dr = (drTile.hasUl() || dTile.hasUr() || rTile.hasDl());// && (drTile.getId()!= 0);
@@ -1005,36 +1179,212 @@ public class MapManager {
 		
 //		Tile tile = new Tile(0,ul, ur, dl, dr);
 //		tile.setIdByCorners();
+		
+		int paintTypeFinal = paintType;
+		if ( LocalMap.getPaintType(centerMap.getLocalMap()[centerTile.x][centerTile.y]) == 0) {
+//			paintType = LocalMap.getPaintType(centerMap.getLocalMap()[centerTile.x][centerTile.y]);
+		} else {
+			paintTypeFinal = LocalMap.getPaintType(centerMap.getLocalMap()[centerTile.x][centerTile.y]);
+		}
+		
 		if (dl)	{
-			centerMap.setDl(centerTile.x, centerTile.y, paintType);
+			centerMap.setDl(centerTile.x, centerTile.y, paintTypeFinal);
 //			System.out.println("dl "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setDl(centerTile.x, centerTile.y, 0);
 		if (dr)	{
-			centerMap.setDr(centerTile.x, centerTile.y, paintType);
+			centerMap.setDr(centerTile.x, centerTile.y, paintTypeFinal);
 //			System.out.println("dr "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setDr(centerTile.x, centerTile.y, 0);
 		if (ul)	{
-			centerMap.setUl(centerTile.x, centerTile.y, paintType);
+			centerMap.setUl(centerTile.x, centerTile.y, paintTypeFinal);
 //			System.out.println("ul "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setUl(centerTile.x, centerTile.y, 0);
 		if (ur)	{
-			centerMap.setUr(centerTile.x, centerTile.y, paintType);
+			centerMap.setUr(centerTile.x, centerTile.y, paintTypeFinal);
 //			System.out.println("ur "+centerTile.x+" "+centerTile.y);
 		}
 		else centerMap.setUr(centerTile.x, centerTile.y, 0);
 		
 //		System.out.println("DR: "+centerMap.getDr(centerTile.x, centerTile.y));
-		centerMap.setIdByCorners(centerTile.x, centerTile.y, paintType);
+		centerMap.setIdByCorners(centerTile.x, centerTile.y, paintTypeFinal);
 //		if (tile.getId() == 0) tile = null;
 //		centerMap.setTile(centerTile.x, centerTile.y, tile);
+//		}
+	}
+	
+	public int getPaintType(LocalMap localMap, int localX, int localY) {
+		Point origin = localMap.getOrigin();
+		LocalMap centerMap;
+		Point centerTile;
+		
+		int maxIndexX = GameStates.mapWidth-1;
+		int maxIndexY = GameStates.mapHeight-1;
+		
+		if (localX <= 0) {
+			if (localX == 0) {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 1
+						centerMap = localMap;
+						centerTile = new Point(0, 0);
+					} else {
+						// 2
+						centerMap = createMapIfNonExistent(getUpperMap(origin));
+						centerTile = new Point(0, maxIndexY);
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 3
+						centerMap =  localMap;
+						centerTile = new Point(0, maxIndexY);
+						
+					} else {
+						// 4
+						centerMap = createMapIfNonExistent(getLowerMap(origin));
+						centerTile = new Point(0, 0);
+						
+					}
+				} else {
+					// 5
+					centerMap =localMap;
+					centerTile = new Point(0, localY);
+					
+				}
+			} else {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 6
+						centerMap = createMapIfNonExistent(getLeftMap(origin));
+						centerTile = new Point(maxIndexX, 0);
+						
+					} else {
+						// 7
+						centerMap = createMapIfNonExistent(getUpperLeftMap(origin));
+						centerTile = new Point(maxIndexX, maxIndexY);
+						
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 8
+						centerMap = createMapIfNonExistent(getLeftMap(origin));
+						centerTile = new Point(maxIndexX, maxIndexY);
+						
+					} else {
+						// 9
+						centerMap  = createMapIfNonExistent(getLowerLeftMap(origin));
+						centerTile = new Point(maxIndexX, 0);
+					}
+				} else {
+					// 10
+					centerMap = createMapIfNonExistent(getLeftMap(origin));
+					centerTile = new Point(maxIndexX, localY);
+				}
+			}
+		} else if (localX >= GameStates.mapWidth-1) {
+			if (localX == GameStates.mapWidth-1) {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 11
+						centerMap = localMap;
+						centerTile = new Point(maxIndexX, 0);
+						
+					} else {
+						// 12
+						centerMap = createMapIfNonExistent(getUpperMap(origin));
+						centerTile = new Point(maxIndexX, maxIndexY);
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 13
+						centerMap = localMap;
+						centerTile = new Point(maxIndexX, maxIndexY);
+						
+					} else {
+						// 14
+						centerMap = createMapIfNonExistent(getLowerMap(origin));
+						centerTile = new Point(maxIndexX, 0);
+						
+					}
+				} else {
+					// 15
+					centerMap = localMap;
+					centerTile = new Point(maxIndexX, localY);
+					
+				}
+			} else {
+				if (localY <= 0) {
+					if (localY == 0) {
+						// 16
+						centerMap = createMapIfNonExistent(getRightMap(origin));
+						centerTile = new Point(0, 0);
+						
+					} else {
+						// 17
+						centerMap  = createMapIfNonExistent(getUpperRightMap(origin));
+						centerTile = new Point(0, maxIndexY);
+						
+					}
+				} else if (localY >= GameStates.mapHeight-1) {
+					if (localY == GameStates.mapHeight-1) {
+						// 18
+						centerMap = createMapIfNonExistent(getRightMap(origin));
+						centerTile = new Point(0, maxIndexY);
+						
+					} else {
+						// 19
+						centerMap = createMapIfNonExistent(getLowerRightMap(origin));
+						centerTile = new Point(0, 0);
+						
+					}
+				} else {
+					// 20
+					centerMap = createMapIfNonExistent(getRightMap(origin)); 
+					centerTile = new Point(0, localY);
+					
+				}
+			}
+		} else {
+			if (localY <= 0) {
+				if (localY == 0) {
+					// 21
+					centerMap =localMap;
+					centerTile = new Point(localX, 0);
+					
+				} else {
+					// 22
+					centerMap = createMapIfNonExistent(getUpperMap(origin));
+					centerTile = new Point(localX, maxIndexY);
+					
+				}
+			} else if (localY >= GameStates.mapHeight-1) {
+				if (localY == GameStates.mapHeight-1) {
+					// 23
+					centerMap = localMap;
+					centerTile = new Point(localX, maxIndexY);
+					
+				} else {
+					// 24
+					centerMap =  createMapIfNonExistent(getLowerMap(origin));
+					centerTile = new Point(localX, 0);
+					
+				}
+			} else {
+				// 25
+				centerMap  = localMap;
+				centerTile = new Point(localX, localY);
+				
+			}
+		}
+		return centerMap.getLocalMap()[centerTile.x][centerTile.y];		
 	}
 	
 	
-	public Point getUpperLeftMap(Point origin) {
-		return new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
+	public Point getUpperLeftMap(Point origin) {		
+		Point point = new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
 	}
 	
 	public Point getUpperMap(Point origin) {
@@ -1042,27 +1392,39 @@ public class MapManager {
 	}
 	
 	public Point getUpperRightMap(Point origin) {
-		return new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
+		Point point =  new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y-GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
 	public Point getLeftMap(Point origin) {
-		return new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
+		Point point = new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
 	public Point getRightMap(Point origin) {
-		return new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
+		Point point = new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
-	public static Point getLowerLeftMap(Point origin) {
-		return new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+	public Point getLowerLeftMap(Point origin) {
+		Point point = new Point(origin.x-GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
-	public static Point getLowerMap(Point origin) {
-		return new Point(origin.x, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+	public Point getLowerMap(Point origin) {
+		Point point = new Point(origin.x, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 	
 	public Point getLowerRightMap(Point origin) {
-		return new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+		Point point =  new Point(origin.x+GameStates.mapWidth*GameStates.mapTileSetWidth, origin.y+GameStates.mapHeight*GameStates.mapTileSetHeight);
+		return new Point(((point.x/GameStates.mapTotalWidth) % this.getMapWidth() +this.getMapWidth()) % this.getMapWidth() *GameStates.mapTotalWidth, ((point.y/GameStates.mapTotalHeight) % this.getMapHeight() +this.getMapHeight()) % this.getMapHeight() *GameStates.mapTotalHeight);
+		
 	}
 
 	
@@ -1094,24 +1456,35 @@ public class MapManager {
 	}
 	
 	
-	public LocalMap loadMap(String fileName) {
+	public static LocalMap loadMap(String fileName) {
 		try {
+			File testFile = new File(fileName);
+			if (testFile.exists()) {
+				// OK
+			} else return null;
+			
 			FileInputStream datei=new FileInputStream(fileName);
 			BufferedInputStream buf=new BufferedInputStream(datei);
 			ObjectInputStream readStream = new ObjectInputStream(buf);
-			int[][] localMap = (int[][]) readStream.readObject();
-			int[][] ulArray = (int[][]) readStream.readObject();
-			int[][] urArray = (int[][]) readStream.readObject();
-			int[][] dlArray = (int[][]) readStream.readObject();
-			int[][] drArray = (int[][]) readStream.readObject();
-			Point origin = (Point) readStream.readObject();
-//			String tileSetFileName = (String) readStream.readObject();
-			String paintLayer = (String) readStream.readObject();
-			readStream.close();
-			
-//			System.out.println(origin.x +" "+origin.y);
-			return new LocalMap(localMap, ulArray, urArray, dlArray, drArray, origin, paintLayer);
-			
+			try {
+				int[][] localMap = (int[][]) readStream.readObject();
+				int[][] ulArray = (int[][]) readStream.readObject();
+				int[][] urArray = (int[][]) readStream.readObject();
+				int[][] dlArray = (int[][]) readStream.readObject();
+				int[][] drArray = (int[][]) readStream.readObject();
+				Point origin = (Point) readStream.readObject();
+	//			String tileSetFileName = (String) readStream.readObject();
+				String paintLayer = (String) readStream.readObject();
+				readStream.close();
+				
+				
+	//			System.out.println(origin.x +" "+origin.y);
+				return new LocalMap(localMap, ulArray, urArray, dlArray, drArray, origin, paintLayer, true);
+			} catch (EOFException e) {
+				e.printStackTrace();
+				return null;
+			}
+				
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
@@ -1139,7 +1512,7 @@ public class MapManager {
 //		
 //	}
 	
-	public void loadFromFileSystem(String playerName , int x, int y) {
+	public boolean loadFromFileSystem(String playerName , int x, int y) {
 //		ArrayList<String> listOfFiles = new ArrayList<String>();
 //		File folder = new File(GameStates.standardMapFolder+playerName);
 //		listOfFiles = MyUtil.listFilesForFolder(folder);
@@ -1152,12 +1525,53 @@ public class MapManager {
 //				pointList.add(lMap.getOrigin());
 //			}
 //		}
-		String mapFile = localMapFileList.get(new Point(x, y));
+		Point moduloPoint = new Point(((x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		String mapFile = localMapFileList.get(moduloPoint);
 		if (mapFile != null) {
 			LocalMap lMap = loadMap(mapFile);
 			localMapList.put(lMap.getOrigin(), lMap);
 			pointList.add(lMap.getOrigin());
+			return true;
+		} else {
+			return false;
 		}
+	}
+	
+	public void paintTilesOnMap(Point point, int[] x, int[] y, int tile) {		
+		if (localMapList.get(point) != null) {
+			if (x.length != y.length) {
+				System.out.println("Wrong dimension in paintTilesOnMap in MapManager");
+			} else {
+				for (int i = 0; i < x.length; i ++) {
+					paintTilesMapManager(point, new Point(x[i], y[i]), tile);	
+				}		
+			}
+		} else {
+			createMap(point);
+			if (x.length != y.length) {
+				System.out.println("Wrong dimension in paintTilesOnMap in MapManager");
+			} else {
+				System.out.println("MapManager: needed to create map first");
+				if (localMapList.get(point) != null) {
+					for (int i = 0; i < x.length; i ++) {
+						paintTilesMapManager(point, new Point(x[i], y[i]), tile);
+					}
+					
+				}
+			}
+		}
+		
+//		if (x.length != y.length) {
+//			System.out.println("Wrong dimension in paintTilesOnMap in ObjectMapManager");
+//		} else {
+//			if (localMapList.get(point) != null) {
+//				for (int i = 0; i < x.length; i ++) {
+//					paintTilesMapManager(point, new Point(x[i], y[i]), tile);
+////					this.addChangedList(point);
+//				}
+//				
+//			}
+//		}
 	}
 	
 	
@@ -1170,9 +1584,9 @@ public class MapManager {
 		return this.paintLayer;
 	}
 	
-	public byte[] LocalMap2ByteArray(String playerName, String paintLayer, Point p) {
+	public byte[] LocalMap2ByteArray(String playerName, String room, String paintLayer, Point p) {
 		FileInputStream fileInputStream=null;
-        File file = new File(GameStates.standardMapFolder+playerName+"/"+paintLayer+"_"+p.x+"_"+p.y+".map");
+        File file = new File(GameStates.standardMapFolder+playerName+"/"+room+"/"+paintLayer+"_"+p.x+"_"+p.y+".map");
         byte[] mapBytes = new byte[(int) file.length()];
 
         try {
@@ -1194,11 +1608,13 @@ public class MapManager {
 	}
 	
 	public void addChangedList(Point p) {
-		if (!changedList.contains(p)) this.changedList.add(p);
+		Point moduloPoint = new Point(((p.x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((p.y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		if (!changedList.contains(moduloPoint)) this.changedList.add(moduloPoint);
 	}
 	
 	public void removeStayList(Point p) {
-		if (stayList.contains(p)) this.stayList.remove(p);
+		Point moduloPoint = new Point(((p.x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((p.y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		if (!stayList.contains(moduloPoint)) this.stayList.remove(moduloPoint);
 	}
 	
 	public void setChangedList(  ArrayList<Point> list) {
@@ -1218,7 +1634,8 @@ public class MapManager {
 	}
 	
 	public void addStayList(Point p) {
-		if (!stayList.contains(p)) this.stayList.add(p);
+		Point moduloPoint = new Point(((p.x/GameStates.mapTotalWidth) % this.getMapWidth()+this.getMapWidth()) % this.getMapWidth()*GameStates.mapTotalWidth, ((p.y/GameStates.mapTotalHeight) % this.getMapHeight()+this.getMapHeight())%this.getMapHeight()*GameStates.mapTotalHeight);
+		if (!stayList.contains(moduloPoint)) this.stayList.add(moduloPoint);
 	}
 	
 	public void setStayList(  ArrayList<Point> stayList) {
@@ -1229,18 +1646,19 @@ public class MapManager {
 		return stayList;
 	}
 	
-	public void initLocalMapFileList(String playerName) {
+	public void initLocalMapFileList(String playerName, String room) {
 		ArrayList<String> listOfFiles = new ArrayList<String>();
-		File folder = new File(GameStates.standardMapFolder+playerName);
+		File folder = new File(GameStates.standardMapFolder+playerName+"/"+room);
 		listOfFiles = MyUtil.listFilesForFolder(folder);
 		for (String mapFile: listOfFiles) {
 			/** get origins and save the maps under the corresponding origin */
 			/** only load if its the right paintLayer */
 			if (mapFile.startsWith(getPaintLayer())) { // && mapFile.contains("_"+x+"_") && mapFile.contains("_"+y+".")) {
-				LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+mapFile);
+				LocalMap lMap = loadMap(GameStates.standardMapFolder+playerName+"/"+room+"/"+mapFile);
 //				localMapList.put(lMap.getOrigin(), lMap);
-				localMapFileList.put(lMap.getOrigin(), GameStates.standardMapFolder+playerName+"/"+mapFile);
+				localMapFileList.put(lMap.getOrigin(), GameStates.standardMapFolder+playerName+"/"+room+"/"+mapFile);
 //				pointList.add(lMap.getOrigin());
+				
 			}
 		}
 	}
@@ -1248,4 +1666,22 @@ public class MapManager {
 	public void putMapFileName(Point p, String fileName) {
 		localMapFileList.put(p, fileName);
 	}
+
+	public int getMapWidth() {
+		return mapWidth;
+	}
+
+	public void setMapWidth(int mapWidth) {
+		this.mapWidth = mapWidth;
+	}
+
+	public int getMapHeight() {
+		return mapHeight;
+	}
+
+	public void setMapHeight(int mapHeight) {
+		this.mapHeight = mapHeight;
+	}
+
+
 }

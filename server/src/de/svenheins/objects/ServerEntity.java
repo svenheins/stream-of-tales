@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 
@@ -45,13 +51,14 @@ public class ServerEntity extends WorldObject{
 	public final static int DEFAULT_MOVEMENT_ON_X = 300;
 	public final static int DEFAULT_MOVEMENT_ON_Y = 300;
 	
-	public ServerEntity(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x, float y, float mx, float my) {
+	public ServerEntity(ServerSprite sprite, String name, String room, BigInteger id, String tileSetName, String tileSetPathName, float x, float y, float mx, float my) {
 		standardAnimation = new String[1];
 		standardAnimation[0] = sprite.getStrImg();
 		animation = standardAnimation;
 		this.sprite = AppContext.getDataManager().createReference(sprite);
 		this.id = id;
-		this.setName(sprite.getStrImg());
+		this.setName(name);
+		this.setRoom(room);
 		this.x = x;
 		this.y = y;
 		this.my = mx;
@@ -110,10 +117,14 @@ public class ServerEntity extends WorldObject{
 	}
 	
 	public boolean collides(ServerEntity otherEntity) {
-		//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
-		Rectangle r1 = new Rectangle((int) x, (int) y, sprite.get().getWidth(), sprite.get().getHeight());
-		Rectangle r2 = new Rectangle((int) otherEntity.x, (int) otherEntity.y, otherEntity.getSprite().getWidth(), otherEntity.getSprite().getHeight());
-		return r1.intersects(r2);
+		if (this.getRoom().equals(otherEntity.getRoom())) {
+			//Sprite sprite = animation.getSprite(System.currentTimeMillis(), this.standardAnimation);
+			Rectangle r1 = new Rectangle((int) x, (int) y, sprite.get().getWidth(), sprite.get().getHeight());
+			Rectangle r2 = new Rectangle((int) otherEntity.x, (int) otherEntity.y, otherEntity.getSprite().getWidth(), otherEntity.getSprite().getHeight());
+			return r1.intersects(r2);
+		} else {
+			return false;
+		}
 	}
 	
 	public boolean contains(Point p) {
@@ -139,7 +150,7 @@ public class ServerEntity extends WorldObject{
      * <p>
      * @return the room this player is currently in, or {@code null}
      */
-    public WorldRoom getRoom() {
+    public WorldRoom getWorldRoom() {
         if (currentRoomRef == null) {
             return null;
         }
@@ -153,16 +164,16 @@ public class ServerEntity extends WorldObject{
      * <p>
      * @param room the room this player should be in, or {@code null}
      */
-    public void setRoom(WorldRoom room) {
+    public void setWorldRoom(WorldRoom worldRoom) {
         DataManager dataManager = AppContext.getDataManager();
         dataManager.markForUpdate(this);
 
-        if (room == null) {
+        if (worldRoom == null) {
             currentRoomRef = null;
             return;
         }
 
-        currentRoomRef = dataManager.createReference(room);
+        currentRoomRef = dataManager.createReference(worldRoom);
     }
     
     public void setTileSetPathName(String pathName) {

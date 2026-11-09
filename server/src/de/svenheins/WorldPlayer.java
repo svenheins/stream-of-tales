@@ -24,15 +24,14 @@ package de.svenheins;
 
 import java.awt.Point;
 import java.awt.Polygon;
-import java.awt.TrayIcon.MessageType;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 //import com.sun.darkstar.example.snowman.common.protocol.enumn.EOPCODE;
 import com.sun.sgs.app.AppContext;
@@ -45,39 +44,34 @@ import com.sun.sgs.app.ManagedReference;
 import com.sun.sgs.app.NameNotBoundException;
 
 import de.svenheins.main.AttributeType;
+import de.svenheins.main.EntityStates;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.Priority;
-import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.ServerTextureManager;
 import de.svenheins.managers.SpaceManager;
 import de.svenheins.managers.SpriteManager;
 import de.svenheins.managers.TileSetManager;
-import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.ITEMCODE;
 import de.svenheins.messages.OBJECTCODE;
 import de.svenheins.messages.OPCODE;
 import de.svenheins.messages.ServerMessages;
-import de.svenheins.objects.Entity;
 import de.svenheins.objects.InteractionTile;
 import de.svenheins.objects.PlayerEntity;
-import de.svenheins.objects.ServerAgentEntrepreneur;
 import de.svenheins.objects.ServerAreaInfluence;
 import de.svenheins.objects.ServerContainer;
 import de.svenheins.objects.ServerEntity;
 import de.svenheins.objects.ServerItem;
 import de.svenheins.objects.ServerPlayer;
-import de.svenheins.objects.ServerRegion;
 import de.svenheins.objects.ServerSpace;
 import de.svenheins.objects.ServerSprite;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.Sprite;
-import de.svenheins.objects.TileSet;
 import de.svenheins.objects.WorldLatticePosition;
 import de.svenheins.objects.WorldObject;
-import de.svenheins.objects.items.Container;
 import de.svenheins.objects.items.Item;
+import de.svenheins.objects.items.ItemFactoryCollection;
 
 /**
  * Represents a player in the {@link World} example MUD.
@@ -105,6 +99,7 @@ public class WorldPlayer
     private boolean initializingEntities;
     private boolean initializingItems;
     private boolean initializingAreaInfluences;
+    private boolean initializingGrowthSpots;
     
     private boolean readyForNextMessage= true;
     
@@ -152,6 +147,7 @@ public class WorldPlayer
         player.setInitializingEntities(false);
         player.setInitializingItems(false);
         player.setInitializingAreaInfluences(false);
+        player.setInitializingGrowthSpots(false);
 //        player.setId(id);
         
         String playerName = player.getName().substring(player.getName().indexOf(".")+1, player.getName().length());
@@ -184,6 +180,7 @@ public class WorldPlayer
         initializingEntities= false;
         initializingItems= false;
         initializingAreaInfluences = false;
+        initializingGrowthSpots = false;
     }
 
     /**
@@ -287,7 +284,7 @@ public class WorldPlayer
             new Object[] { this, room }
         );
         room.addPlayer(this);
-        setRoom(room);
+        setWorldRoom(room);
     }
     
     /** {@inheritDoc} */
@@ -315,13 +312,13 @@ public class WorldPlayer
 //        );
 
 //        if (command.equalsIgnoreCase("look")) {
-//            String reply = getRoom().look(this);
+//            String reply = getWorldRoom().look(this);
 //            getSession().send(encodeString(reply));
 //        } else  if (command.equalsIgnoreCase("+")) {
-//        	String reply = getRoom().addOne(this);
+//        	String reply = getWorldRoom().addOne(this);
 //            getSession().send(encodeString(reply));
 //        } else  if (command.equalsIgnoreCase("eye")) {
-//        	String reply = "eye:"+getRoom().getEye(this);
+//        	String reply = "eye:"+getWorldRoom().getEye(this);
 //            getSession().send(encodeString(reply));
 //        } else {
 //            logger.log(Level.WARNING,
@@ -339,36 +336,36 @@ public class WorldPlayer
 		switch (opCode) {
 //			case EYE:
 //				int id = message.getInt();
-//				float[] state = getRoom().getEntityState(this, id);
+//				float[] state = getWorldRoom().getEntityState(this, id);
 //				getSession().send(ServerMessages.sendEntityState(id, state[0], state[1], state[2], state[3]));
 //				break;
 //			case SPACE:
 //				int space_id = message.getInt();
-//				float[] space_state = getRoom().getSpaceState(this, space_id);
+//				float[] space_state = getWorldRoom().getSpaceState(this, space_id);
 //				getSession().send(ServerMessages.sendSpaceState(space_id, space_state[0], space_state[1], space_state[2], space_state[3]));
 //				break;
 //			case OBJECTSTATE:
 //				int object_id = message.getInt();
 //				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
 //				/** get the six object-states: x,y,mx,my,width,height */
-//				float[] object_state = getRoom().getObjectState(objCode, this, object_id);
+//				float[] object_state = getWorldRoom().getObjectState(objCode, this, object_id);
 //				getSession().send(ServerMessages.sendObjectState(objCode, object_id, object_state));
 //				break;
 			case INITENTITIES:{
 				if(!this.isInitializingEntities()) {
 					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
-					this.getRoom().addPlayerInitializingEntities(this.getId());
+					this.getWorldRoom().addPlayerInitializingEntities(this.getId());
 					
 					setInitializingEntities(true);
 //					int countEntities = currentRoomRef.get().getCountEntities();
 //					int end = 0;
 //					Entity[] entityArray;
-//					Iterator<BigInteger> itKeys = getRoom().getEntities().get().keySet().iterator();
+//					Iterator<BigInteger> itKeys = getWorldRoom().getEntities().get().keySet().iterator();
 //					
 //					for (int begin = 0; end<countEntities; begin+=10) {
 //						end = begin+10;
 //						if (end> countEntities) end = countEntities;
-//						entityArray = getRoom().getEntities(this, begin, end, itKeys);
+//						entityArray = getWorldRoom().getEntities(this, begin, end, itKeys);
 //						getSession().send(ServerMessages.sendEntities(entityArray));
 //					
 //					}
@@ -378,7 +375,7 @@ public class WorldPlayer
 			case INITITEMS:{
 				if(!this.isInitializingItems()) {
 					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
-					this.getRoom().addPlayerInitializingItems(this.getId());
+					this.getWorldRoom().addPlayerInitializingItems(this.getId());
 					
 					setInitializingItems(true);					
 				}
@@ -388,9 +385,19 @@ public class WorldPlayer
 			case INITAREAINFLUENCES: {
 				if(!this.isInitializingAreaInfluences()) {
 					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
-					this.getRoom().addPlayerInitializingAreaInfluences(this.getId());
+					this.getWorldRoom().addPlayerInitializingAreaInfluences(this.getId());
 					
 					setInitializingAreaInfluences(true);					
+				}
+				
+				break;
+			}
+			case INITGROWTHSPOTS: {
+				if(!this.isInitializingGrowthSpots()) {
+					/** add playerId in the initializing HashMap<BigInteger, Iterator<BigInteger>> of the room */
+					this.getWorldRoom().addPlayerInitializingGrowthSpots(this.getId());
+					
+					setInitializingGrowthSpots(true);					
 				}
 				
 				break;
@@ -421,36 +428,37 @@ public class WorldPlayer
 			case PLAYERDATA: {
 				BigInteger playerId = BigInteger.valueOf(message.getLong());
 				this.sendPlayerData(playerId);
+//				this.sendPlayersMyUpdatedEquipment(thisPlayerName);
 				break; }
-			case EDIT_PLAYER_ADDONS: {
-				/** ID */
-				BigInteger objectId_player = BigInteger.valueOf(message.getLong()); // 8
-		        
-				byte[] nameBytes_player = new byte[message.getInt()];
-    			message.get(nameBytes_player);
-    			String name_player = new String(nameBytes_player); // name
-    			byte[] tileNameBytes_player = new byte[message.getInt()];
-    			message.get(tileNameBytes_player);
-    			String tileName = new String(tileNameBytes_player); // name
-    			byte[] tilePathNameBytes_player = new byte[message.getInt()];
-    			message.get(tilePathNameBytes_player);
-    			String tilePathName = new String(tilePathNameBytes_player); // name
-		    	int tileWidth = message.getInt(); // 4 
-		    	int tileHeight = message.getInt(); // 4 
-		    	byte[] countryBytes = new byte[message.getInt()];
-    			message.get(countryBytes);
-    			String country = new String(countryBytes); // name
-    			byte[] groupNameBytes = new byte[message.getInt()];
-    			message.get(groupNameBytes);
-    			String groupName = new String(groupNameBytes); // name
-		    	int experience = message.getInt(); // 4
-		    	
-		    	PlayerManager.updatePlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
-		    	this.getRoom().editPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
-		    	this.getRoom().sendEditPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
-		    	
-		    	
-				break; }
+//			case EDIT_PLAYER_ADDONS: {
+//				/** ID */
+//				BigInteger objectId_player = BigInteger.valueOf(message.getLong()); // 8
+//		        
+//				byte[] nameBytes_player = new byte[message.getInt()];
+//    			message.get(nameBytes_player);
+//    			String name_player = new String(nameBytes_player); // name
+//    			byte[] tileNameBytes_player = new byte[message.getInt()];
+//    			message.get(tileNameBytes_player);
+//    			String tileName = new String(tileNameBytes_player); // name
+//    			byte[] tilePathNameBytes_player = new byte[message.getInt()];
+//    			message.get(tilePathNameBytes_player);
+//    			String tilePathName = new String(tilePathNameBytes_player); // name
+//		    	int tileWidth = message.getInt(); // 4 
+//		    	int tileHeight = message.getInt(); // 4 
+//		    	byte[] countryBytes = new byte[message.getInt()];
+//    			message.get(countryBytes);
+//    			String country = new String(countryBytes); // name
+//    			byte[] groupNameBytes = new byte[message.getInt()];
+//    			message.get(groupNameBytes);
+//    			String groupName = new String(groupNameBytes); // name
+//		    	int experience = message.getInt(); // 4
+//		    	
+//		    	PlayerManager.updatePlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+//		    	this.getWorldRoom().editPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+//		    	this.getWorldRoom().sendEditPlayerAddons(objectId_player, thisPlayerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience);
+//		    	
+//		    	
+//				break; }
 			case OBJECTSTATE: {
 				OBJECTCODE objCode = OBJECTCODE.values()[message.getInt()];
 //				byte[] bigByte = new byte[message.getInt()];
@@ -467,15 +475,15 @@ public class WorldPlayer
 	    		// Update the entities/ spaces of the WorldRoom
 	    		if (objCode == OBJECTCODE.SPACE) {
 	    			SpaceManager.updateSpace(objectId, objectX, objectY, objectMX, objectMY);
-	    			getRoom().editSpace(objectId, new float[]{objectX, objectY, objectMX, objectMY});
+	    			getWorldRoom().editSpace(objectId, new float[]{objectX, objectY, objectMX, objectMY});
 	    		}
 	    		if (objCode == OBJECTCODE.ENTITY) {
 	    			EntityManager.updateEntity(objectId, objectX, objectY, objectMX, objectMY);
-	    			getRoom().editEntity(objectId, new float[]{objectX, objectY, objectMX, objectMY});
+	    			getWorldRoom().editEntity(objectId, new float[]{objectX, objectY, objectMX, objectMY});
 	    		}
 	    		if (objCode == OBJECTCODE.PLAYER) {
 	    			PlayerManager.updatePlayer(this.getId(), objectX, objectY, objectMX, objectMY);
-	    			getRoom().editPlayer(this.getId(), new float[]{objectX, objectY, objectMX, objectMY});
+	    			getWorldRoom().editPlayer(this.getId(), new float[]{objectX, objectY, objectMX, objectMY});
 	    		}
 	    		
 				break;
@@ -532,13 +540,13 @@ public class WorldPlayer
 		    		//if (polygon.size() > 1) System.out.println(polygon.get(1).npoints);
 //		    		SpaceManager.add(spaceAdd);
 		    		/** first create the world object then the temporarily SpaceManager-Object */
-		    		getRoom().addSpace(new ServerSpace(spaceAdd));
+		    		getWorldRoom().addSpace(new ServerSpace(spaceAdd));
 		    		/** now we got a new ID saved in the room */
-		    		spaceAdd.setId(getRoom().getLastAddedSpaceID());
+		    		spaceAdd.setId(getWorldRoom().getLastAddedSpaceID());
 //		    		System.out.println("last ID="+ spaceAdd.getId());
 			        SpaceManager.add(spaceAdd);	
 			        
-		    		//ServerSpace s_space =ServerRegion getRoom().getSpaces().
+		    		//ServerSpace s_space =ServerRegion getWorldRoom().getSpaces().
 		    		//Space spaceAddManager = new Space()
 				}
 				
@@ -592,12 +600,12 @@ public class WorldPlayer
 		    			/** texture "name" is ready to send it to other players except player "playerName" */
 		    			logger.log(Level.INFO, "texture {0} is ready and will now be sent to players except {1}",
 			    	            new Object[] { name, playerName});
-		    			this.getRoom().sendTextureToPlayers(name, playerName);
+		    			this.getWorldRoom().sendTextureToPlayers(name, playerName);
 		    		}
 	    		} else {
 	    			logger.log(Level.INFO, "got an upload request for {0} by player {1} but denied it, because the texture is already there!",
 		    	            new Object[] { name, playerName});
-	    			this.getRoom().sendTextureToPlayers(name, playerName);
+	    			this.getWorldRoom().sendTextureToPlayers(name, playerName);
 	    		}
 	    		
 				break; }
@@ -660,9 +668,9 @@ public class WorldPlayer
 		    	float area = message.getFloat();
 		    	
 		    	/** change the corresponding serverspace and space and send an update to players */
-		    	this.getRoom().editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
+		    	this.getWorldRoom().editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	//SpaceManager.editSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
-		    	this.getRoom().sendEditSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
+		    	this.getWorldRoom().sendEditSpaceAddons(id, nameTexture, rgb, trans, filled, scale, area);
 		    	
 				break; }
 			case ADDITEM: {
@@ -680,6 +688,14 @@ public class WorldPlayer
 				byte[] itemName_ADDITEM_Bytes = new byte[message.getInt()];
 				message.get(itemName_ADDITEM_Bytes);
 				String itemName_ADDITEM = new String(itemName_ADDITEM_Bytes); // name
+				
+				byte[] commentBytes = new byte[message.getInt()];
+				message.get(commentBytes);
+				String comment = new String(commentBytes); // comment
+				
+				byte[] itemRoomBytes = new byte[message.getInt()];
+				message.get(itemRoomBytes);
+				String itemRoom = new String(itemRoomBytes); // room
 
 				byte[] spriteString_ADDITEM_Bytes = new byte[message.getInt()];
 				message.get(spriteString_ADDITEM_Bytes);
@@ -693,7 +709,7 @@ public class WorldPlayer
 		        ServerSprite serverSprite_ADDITEM = new ServerSprite(spriteString_ADDITEM, sprite_ADDITEM.getHeight(), sprite_ADDITEM.getWidth());
 		        ServerEntity serverEntity_ADDITEM;
 		        
-		        serverEntity_ADDITEM = new ServerEntity(serverSprite_ADDITEM, addItemID, spriteShortName_ADDITEM, spriteString_ADDITEM, x_ADDITEM, y_ADDITEM, mx_ADDITEM, my_ADDITEM);
+		        serverEntity_ADDITEM = new ServerEntity(serverSprite_ADDITEM, itemName_ADDITEM, itemRoom, addItemID, spriteShortName_ADDITEM, spriteString_ADDITEM, x_ADDITEM, y_ADDITEM, mx_ADDITEM, my_ADDITEM);
 	        	
 		        itemStatesLength_ADDITEM = message.getInt();
 		        itemStates_ADDITEM = new float[itemStatesLength_ADDITEM];
@@ -702,11 +718,11 @@ public class WorldPlayer
 		        }
 		        
 //		        System.out.println("Server got ="+itemStates_ADDITEM[AttributeType.LIFEREGENERATION.ordinal()]);
-				this.getRoom().addItem(addItemID, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ));
+				this.getWorldRoom().addItem(addItemID, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, comment, itemRoom,  serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ));
 				break; }
 			case TAKEITEM: {
 				BigInteger takeItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
-				if (this.getRoom().getItemList().get().containsKey(takeItemID)) {
+				if (this.getWorldRoom().getItemList().get().containsKey(takeItemID)) {
 					getSession().send(ServerMessages.sendTakeItem(takeItemID));
 					
 //					logger.log(Level.INFO, "taking item {0} by player {1}",
@@ -720,7 +736,7 @@ public class WorldPlayer
 				BigInteger tookItemID = BigInteger.valueOf(message.getLong()); // 8 Bytes
 //				logger.log(Level.INFO, "took item {0} by player {1}",
 //	    	            new Object[] { tookItemID, thisPlayerName});
-				this.getRoom().removeItem(tookItemID);
+				this.getWorldRoom().removeItem(tookItemID);
 				break;
 			}
 			case ADDITEMTOCONTAINER: {
@@ -741,6 +757,14 @@ public class WorldPlayer
 				byte[] itemName_ADDITEM_Bytes = new byte[message.getInt()];
 				message.get(itemName_ADDITEM_Bytes);
 				String itemName_ADDITEM = new String(itemName_ADDITEM_Bytes); // name
+				
+				byte[] commentBytes = new byte[message.getInt()];
+				message.get(commentBytes);
+				String comment = new String(commentBytes); // comment
+				
+				byte[] itemRoomBytes = new byte[message.getInt()];
+				message.get(itemRoomBytes);
+				String itemRoom = new String(itemRoomBytes); // room
 
 				byte[] spriteString_ADDITEM_Bytes = new byte[message.getInt()];
 				message.get(spriteString_ADDITEM_Bytes);
@@ -754,7 +778,7 @@ public class WorldPlayer
 		        ServerSprite serverSprite_ADDITEM = new ServerSprite(spriteString_ADDITEM, sprite_ADDITEM.getHeight(), sprite_ADDITEM.getWidth());
 		        ServerEntity serverEntity_ADDITEM;
 		        
-		        serverEntity_ADDITEM = new ServerEntity(serverSprite_ADDITEM, addItemID, spriteShortName_ADDITEM, spriteString_ADDITEM, x_ADDITEM, y_ADDITEM, mx_ADDITEM, my_ADDITEM);
+		        serverEntity_ADDITEM = new ServerEntity(serverSprite_ADDITEM, itemName_ADDITEM, itemRoom, addItemID, spriteShortName_ADDITEM, spriteString_ADDITEM, x_ADDITEM, y_ADDITEM, mx_ADDITEM, my_ADDITEM);
 //		        System.out.println("x:"+x_ADDITEM+" y:"+y_ADDITEM);
 		        
 		        itemStatesLength_ADDITEM = message.getInt();
@@ -766,9 +790,11 @@ public class WorldPlayer
 		        containerXPos = message.getInt();
 		        containerYPos = message.getInt();
 		        
-				this.getRoom().addItemToContainer(thisPlayerName, containerType, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ), containerXPos, containerYPos);
+				this.getWorldRoom().addItemToContainer(thisPlayerName, containerType, new ServerItem(addItemID, itemCode_ADDITEM, itemName_ADDITEM, comment, itemRoom, serverEntity_ADDITEM, count_ADDITEM, capacity_ADDITEM, itemStates_ADDITEM ), containerXPos, containerYPos);
 //				logger.log(Level.INFO, "added item {0} into the field ({1}|{2} of {3})",
 //	    	            new Object[] { addItemID, containerXPos, containerYPos, containerType});
+				
+				sendPlayersMyUpdatedEquipment(thisPlayerName);
 				break;}
 			case CLEARCONTAINERPOSITION:
 			{	
@@ -777,16 +803,57 @@ public class WorldPlayer
 				int containerYPos = message.getInt();
 				switch (containerType) {
 				case CONTAINER_MAIN:
-					BigInteger itemID = this.getRoom().getContainerList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
-					this.getRoom().getContainerList().get().get(thisPlayerName).getForUpdate().removeItem(itemID);
+					BigInteger itemID = this.getWorldRoom().getContainerList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerList().get().get(thisPlayerName).getForUpdate().removeItem(itemID);
 					break;
 				case CONTAINER_EQUIPMENT_BODY:
-					BigInteger itemIDBODY = this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
-					this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDBODY);
+					BigInteger itemIDBODY = this.getWorldRoom().getContainerEqBodyList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqBodyList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDBODY);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_WEAPON:
+					BigInteger itemIDWEAPON = this.getWorldRoom().getContainerEqWeaponList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqWeaponList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDWEAPON);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_HELMET:
+					BigInteger itemIDHELMET = this.getWorldRoom().getContainerEqHelmetList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqHelmetList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDHELMET);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_FEET:
+					BigInteger itemIDFEET = this.getWorldRoom().getContainerEqFeetList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqFeetList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDFEET);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_SHIELD:
+					BigInteger itemIDSHIELD = this.getWorldRoom().getContainerEqShieldList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqShieldList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDSHIELD);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_AMULET:
+					BigInteger itemIDAmulet = this.getWorldRoom().getContainerEqAmuletList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqAmuletList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDAmulet);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_GLOVE:
+					BigInteger itemIDGlove = this.getWorldRoom().getContainerEqGloveList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqGloveList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDGlove);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_SHIRT:
+					BigInteger itemIDShirt = this.getWorldRoom().getContainerEqShirtList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqShirtList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDShirt);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
+					break;
+				case CONTAINER_EQUIPMENT_TROUSERS:
+					BigInteger itemIDTrousers = this.getWorldRoom().getContainerEqTrousersList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerEqTrousersList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDTrousers);
+					sendPlayersMyUpdatedEquipment(thisPlayerName);
 					break;
 				case CONTAINER_USE:
-					BigInteger itemIDUse = this.getRoom().getContainerUseList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
-					this.getRoom().getContainerUseList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDUse);
+					BigInteger itemIDUse = this.getWorldRoom().getContainerUseList().get().get(thisPlayerName).getForUpdate().getContainerArray()[containerXPos][containerYPos];
+					this.getWorldRoom().getContainerUseList().get().get(thisPlayerName).getForUpdate().removeItem(itemIDUse);
 					break;
 				default:;
 				}
@@ -808,21 +875,44 @@ public class WorldPlayer
 				ServerContainer playerContainer = null;
 				switch (containerType) {
 				case CONTAINER_MAIN:
-					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+					playerContainer = this.getWorldRoom().getContainerList().get().get(thisPlayerName).get();
 					break;
 				case CONTAINER_EQUIPMENT_BODY:
-					playerContainer = this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).get();
-//					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+					playerContainer = this.getWorldRoom().getContainerEqBodyList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_WEAPON:
+					playerContainer = this.getWorldRoom().getContainerEqWeaponList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_HELMET:
+					playerContainer = this.getWorldRoom().getContainerEqHelmetList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_FEET:
+					playerContainer = this.getWorldRoom().getContainerEqFeetList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_SHIELD:
+					playerContainer = this.getWorldRoom().getContainerEqShieldList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_AMULET:
+					playerContainer = this.getWorldRoom().getContainerEqAmuletList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_GLOVE:
+					playerContainer = this.getWorldRoom().getContainerEqGloveList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_SHIRT:
+					playerContainer = this.getWorldRoom().getContainerEqShirtList().get().get(thisPlayerName).get();
+					break;
+				case CONTAINER_EQUIPMENT_TROUSERS:
+					playerContainer = this.getWorldRoom().getContainerEqTrousersList().get().get(thisPlayerName).get();
 					break;
 				case CONTAINER_USE:
-					playerContainer = this.getRoom().getContainerUseList().get().get(thisPlayerName).get();
-//					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+					playerContainer = this.getWorldRoom().getContainerUseList().get().get(thisPlayerName).get();
+//					playerContainer = this.getWorldRoom().getContainerList().get().get(thisPlayerName).get();
 					break;
 				default:
-//					playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+//					playerContainer = this.getWorldRoom().getContainerList().get().get(thisPlayerName).get();
 					
 				}
-//				ServerContainer playerContainer = this.getRoom().getContainerList().get().get(thisPlayerName).get();
+//				ServerContainer playerContainer = this.getWorldRoom().getContainerList().get().get(thisPlayerName).get();
 		        boolean foundItem = false;
 		        ManagedReference<ServerItem> itemRef = null;
 		        if (fieldX < playerContainer.getContainerWidth()-1) {
@@ -853,7 +943,7 @@ public class WorldPlayer
 		        if (foundItem && itemRef != null) {
 		        	// send first found item
 //		        	System.out.println("send next item: x="+nextFieldX+" y="+nextFieldY);
-		        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+		        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getComment(), itemRef.get().getRoom(), itemRef.get().getCount(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
 					getSession().send(ServerMessages.sendItemField(playerID, containerType, item, nextFieldX, nextFieldY));
 		        } else {
 		        	// nothing should be send to player
@@ -862,6 +952,7 @@ public class WorldPlayer
 			}
 			case ADDAREAINFLUENCE: {
 				Priority priority = getPriority(message); // 1 Byte
+
 				BigInteger id = BigInteger.valueOf(message.getLong()); // 8 Bytes
 
 		        long timeBegin = message.getLong();
@@ -869,6 +960,13 @@ public class WorldPlayer
 		        byte[] groupNameBytes = new byte[message.getInt()];
 				message.get(groupNameBytes);
 				String groupName = new String(groupNameBytes); // name
+				byte[] roomBytes = new byte[message.getInt()];
+				message.get(roomBytes);
+				String room = new String(roomBytes); // name
+				
+				byte[] creatorBytes = new byte[message.getInt()];
+				message.get(creatorBytes);
+				String creator = new String(creatorBytes); // name
 				
 				boolean exclusive;
 				if (message.getInt() == 1) exclusive = true; else exclusive = false;
@@ -886,10 +984,49 @@ public class WorldPlayer
 		        }
 		        
 		        WorldObject worldObject = new WorldObject(x, y, width, height, mx, my);
-		        ServerAreaInfluence serverAreaInfluence = new ServerAreaInfluence(id, timeBegin, timeEnd, groupName, exclusive, worldObject, attributes, priority);
+		        ServerAreaInfluence serverAreaInfluence = new ServerAreaInfluence(id, timeBegin, timeEnd, groupName, room,  exclusive, worldObject, attributes, priority, creator);
 		        
-		        System.out.println("Server got areaInfluence with mx="+attributes[AttributeType.MX.ordinal()]+" width="+worldObject.getWidth());
-				this.getRoom().addAreaInfluence(id, serverAreaInfluence);
+//		        System.out.println("Server got areaInfluence with room="+room);//+attributes[AttributeType.LIFE.ordinal()]+" width="+worldObject.getWidth());
+				this.getWorldRoom().addAreaInfluence(id, serverAreaInfluence);
+				break; }
+			case ADDGROWTHSPOT: {
+				Priority priority = getPriority(message); // 1 Byte
+
+				BigInteger id = BigInteger.valueOf(message.getLong()); // 8 Bytes
+
+		        long timeBegin = message.getLong();
+		        long timeEnd = message.getLong();
+		        byte[] groupNameBytes = new byte[message.getInt()];
+				message.get(groupNameBytes);
+				String groupName = new String(groupNameBytes); // name
+				byte[] roomBytes = new byte[message.getInt()];
+				message.get(roomBytes);
+				String room = new String(roomBytes); // name
+				
+				byte[] creatorBytes = new byte[message.getInt()];
+				message.get(creatorBytes);
+				String creator = new String(creatorBytes); // name
+				
+				boolean exclusive;
+				if (message.getInt() == 1) exclusive = true; else exclusive = false;
+				
+				float x = message.getFloat(); // 4
+				float y= message.getFloat(); // 4
+				float width = message.getFloat(); // 4
+				float height= message.getFloat(); // 4
+				float mx= message.getFloat(); // 4
+				float my= message.getFloat(); // 4
+				int attributeLength = message.getInt(); // 4
+				float[] attributes = new float[attributeLength]; // 4*Length
+		        for (int i = 0; i < attributeLength; i ++) {
+		        	attributes[i] = message.getFloat();
+		        }
+		        
+		        WorldObject worldObject = new WorldObject(x, y, width, height, mx, my);
+		        ServerAreaInfluence serverAreaInfluence = new ServerAreaInfluence(id, timeBegin, timeEnd, groupName, room,  exclusive, worldObject, attributes, priority, creator);
+		        
+//		        System.out.println("Server got areaInfluence with room="+room);//+attributes[AttributeType.LIFE.ordinal()]+" width="+worldObject.getWidth());
+				this.getWorldRoom().addAreaInfluence(id, serverAreaInfluence);
 				break; }
 			case DELETE_MAPOBJECT:
 			{
@@ -898,12 +1035,15 @@ public class WorldPlayer
 				int mapX = message.getInt();
 				int mapY = message.getInt();
 				BigInteger gmID = BigInteger.valueOf(message.getLong());
-				byte[] roomName_Bytes = new byte[message.getInt()];
-				message.get(roomName_Bytes);
-				String roomName = new String(roomName_Bytes); // name
+				byte[] tileRoomName_Bytes = new byte[message.getInt()];
+				message.get(tileRoomName_Bytes);
+				String tileRoomName = new String(tileRoomName_Bytes); // name
 				byte[] gmName_Bytes = new byte[message.getInt()];
 				message.get(gmName_Bytes);
 				String gmName = new String(gmName_Bytes); // name
+				byte[] roomName_Bytes = new byte[message.getInt()];
+				message.get(roomName_Bytes);
+				String roomName = new String(roomName_Bytes); // name
 				byte[] objectMapNameName_Bytes = new byte[message.getInt()];
 				message.get(objectMapNameName_Bytes);
 				String objectMapName = new String(objectMapNameName_Bytes); // name
@@ -921,8 +1061,152 @@ public class WorldPlayer
 				InteractionTile iTile = new InteractionTile(new WorldLatticePosition(new Point(mapX, mapY), localX, localY));
 				iTile.setValues(values);
 				iTile.getPosition().setRoom(roomName);
-				this.getRoom().deleteMapObject(gmID, iTile, objectMapName, objectOverlayMapName);
+				this.getWorldRoom().deleteMapObject(gmID, iTile, objectMapName, objectOverlayMapName);
 		    	
+				break;
+			}
+			case SENDMISSINGPLAYERAGENTS: {
+//				buffer.putLong(playerID.longValue());
+				BigInteger requestedPlayerID = BigInteger.valueOf(message.getLong());
+//		        buffer.putInt(sourcePlayerName.length()); // 4
+//		    	buffer.put(sourcePlayerName.getBytes()); // playerName.length()
+				byte[] requestedPlayerNameBytes = new byte[message.getInt()];
+				message.get(requestedPlayerNameBytes);
+				String requestedPlayerName = new String(requestedPlayerNameBytes); // playerName
+//		    	buffer.putInt(sendUnknownPlayerAgentIDs.size()); // 4
+				int unknownPlayerAgentsLength = message.getInt();
+				ArrayList<BigInteger> unknownPlayerAgents = new ArrayList<BigInteger>();
+		        /** get all playerAgents of the specific class */
+		        for (int i = 0; i < unknownPlayerAgentsLength; i++) {
+//		    		buffer.putLong(id.longValue()); // 8
+		        	unknownPlayerAgents.add(BigInteger.valueOf(message.getLong()));
+		    	}
+		        /** send askFor from playerA to playerB*/
+		        this.getWorldRoom().askForUnknownPlayerAgentsPlayerAToPlayerB(this.getId(), requestedPlayerID, unknownPlayerAgents);
+				
+				break;
+			}
+			case SENDCOMPLETEPLAYERAGENTS: {
+				BigInteger toPlayerID = BigInteger.valueOf(message.getLong());
+	    		byte[] nameBytes = new byte[message.getInt()];
+				message.get(nameBytes);
+				String namePlayer = new String(nameBytes); // name
+				
+//				if (namePlayer.equals(GameWindow.gw.getPlayerName())) {
+//					//STOP - its my own playerAgentList
+//				} else {
+				
+		    		int playerAgentsLength = message.getInt(); // 4;
+		    		ArrayList<PlayerEntity> playerAgentsList = new ArrayList<PlayerEntity>();
+		    		
+		    		/** here come all the agent properties */
+		    		PlayerEntity e;
+		    		byte[] agentNameBytes;
+		    		String agentName;
+		    		BigInteger id;
+		    		byte[] tileSetNameBytes;
+		    		String tileSetName;
+		    		float x, y, width, height, mx, my;
+		    		int attributeLength;
+		    		float[] attributes = new float[AttributeType.values().length];
+		    		EntityStates orientation;
+	            	EntityStates singleState;
+	            	EntityStates continuousState;
+	            	byte[] roomBytes;
+					String room;
+		    		
+		    		/** get every playerAgent */
+		    		for (int i = 0; i < playerAgentsLength; i++) {
+		//        		buffer.putLong(id.longValue()); // 8
+		        		id = BigInteger.valueOf(message.getLong());
+		//        		buffer.putInt(name.length()); // 4
+		//            	buffer.put(name.getBytes()); // name.length
+		            	agentNameBytes = new byte[message.getInt()];
+		            	message.get(agentNameBytes);
+		    			agentName = new String(agentNameBytes); // agentName
+		    			roomBytes = new byte[message.getInt()];
+						message.get(roomBytes);
+						room = new String(roomBytes); // name
+		//            	buffer.putInt(e.getTileSet().getName().length()); // 4
+		//            	buffer.put(e.getTileSet().getName().getBytes()); // name.length
+		            	tileSetNameBytes = new byte[message.getInt()];
+		            	message.get(tileSetNameBytes);
+		    			tileSetName = new String(tileSetNameBytes); // tileSetName
+		    			orientation = getEntityStates(message);
+		    			singleState = getEntityStates(message);
+		    			continuousState = getEntityStates(message);
+		//            	buffer.putFloat(e.getX()); // 4
+		            	x = message.getFloat();
+		//            	buffer.putFloat(e.getY()); // 4
+		            	y = message.getFloat();
+		//            	buffer.putFloat(e.getWidth()); // 4
+		            	width = message.getFloat();
+		//            	buffer.putFloat(e.getHeight()); // 4
+		            	height = message.getFloat();
+		            	//buffer.putFloat(e.getMX()); // 4
+		            	mx = message.getFloat();
+		//            	buffer.putFloat(e.getMY()); // 4
+		            	my = message.getFloat();
+		//            	buffer.putInt(e.getAttributes().length);
+		            	attributeLength = message.getInt();
+		            	if (attributeLength != attributes.length) {
+		            		//ERROR!!!
+		            		System.out.println("Wrong length of attributes!!!");
+		            		break;
+		            	} else {
+		            		for ( int j = 0; j < attributeLength; j++) {
+		//                		buffer.putFloat(e.getAttributes()[j]);
+		                		attributes[j] = message.getFloat();
+		                	}
+		            	}
+		            	e = new PlayerEntity(TileSetManager.manager.getTileSet(tileSetName), agentName, room, id, x, y, GameStates.animationDelay);
+		            	e.setWidth(width);
+		            	e.setHeight(height);
+		            	e.setMX(mx);
+		            	e.setMY(my);
+		            	e.setAttributes(attributes);
+		            	e.setOrientation(orientation);
+		            	e.setSingleState(singleState);
+		            	e.setContinuousState(continuousState);
+		            	playerAgentsList.add(e);
+		    		}
+		    		
+		    		/** worldRoom send the message to the correct session */
+			        this.getWorldRoom().sendUnknownPlayerAgents(toPlayerID, namePlayer, playerAgentsList);
+					
+					
+//		    		/** add all playerAgents to the new agentList/ idList */
+//		    		HashMap<BigInteger, PlayerEntity> agentList = new HashMap<BigInteger, PlayerEntity>();
+//		    		ArrayList<BigInteger> idList = new ArrayList<BigInteger>();
+//		    		for (int i = 0; i < playerAgentsList.size(); i++) {
+//		    			BigInteger agentID = playerAgentsList.get(i).getId();
+//		    			agentList.put(agentID, playerAgentsList.get(i));
+//		    			idList.add(agentID);
+//		    		}
+//		    		
+//		    		/** configure the new/ updated playerAgentManager */
+//		    		PlayerAgentManager playerAgentManager = new PlayerAgentManager(namePlayer);
+//		    		playerAgentManager.setAgentList(agentList);
+//		    		playerAgentManager.setIdList(idList);
+//		    		/** and add it to the PlayerAgentManagerManager */
+//		    		if (PlayerAgentManagerManager.contains(namePlayer)) {
+//		    			PlayerAgentManagerManager.overwrite(namePlayer, playerAgentManager);
+//		    		} else {
+//		    			PlayerAgentManagerManager.add(playerAgentManager);
+//		    		}
+//		    		GameWindow.gw.gameInfoConsole.appendLine("Player "+namePlayer+" send "+ playerAgentsLength+" agents.");
+//				}
+	    		break;
+	    	}
+			case EDIT_PLAYER_ROOM: {
+				BigInteger playerID = BigInteger.valueOf(message.getLong());
+				byte[] playerNameByte = new byte[message.getInt()];
+            	message.get(playerNameByte);
+				String playerName = new String(playerNameByte); 
+				byte[] roomNameByte = new byte[message.getInt()];
+            	message.get(roomNameByte);
+				String room = new String(roomNameByte); 
+				this.getWorldRoom().editPlayerRoom(playerID, playerName, room);
 				break;
 			}
 			case RESPAWN:
@@ -968,7 +1252,7 @@ public class WorldPlayer
 		for (int begin = 0; end<countSpaces; begin+=200) {
 			end = begin+200;
 			if (end> countSpaces) end = countSpaces;
-			spaceArray = getRoom().getSpaces(this, begin, end);
+			spaceArray = getWorldRoom().getSpaces(this, begin, end);
 //								logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
 
 			getSession().send(ServerMessages.sendSpaces(spaceArray));
@@ -984,24 +1268,27 @@ public class WorldPlayer
 		for (int begin = 0; end<countPlayers; begin+=200) {
 			end = begin+200;
 			if (end> countPlayers) end = countPlayers;
-			playerArray = getRoom().getPlayers(this, begin, end);
+			playerArray = getWorldRoom().getPlayers(this, begin, end);
 //								logger.log(Level.INFO, "got entityArray: "+ entityArray[0].getName());
 
 			getSession().send(ServerMessages.sendPlayers(playerArray));
 //								logger.log(Level.INFO, "packet send");
 		
 		}
+		
+		
 	}
 	
 	/** initialize the player himself */
 	public void initMe() {
 		String thisPlayerName = this.getName().substring(this.getName().indexOf(".")+1, this.getName().length());
-		ServerPlayer s_player = getRoom().getServerPlayer(thisPlayerName);
+		ServerPlayer s_player = getWorldRoom().getServerPlayer(thisPlayerName);
 
 		BigInteger playerId = s_player.getId();
 		String tileName = s_player.getTileSetName();
 		String tilePathName = s_player.getTileSetPathName();
 		String groupName = s_player.getGroupName();
+		String room = s_player.getRoom();
 		long firstServerLogin = s_player.getFirstServerLogin();
 		int experience = s_player.getExperience();
 		String country = s_player.getCountry();
@@ -1011,9 +1298,17 @@ public class WorldPlayer
 		float mx = s_player.getMX();
 		float my = s_player.getMY();
 		
-		ServerContainer serverInventory = this.getRoom().getContainerList().get().get(thisPlayerName).get();
-		ServerContainer serverInventoryUse = this.getRoom().getContainerUseList().get().get(thisPlayerName).get();
-		ServerContainer serverInventoryEqBody = this.getRoom().getContainerEqBodyList().get().get(thisPlayerName).get();
+		ServerContainer serverInventory = this.getWorldRoom().getContainerList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryUse = this.getWorldRoom().getContainerUseList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqBody = this.getWorldRoom().getContainerEqBodyList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqWeapon = this.getWorldRoom().getContainerEqWeaponList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqHelmet = this.getWorldRoom().getContainerEqHelmetList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqFeet = this.getWorldRoom().getContainerEqFeetList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqShield = this.getWorldRoom().getContainerEqShieldList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqAmulet = this.getWorldRoom().getContainerEqAmuletList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqGlove = this.getWorldRoom().getContainerEqGloveList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqShirt = this.getWorldRoom().getContainerEqShirtList().get().get(thisPlayerName).get();
+		ServerContainer serverInventoryEqTrousers = this.getWorldRoom().getContainerEqTrousersList().get().get(thisPlayerName).get();
 		//s_player.getInventory().get();
 //		Container inventory = new Container(serverInventory.getContainerWidth(), serverInventory.getContainerHeight(), serverInventory.getContainerType());
 //		inventory.setContainerArray(serverInventory.getContainerArray());
@@ -1026,9 +1321,11 @@ public class WorldPlayer
 //			inventory.getItemList().put(item.getId(), item);
 //		}
 		
-		BigInteger maxItemID = this.getRoom().getMaxItemIndex();
-		BigInteger maxAreaInfluenceID = this.getRoom().getMaxAreaInfluenceIndex();
-        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, firstServerLogin, experience, country, x,y,mx,my, maxItemID, maxAreaInfluenceID));
+		BigInteger maxItemID = this.getWorldRoom().getMaxItemIndex();
+		BigInteger maxAreaInfluenceID = this.getWorldRoom().getMaxAreaInfluenceIndex();
+		BigInteger maxGrowthSpotID = this.getWorldRoom().getMaxGrowthSpotIndex();
+		long sendWorldTime = this.getWorldRoom().getWorldTime();
+        getSession().send(ServerMessages.sendMe(playerId, tileName, tilePathName, groupName, room , firstServerLogin, experience, country, x,y,mx,my, maxItemID, maxAreaInfluenceID, maxGrowthSpotID, sendWorldTime));
 //      getSession().send(ServerMessages.sendContainer(playerId, inventory));
         boolean foundItem;
         int fieldX;
@@ -1054,7 +1351,7 @@ public class WorldPlayer
         }
         if (foundItem && itemRef != null) {
         	// send first found item
-        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getComment(), itemRef.get().getRoom(), itemRef.get().getCount(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
 			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_MAIN, item, fieldX, fieldY));
         } else {
         	// nothing should be send to player
@@ -1078,7 +1375,7 @@ public class WorldPlayer
         	if (foundItem) break;
         }
         if (foundItem && itemRef != null) {
-        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getComment(),itemRef.get().getRoom(),  itemRef.get().getCount(),  itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
 			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_USE, item, fieldX, fieldY));
         } else {
         	// nothing should be send to player
@@ -1104,12 +1401,238 @@ public class WorldPlayer
         	if (foundItem) break;
         }
         if (foundItem && itemRef != null) {
-        	Item item = Item.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getCount(), itemRef.get().getCapacity(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(),itemRef.get().getComment(), itemRef.get().getRoom(), itemRef.get().getCount(),  itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
 			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_BODY, item, fieldX, fieldY));
         } else {
         	// nothing should be send to player
         }  
+        
+        /** NEXT CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqWeapon.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqWeapon.getContainerWidth(); j++) {
+        		if (serverInventoryEqWeapon.getItemList().get(serverInventoryEqWeapon.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqWeapon.getItemList().get(serverInventoryEqWeapon.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getComment(),itemRef.get().getRoom(), itemRef.get().getCount(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_WEAPON, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        
+        /** NEXT CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqHelmet.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqHelmet.getContainerWidth(); j++) {
+        		if (serverInventoryEqHelmet.getItemList().get(serverInventoryEqHelmet.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqHelmet.getItemList().get(serverInventoryEqHelmet.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getComment(),itemRef.get().getRoom(), itemRef.get().getCount(),  itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_HELMET, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        
+        /** NEXT CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqFeet.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqFeet.getContainerWidth(); j++) {
+        		if (serverInventoryEqFeet.getItemList().get(serverInventoryEqFeet.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqFeet.getItemList().get(serverInventoryEqFeet.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(),itemRef.get().getComment(),itemRef.get().getRoom(),  itemRef.get().getCount(),  itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_FEET, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        
+        /** SHIELD CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqShield.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqShield.getContainerWidth(); j++) {
+        		if (serverInventoryEqShield.getItemList().get(serverInventoryEqShield.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqShield.getItemList().get(serverInventoryEqShield.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(),itemRef.get().getComment(), itemRef.get().getRoom(), itemRef.get().getCount(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_SHIELD, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        
+        /** Amulet CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqAmulet.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqAmulet.getContainerWidth(); j++) {
+        		if (serverInventoryEqAmulet.getItemList().get(serverInventoryEqAmulet.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqAmulet.getItemList().get(serverInventoryEqAmulet.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(),itemRef.get().getComment(),itemRef.get().getRoom(),  itemRef.get().getCount(),  itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_AMULET, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        
+        /** Glove CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqGlove.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqGlove.getContainerWidth(); j++) {
+        		if (serverInventoryEqGlove.getItemList().get(serverInventoryEqGlove.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqGlove.getItemList().get(serverInventoryEqGlove.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getComment(),itemRef.get().getRoom(), itemRef.get().getCount(), itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_GLOVE, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        
+        /** Shirt CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqShirt.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqShirt.getContainerWidth(); j++) {
+        		if (serverInventoryEqShirt.getItemList().get(serverInventoryEqShirt.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqShirt.getItemList().get(serverInventoryEqShirt.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(), itemRef.get().getComment(),itemRef.get().getRoom(), itemRef.get().getCount(),  itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_SHIRT, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+        
+        /** Trousers CONTAINER */
+        foundItem = false;
+        fieldX = 0;
+        fieldY = 0;
+        itemRef = null;
+        for(int i = 0; i <serverInventoryEqTrousers.getContainerHeight(); i++) {
+        	for (int j = 0; j < serverInventoryEqTrousers.getContainerWidth(); j++) {
+        		if (serverInventoryEqTrousers.getItemList().get(serverInventoryEqTrousers.getContainerArray()[i][j]) != null) {
+        			foundItem = true;
+        			itemRef = serverInventoryEqTrousers.getItemList().get(serverInventoryEqTrousers.getContainerArray()[i][j]);
+        			fieldX = j;
+        			fieldY = i;
+        			break;
+        		}
+        	}
+        	if (foundItem) break;
+        }
+        if (foundItem && itemRef != null) {
+        	Item item = ItemFactoryCollection.getItem(itemRef.get().getItemCode(), itemRef.get().getId(), itemRef.get().getName(),itemRef.get().getComment(), itemRef.get().getRoom(), itemRef.get().getCount(),  itemRef.get().getX(), itemRef.get().getY(), itemRef.get().getCreationTime(), itemRef.get().getStates());
+			getSession().send(ServerMessages.sendItemField(playerId, OBJECTCODE.CONTAINER_EQUIPMENT_TROUSERS, item, fieldX, fieldY));
+        } else {
+        	// nothing should be send to player
+        }  
+
 	}
+	
+	/** send the updated Equipment to other players */
+	public void sendPlayersMyUpdatedEquipment(String playerName) {
+		String armorName = "";
+		if (this.getWorldRoom().getContainerEqBodyList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			armorName = this.getWorldRoom().getContainerEqBodyList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String weaponName = "";
+		if (this.getWorldRoom().getContainerEqWeaponList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			weaponName = this.getWorldRoom().getContainerEqWeaponList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String feetName = "";
+		if (this.getWorldRoom().getContainerEqFeetList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			feetName = this.getWorldRoom().getContainerEqFeetList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String helmetName = "";
+		if (this.getWorldRoom().getContainerEqHelmetList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			helmetName = this.getWorldRoom().getContainerEqHelmetList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String shieldName = "";
+		if (this.getWorldRoom().getContainerEqShieldList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			shieldName = this.getWorldRoom().getContainerEqShieldList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String amuletName = "";
+		if (this.getWorldRoom().getContainerEqAmuletList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			amuletName = this.getWorldRoom().getContainerEqAmuletList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String gloveName = "";
+		if (this.getWorldRoom().getContainerEqGloveList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			gloveName = this.getWorldRoom().getContainerEqGloveList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String shirtName = "";
+		if (this.getWorldRoom().getContainerEqShirtList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			shirtName = this.getWorldRoom().getContainerEqShirtList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		String trousersName = "";
+		if (this.getWorldRoom().getContainerEqTrousersList().get().get(playerName).get().getItemList().values().iterator().hasNext())
+			trousersName = this.getWorldRoom().getContainerEqTrousersList().get().get(playerName).get().getItemList().values().iterator().next().get().getName();
+		this.getWorldRoom().sendEditPlayerEquipment(this.getId(), weaponName, armorName, helmetName, feetName, shieldName, amuletName, gloveName, shirtName, trousersName);
+	}
+	
 	
 	public void sendPlayerData(BigInteger id) {
 		PlayerEntity[] playerArray = new PlayerEntity[1];
@@ -1127,11 +1650,11 @@ public class WorldPlayer
     public void disconnected(boolean graceful) {
         setSession(null, null);
         logger.log(Level.INFO, "Disconnected: {0}", this);
-        getRoom().removePlayer(this);
+        getWorldRoom().removePlayer(this);
         PlayerManager.remove(this.getId());
         
         
-        setRoom(null);
+        setWorldRoom(null);
     }
 
     /**
@@ -1140,7 +1663,7 @@ public class WorldPlayer
      * <p>
      * @return the room this player is currently in, or {@code null}
      */
-    protected WorldRoom getRoom() {
+    protected WorldRoom getWorldRoom() {
         if (currentRoomRef == null) {
             return null;
         }
@@ -1154,7 +1677,7 @@ public class WorldPlayer
      * <p>
      * @param room the room this player should be in, or {@code null}
      */
-    protected void setRoom(WorldRoom room) {
+    protected void setWorldRoom(WorldRoom room) {
         DataManager dataManager = AppContext.getDataManager();
         dataManager.markForUpdate(this);
 
@@ -1327,9 +1850,14 @@ public class WorldPlayer
 		getSession().send(ServerMessages.editSpaceAddons(id, textureName, rgb, trans, filled, scale, area));
 	}
 	
-	public void sendEditPlayerAddons(BigInteger id, String playerName, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
+	public void sendEditPlayerAddons(BigInteger id, String playerName, String room, String tileName, String tilePathName, int tileWidth, int tileHeight, String country, String groupName, int experience) {
 		// TODO Auto-generated method stub
-		getSession().send(ServerMessages.editPlayerAddons(id, playerName, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience));
+		getSession().send(ServerMessages.editPlayerAddons(id, playerName, room, tileName, tilePathName, tileWidth, tileHeight, country, groupName, experience));
+	}
+	
+	public void sendEditPlayerEquipment(BigInteger id, String weaponName, String armorName, String helmetName, String feetName, String shieldName, String amuletName, String gloveName, String shirtName, String trousersName) {
+		getSession().send(ServerMessages.editPlayerEquipment(id, weaponName, armorName, helmetName, feetName, shieldName, amuletName, gloveName, shirtName, trousersName));
+//		System.out.println("send edit PlayerEquipment: "+weaponName + armorName + helmetName + feetName);
 	}
 	
 	public boolean isReadyForNextMessage() {
@@ -1347,4 +1875,27 @@ public class WorldPlayer
 	public void setInitializingAreaInfluences(boolean initializingAreaInfluences) {
 		this.initializingAreaInfluences = initializingAreaInfluences;
 	}
+	
+	public boolean isInitializingGrowthSpots() {
+		return initializingGrowthSpots;
+	}
+
+	public void setInitializingGrowthSpots(boolean b) {
+		this.initializingGrowthSpots = b;
+	}
+	
+	
+	private static EntityStates getEntityStates(ByteBuffer packet) 
+    {
+        byte esbyte = packet.get();
+        if ((esbyte < 0) || (esbyte > EntityStates.values().length - 1)) {
+        	//TODO: exception is better
+        	System.out.println("Unknown es value: " + esbyte);
+//            logger.severe("Unknown op value: " + opbyte);
+            return null;
+        }
+        EntityStates entityStates = EntityStates.values()[esbyte];
+        
+        return entityStates;
+    }
 }

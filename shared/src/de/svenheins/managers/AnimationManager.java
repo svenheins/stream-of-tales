@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.managers;
 
 //import java.awt.Image;
@@ -8,8 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-
 import de.svenheins.animation.Animation;
 
 import de.svenheins.main.GameStates;
@@ -80,6 +84,7 @@ public class AnimationManager {
 			/** create new Animation */
 			List<Sprite> spriteList = new ArrayList<Sprite>();
 			for (int i=begin; i<=end; i++) {
+				if (tile.getSize() == 1) spriteList.add(new Sprite(tile.getTileImage(0))); else
 				spriteList.add(new Sprite(tile.getTileImage(i)));
 //				System.out.println("Added "+src[i]);
 			}

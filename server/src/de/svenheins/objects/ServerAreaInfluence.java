@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.io.Serializable;
@@ -28,12 +34,16 @@ public class ServerAreaInfluence implements Serializable, ManagedObject {
 	private long timeEnd;
 	/** groupName defines the group, that is effected by the influence */
 	private String groupName;
+	private String room;
+
 	/** exclude group or include? */
 	private boolean exclusive;
 	/** values are InfluenceType enums */
 	private float[] attributes;
 	/** priority */
 	private Priority priority;
+	/** creator */
+	private String creator;
 	
 	/** The {@link WorldRoom} this player is in, or null if none. */
     protected ManagedReference<WorldRoom> currentRoomRef = null;
@@ -42,7 +52,7 @@ public class ServerAreaInfluence implements Serializable, ManagedObject {
         Logger.getLogger(ServerEntity.class.getName());
     
     
-    public ServerAreaInfluence(BigInteger id, long timeBegin, long timeEnd, String groupName, boolean exclusive, WorldObject worldObject, float[] attributes, Priority priority) {
+    public ServerAreaInfluence(BigInteger id, long timeBegin, long timeEnd, String groupName, String room, boolean exclusive, WorldObject worldObject, float[] attributes, Priority priority, String creator) {
     	this.setId(id);
     	this.setTimeBegin(timeBegin);
     	this.setTimeEnd(timeEnd);
@@ -51,6 +61,8 @@ public class ServerAreaInfluence implements Serializable, ManagedObject {
     	this.setWorldObject(AppContext.getDataManager().createReference(worldObject));
     	this.setAttributes(attributes);
     	this.setPriority(priority);
+    	this.setRoom(room);
+    	this.setCreator(creator);
     }
     
     public BigInteger getId() {
@@ -105,6 +117,20 @@ public class ServerAreaInfluence implements Serializable, ManagedObject {
 	public void setWorldObject(ManagedReference<WorldObject> worldObject) {
 		this.worldObject = worldObject;
 	}
+	public String getRoom() {
+		return room;
+	}
 
-    
+	public void setRoom(String room) {
+		this.room = room;
+	}
+
+	public String getCreator() {
+		return creator;
+	}
+
+	public void setCreator(String creator) {
+		this.creator = creator;
+	}
+
 }

@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.main.gui;
 
 import java.awt.Color;
@@ -5,25 +11,12 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.image.ImageObserver;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import com.sun.sgs.client.ClientChannel;
-
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.main.EntityStates;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
-import de.svenheins.main.GameWindow;
-import de.svenheins.managers.ItemManager;
-import de.svenheins.managers.PlayerManager;
-import de.svenheins.messages.ClientMessages;
 import de.svenheins.messages.ITEMCODE;
 import de.svenheins.objects.Entity;
-import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
 import de.svenheins.objects.items.Container;
 import de.svenheins.objects.items.Item;
@@ -78,7 +71,7 @@ public class ContainerGUI {
 		
 		if (GamePanel.gp.getMouseItem() != null) {
 			if (container.getAllowedItems() == GamePanel.gp.getMouseItem().getItemCode() || container.getAllowedItems() == ITEMCODE.ALL) {
-				if (container.hasAvailableField()) {
+//				if (container.hasAvailableField()) {
 					if (retItem != null) {
 						container.getItemList().remove(retItem.getId());
 						container.getItemList().put(GamePanel.gp.getMouseItem().getId(), GamePanel.gp.getMouseItem());
@@ -128,7 +121,7 @@ public class ContainerGUI {
 						}
 //						GamePanel.gp.setMouseItem(null);
 					}
-				}
+//				}
 			}
 		} else {
 			if (retItem != null) {
@@ -147,71 +140,24 @@ public class ContainerGUI {
 			} else {
 				// both are null, so just ignore the process
 			}
-		}
-		
-//		if (retItem != null) {
-//			retItem.getEntity().setX(p.x);
-//			retItem.getEntity().setY(p.y);
-//			GamePanel.gp.setMouseItem(retItem);
-//		}
-			
-		
-//		if (retItem != null) {
-//			/** take the item */
-//			if (GamePanel.gp.getMouseItem() != null) {
-//				container.getItemList().remove(retItem.getId());
-//				container.getItemList().put(GamePanel.gp.getMouseItem().getId(), GamePanel.gp.getMouseItem());
-//				for (int i =0; i < container.getHeight(); i++) {
-//					for (int j = 0; j < container.getWidth(); j++) {
-//						if (container.getContainerArray()[i][j].equals(retItem.getId())) {
-//							GamePanel.gp.getMouseItem().getEntity().setX(GameStates.inventoryDistToFrameX + j*(2*GameStates.inventorySlotDistX+GameStates.inventoryItemTileWidth)+GameStates.inventorySlotDistX);
-//							GamePanel.gp.getMouseItem().getEntity().setY(GameStates.inventoryDistToFrameY + i*(2*GameStates.inventorySlotDistY+GameStates.inventoryFontDistanceY+GameStates.inventoryItemTileHeight)+GameStates.inventorySlotDistY);
-//							container.getContainerArray()[i][j] = GamePanel.gp.getMouseItem().getId();
-//						}
-//					}
-//				}
-//				
-//			} else {
-//				/** just take the item */
-//				if(container.removeItem(retItem.getId())) {
-//					// OK
-//				}
-//				else
-//				{
-//					// not OK
-//				}
-//			}
-//			retItem.getEntity().setX(p.x);
-//			retItem.getEntity().setY(p.y);
-//			GamePanel.gp.setMouseItem(retItem);
-//		} else {
-//			if (GamePanel.gp.getMouseItem() != null) {
-//				/** retItem == null  so we did not click onto any valid item */
-//				Item tooManyItem = container.addItem(GamePanel.gp.getMouseItem()/*, GamePanel.gp.getMouseItem().getId()*/);
-//				if (tooManyItem != null) {
-//					if (tooManyItem.getCount() > 0) {
-//						/** first send to server for the itemList */
-//						GameWindow.gw.send(ClientMessages.addItem(tooManyItem.getId(), tooManyItem.getItemCode(), tooManyItem.getCount(), tooManyItem.getCapacity(), tooManyItem.getEntity().getX(), tooManyItem.getEntity().getY(), tooManyItem.getEntity().getMX(), tooManyItem.getEntity().getMY(), tooManyItem.getName(), tooManyItem.getEntity().getTileSet().getFileName(), tooManyItem.getEntity().getName(), tooManyItem.getStates()));
-//						for (String channelName : GameWindow.gw.getSpaceChannels().values()) {
-//							ClientChannel channel = GameWindow.gw.getChannelByName(channelName);
-//							try {
-//								channel.send(ClientMessages.addCompleteItem(ITEMCODE.WOOD, tooManyItem.getId(), "wood", GamePanel.gp.getPlayerEntity().getX(),GamePanel.gp.getPlayerEntity().getY(), tooManyItem.getCount(), new float[1]));
-//							} catch (IOException e) {
-//								e.printStackTrace();
-//							}	
-//						}
-//						
-//		    		}
-//				}
-//				GamePanel.gp.setMouseItem(null);
-//			} // else there is no item in the inventory or in the mouseItem
-//		}
-		
+		}		
 		/** update server */
 		ClientMessageHandler.containerUpdateSendBrutal(this.container);
-		GamePanel.gp.getPlayerEntity().calculateTotalEquipmentInfluence();
+		GamePanel.gp.getPlayerEntity().calculateTotalEquipmentInfluenceAndUpdateVisuals();
 	}
 
+	/** check if the mouse is over an item */
+	public Item mouseMoved(Point p) {
+		Item retItem = null;
+		Point correctedPoint = (Point) p.clone();
+		correctedPoint.setLocation(p.x - this.getX(), p.y-this.getY());
+		for (Item item : container.getItemList().values()) {
+			if (item.getEntity().contains(correctedPoint)) {
+				retItem = item;
+			}
+		}
+		return retItem;
+	}
 	
 	public void paint(Graphics2D g, ImageObserver iObserver) {
 		/** paint backgroundSpace only if it exists */
@@ -234,7 +180,7 @@ public class ContainerGUI {
 						g.setPaintMode();
 						if (item.getCount()>1) {
 							g.setColor(new Color(250, 250, 250));
-							g.setFont(new Font("Arial", Font.PLAIN , fontSize));
+							g.setFont(new Font(GameStates.standardFont, Font.PLAIN , fontSize));
 		//					drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
 							g.drawString(""+item.getCount()/*+" "+item.getName()*/,this.x+GameStates.inventoryFontDistanceX + (int)itemEntity.getX(), this.y+ GameStates.inventoryFontDistanceY +(int) itemEntity.getY() + itemEntity.getHeight() /*+ g.getFontMetrics().getHeight()*/);
 						}

@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.handlers;
 
 
@@ -6,13 +12,13 @@ import java.awt.event.KeyListener;
 
 
 
-public class InputHandler implements KeyListener{
+public class InputHandler {
 
-	private int keyLeft, keyRight, keyUp, keyDown, keyAttack, keyPause, keyOptions, keyInfoConsole, keyZoomIn, keyZoomOut, keyInventory;
-	public boolean up, down, left, right, attack, pause, options, infoConsole, zoomIn, zoomOut, inventory;
+	private int keyLeft, keyRight, keyUp, keyDown, keyAttack, keyPause, keyOptions, keyInfoConsole, keyZoomIn, keyZoomOut, keyInventory, keyMessageWindow, keyLightOnOff;
+	public boolean up, down, left, right, attack, pause, options, infoConsole, zoomIn, zoomOut, inventory, messageWindow, lightOnOff;
 	
 	
-	public InputHandler(int keyLeft, int keyRight, int keyUp, int keyDown, int keyAttack, int keyPause, int keyOptions, int keyInfoConsole, int keyZoomIn, int keyZoomOut, int keyInventory) {
+	public InputHandler(int keyLeft, int keyRight, int keyUp, int keyDown, int keyAttack, int keyPause, int keyOptions, int keyInfoConsole, int keyZoomIn, int keyZoomOut, int keyInventory, int keyMessageWindow, int keyLightOnOff) {
 		this.keyLeft = keyLeft;
 		this.keyRight = keyRight;
 		this.keyUp = keyUp;
@@ -24,13 +30,14 @@ public class InputHandler implements KeyListener{
 		this.keyZoomIn = keyZoomIn;
 		this.keyZoomOut = keyZoomOut;
 		this.keyInventory = keyInventory;
+		this.keyMessageWindow = keyMessageWindow;
+		this.keyLightOnOff = keyLightOnOff;
 	}
 	
-	@Override
-	public void keyPressed(KeyEvent e) {
+	public void keyPressed(int key) {
 		// TODO Auto-generated method stub
-//		System.out.println("pressed");
-		int key = e.getKeyCode();
+//		System.out.println("down");
+//		int key = e.getKeyCode();
 		if (key== keyLeft) {
 			left = true;
 		}
@@ -64,12 +71,18 @@ public class InputHandler implements KeyListener{
 		if (key== keyInventory) {
 			inventory = true;
 		}
+		if (key== keyMessageWindow) {
+			messageWindow = true;
+		}
+		if (key== keyLightOnOff) {
+			lightOnOff = true;
+		}
 	}
 
-	@Override
-	public void keyReleased(KeyEvent e) {
+	public void keyReleased(int key) {
 		// TODO Auto-generated method stub
-		int key = e.getKeyCode();
+//		System.out.println("up");
+//		int key = e.getKeyCode();
 		if (key== keyLeft) {
 			left = false;
 		}
@@ -103,9 +116,15 @@ public class InputHandler implements KeyListener{
 		if (key == keyInventory) {
 			inventory = false;
 		}
+		if (key == keyMessageWindow) {
+			messageWindow = false;
+		}
+		if (key== keyLightOnOff) {
+			lightOnOff = false;
+		}
 	}
 
-	@Override
+	
 	public void keyTyped(KeyEvent e) {
 
 	}

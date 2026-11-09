@@ -38,6 +38,9 @@ public class WorldObject
 
     /** The name of this object. */
     private String name;
+    
+    /** the room, where the object is located */
+    private String room;
 
     /** The description of this object. */
     private String description;
@@ -66,6 +69,7 @@ public class WorldObject
      */
     public WorldObject(String name, String description, float x, float y) {
         this.name = name;
+        this.setRoom("");
         this.description = description;
         this.x = x;
         this.y = y;
@@ -74,6 +78,7 @@ public class WorldObject
     
     public WorldObject(float x, float y, float width, float height, float mx, float my) {
         this.name = "";
+        this.setRoom("");
         this.description = "";
         this.x = x;
         this.y = y;
@@ -100,6 +105,7 @@ public class WorldObject
         this.x = 0;
         this.y = 0;
         this.id = BigInteger.valueOf(0);
+        this.setRoom("");
     }
 
     /**
@@ -229,5 +235,13 @@ public class WorldObject
 	
 	public void setSpeed(float speed) {
 		this.speed = speed;
+	}
+
+	public String getRoom() {
+		return room;
+	}
+
+	public void setRoom(String room) {
+		this.room = room;
 	}
 }

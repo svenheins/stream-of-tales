@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.awt.Color;
@@ -13,11 +19,9 @@ import java.util.Date;
 
 import com.sun.sgs.client.ClientChannel;
 
-import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
 import de.svenheins.messages.ClientMessages;
-import de.svenheins.messages.OPCODE;
 
 public class IngameConsole extends Space {
 	/**
@@ -28,8 +32,13 @@ public class IngameConsole extends Space {
 	private boolean deleteable, writable, sendToServer, lastLineSend;
 	private int maxEnters;
 	private Point position;
+	
+
 	private int height, width;
-	private int fontSize;
+	protected int fontSize;
+	private int distanceTextX;
+	private int distanceTextY;
+	private boolean visible;
 	
 	public IngameConsole(Point position, int width, int height, int[] color, float trans, boolean writable, boolean sendToServer, int fontSize) {
 		super();
@@ -46,6 +55,8 @@ public class IngameConsole extends Space {
 		this.height = height;
 		this.width = width;
 		this.writable = writable;
+		this.setDistanceTextX(10);
+		this.setDistanceTextY(10);
 		if (!writable) this.maxEnters += 1;
 		this.fontSize = fontSize;
 		this.sendToServer = sendToServer;
@@ -61,13 +72,21 @@ public class IngameConsole extends Space {
 		super.paint(g, x, y);
 		g.setPaintMode();
 		g.setColor(new Color(250, 250, 250));
-		g.setFont(new Font("Arial", Font.PLAIN , fontSize));
+		g.setFont(new Font(GameStates.standardFont, Font.PLAIN , fontSize));
+		// a composite with transparency.
+//	    Composite c = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .4f);
+//	    g.setComposite(c);
 //		drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
-		drawConsoleText(g, this.position.x+10, this.position.y+10);
+		drawConsoleText(g, this.position.x+this.getDistanceTextX(), this.position.y+this.getDistanceTextY());
 	}
 	
 	public StringBuffer getConsoleText() {
 		return this.consoleText;
+	}
+	
+	public void setConsoleText(String text) {
+		this.consoleText = new StringBuffer();
+		this.consoleText.append(text);
 	}
 	
 	/**
@@ -92,6 +111,13 @@ public class IngameConsole extends Space {
 	            try {
 	            	if (!getLastLineAsString().equals("")) {
 	            		channel.send(ClientMessages.chat(getLastLineAsString()));
+	            		if (GameWindow.gw.isUsingTwitch()) {
+	            			if (GameWindow.gw.getTwitchBot() != null) {
+//	            				GameWindow.gw.getTwitchBot().sendSafeMessage(GameWindow.gw.getTwitchBot().getChannels()[0], getLastBlankLineAsString());
+//	            				String completeMessage = "PRIVMSG " + "#"+GameWindow.gw.getTwitchBot().getNickname() + " :" + getLastBlankLineAsString();
+	            				GameWindow.gw.getTwitchBot().sendSafeMessage(getLastBlankLineAsString());
+	            			}
+	            		}
 	            	}
 	            } catch (Exception e) {
 	                e.printStackTrace();
@@ -136,6 +162,17 @@ public class IngameConsole extends Space {
 		if (enters == 1 && text.split("\n").length > 0) {
 			// last line of the text + the players prefix
 			String lastLine = GameWindow.gw.getPlayerName() +": " + text.split("\n")[text.split("\n").length-1];
+			return lastLine;
+		} else return null;
+	}
+	
+	private String getLastBlankLineAsString() {
+		String text = this.consoleText.toString();
+//	    StringBuffer temp = this.consoleText;
+		int enters = this.getEnters();
+		if (enters == 1 && text.split("\n").length > 0) {
+			// last line of the text + the players prefix
+			String lastLine = text.split("\n")[text.split("\n").length-1];
 			return lastLine;
 		} else return null;
 	}
@@ -255,5 +292,35 @@ public class IngameConsole extends Space {
 		this.lastLineSend = b;
 	}
 
+	public int getDistanceTextX() {
+		return distanceTextX;
+	}
 
+	public void setDistanceTextX(int distanceTextX) {
+		this.distanceTextX = distanceTextX;
+	}
+
+	public int getDistanceTextY() {
+		return distanceTextY;
+	}
+
+	public void setDistanceTextY(int distanceTextY) {
+		this.distanceTextY = distanceTextY;
+	}
+
+	public boolean isVisible() {
+		return visible;
+	}
+
+	public void setVisible(boolean visible) {
+		this.visible = visible;
+	}
+
+	public Point getPosition() {
+		return position;
+	}
+
+	public void setPosition(Point position) {
+		this.position = position;
+	}
 }

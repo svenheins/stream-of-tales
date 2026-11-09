@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.main.gui;
 
 
@@ -6,18 +12,13 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.image.ImageObserver;
-import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.swing.JComboBox;
-
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
-import de.svenheins.main.GameWindow;
-import de.svenheins.managers.AnimationManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
@@ -149,6 +150,22 @@ public class PlayerListGUI {
 		return retEntity;
 	}
 	
+	/** return PlayerEntity if the mouse was moved over the symbol */
+	public PlayerEntity mouseMoved(Point p) {
+		PlayerEntity retEntity = null;
+		for (BigInteger id : idList) {
+			Button button = buttonList.get(id);
+			if (button.contains(p)) {
+				if (button.getId() == BigInteger.valueOf(0)) {
+					retEntity = GamePanel.gp.getPlayerEntity();
+				} else {
+					retEntity = PlayerManager.get(button.getId());	
+				}
+			}
+		}
+		return retEntity;
+	}
+	
 	public void deactivateOthers(Button button) {
 		for(Button otherButton : buttonList.values()) {
 			if (otherButton != button) {
@@ -169,7 +186,7 @@ public class PlayerListGUI {
 			g.drawImage(button.getSprite().getImage(), x + (int) (button.getX()), y + (int) (button.getY()), iObserver);
 			g.setPaintMode();
 			g.setColor(new Color(250, 250, 250));
-			g.setFont(new Font("Arial", Font.PLAIN , fontSize));
+			g.setFont(new Font(GameStates.standardFont, Font.PLAIN , fontSize));
 //			drawConsoleText(g, (int)((this.position.x+10)/GamePanel.gp.getZoomFactor()), (int)((this.position.y+10)/GamePanel.gp.getZoomFactor()));
 			g.drawString(button.getStrValue(), x + button.getX(), y + button.getY() + button.getHeight() + g.getFontMetrics().getHeight());
 //			System.out.println(button.getY());

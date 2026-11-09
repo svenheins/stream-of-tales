@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.main;
 
 import java.awt.Color;
@@ -6,7 +12,6 @@ import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -15,19 +20,14 @@ import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import de.svenheins.functions.MyStrings;
-import de.svenheins.functions.MyUtil;
-
-
 import de.svenheins.animation.SpaceAnimation;
 import de.svenheins.animation.SpaceDisappear;
-
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
 import de.svenheins.managers.TileSetManager;
@@ -38,7 +38,6 @@ import de.svenheins.objects.Entity;
 import de.svenheins.objects.LocalObject;
 import de.svenheins.objects.PlayerEntity;
 import de.svenheins.objects.Space;
-import de.svenheins.objects.TileSet;
 
 public class EditWindow {
 	//private Color color;
@@ -81,7 +80,7 @@ public class EditWindow {
         colorButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
             	Color s_color = new Color(space.getRGB()[0], space.getRGB()[1], space.getRGB()[2]);
-            	Color color = JColorChooser.showDialog(GamePanel.gp, "Choose Color", s_color);
+            	Color color = JColorChooser.showDialog(GUI.gui.panel, "Choose Color", s_color);
             	int[] rgb = new int[]{color.getRed(), color.getGreen(), color.getBlue()};
         		space.setRGB(rgb);
         		int isFilled = 0;
@@ -423,7 +422,7 @@ public class EditWindow {
 					entity.setTileSet( TileSetManager.manager.getTileSet((String) ((JComboBox) e.getSource()).getSelectedItem()));
 //					GameWindow.gw.send(ClientMessages.editPlayerAddons(space.getId(), space.getTextureName(), space.getRGB(), space.getTrans(), isFilled, space.getScale(), space.getArea()));
 					if (GameWindow.gw.isLoggedIn()) {
-						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayerName(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));
+//						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayerName(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));
 					}
 				}
 		});

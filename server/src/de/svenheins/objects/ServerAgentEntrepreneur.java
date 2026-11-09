@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.awt.Point;
@@ -19,9 +25,9 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 	private boolean settled;
 
 
-	public ServerAgentEntrepreneur(ServerSprite sprite, BigInteger id, String tileSetName, String tileSetPathName, float x,
+	public ServerAgentEntrepreneur(ServerSprite sprite, String name, String room, BigInteger id, String tileSetName, String tileSetPathName, float x,
 			float y, float mx, float my) {
-		super(sprite, id, tileSetName, tileSetPathName, x, y, mx, my);
+		super(sprite, name, room, id, tileSetName, tileSetPathName, x, y, mx, my);
 		this.settled = false;
 	}
 
@@ -87,7 +93,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 		float desY = localY;
 		float distance = this.range;
 		float tempDistance =0;
-		for(ManagedReference<ServerSpace> serverSpace : this.getRoom().getSpaces().get().values()) {
+		for(ManagedReference<ServerSpace> serverSpace : this.getWorldRoom().getSpaces().get().values()) {
 			ServerSpace s_space = serverSpace.get();
 			if(s_space instanceof ServerRegion) {
 				/** Create a Space, to compute some stuff (faster and fewer errors) */
@@ -153,7 +159,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 								desY = (float) potentialPoint.y;
 								setDesiredPosition(desX, desY);
 								this.setRegion( s_space.getId());
-								if( ((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
+								if( ((ServerRegion) this.getWorldRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
 									/** be happy */
 									this.setSatisfaction(1.0f);
 									this.setSettled(true);
@@ -197,7 +203,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 		float mySize = Math.max(this.height, this.width);
 		
 		boolean blocked = false;
-		ArrayList<Point> blockedPoints = ((ServerRegion)  this.getRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).getBlockedPoints();
+		ArrayList<Point> blockedPoints = ((ServerRegion)  this.getWorldRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).getBlockedPoints();
 		for(Point blockedPoint : blockedPoints) {
 			/** check if any blocked Position gets in the way */			
 			if (MyMath.getDistance(blockedPoint, myPosition)< mySize) {
@@ -229,7 +235,7 @@ public class ServerAgentEntrepreneur extends ServerAgent {
 //				}
 //			}
 //		}
-		if( ((ServerRegion) this.getRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
+		if( ((ServerRegion) this.getWorldRoom().getSpaces().get().get(this.getRegion()).getForUpdate()).addBlockedPoint(new Point((int) this.getX(), (int) this.getY()))) {
 			/** be happy */
 			this.setSatisfaction(1.0f);
 			this.setSettled(true);

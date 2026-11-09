@@ -1,3 +1,10 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
+
 package de.svenheins.objects.agents;
 
 import java.math.BigInteger;
@@ -22,28 +29,36 @@ public abstract class Agent extends PlayerEntity {
 	/** Motivation attributes */
 	protected float satisfaction;
 	protected float danger;
-	protected boolean goal;
+//	protected boolean goal;
 	protected float range;
 	protected Goal actualGoal;
 	protected WorldPosition actualPathElement;
-	
+
+
 	protected ArrayList<Goal> goalList = new ArrayList<Goal>(); // defines the goalList
 	protected ArrayList<WorldPosition> pathList = new ArrayList<WorldPosition>(); // defines the way to the actualGoal
 	protected boolean pathCalculationComplete = false;
 	protected HashMap<WorldLatticePosition, PathTile> openList = new HashMap<WorldLatticePosition, PathTile>(); // defines the openList (A*-algorithm)
 	protected HashMap<WorldLatticePosition, PathTile> closedList = new HashMap<WorldLatticePosition, PathTile>(); // defines the closedList (A*-algorithm)
 	protected ArrayList<BigInteger> entityIDList = new ArrayList<BigInteger>(); // all known entities
+	protected ArrayList<String> messageBoard = new ArrayList<String>(); // the messageBoard of the agent
+	protected String killedBy = "";
+
+	protected Entity infoIcon = null;
 	
+	
+
 	public static FScoreComparator fScoreComparator = new FScoreComparator();
 	public static GoalRankComparator goalRankComparator = new GoalRankComparator();
 	
-	public Agent(TileSet tileSet, String name, BigInteger id, float x, float y, long animationDelay) {
-		super(tileSet, name, id, x, y, animationDelay);
+	public Agent(TileSet tileSet, String name, String room, BigInteger id, float x, float y, long animationDelay) {
+		super(tileSet, name, room, id, x, y, animationDelay);
 		satisfaction = 0;
 		this.range = 10000;
 		this.setVisible(true);
-		goal = true;
+//		goal = true;
 		pathCalculationComplete = false;
+		this.setRoom(room);
 	}
 	
 	/** run */
@@ -79,17 +94,22 @@ public abstract class Agent extends PlayerEntity {
 		return (float) Math.sqrt((x-this.getX())*(x-this.getX()) + (y-(this.getY()))*(y-(this.getY())));
 	}
 	
+	/** calculate center distance to Point (x,y) */
+	public float getDistanceCenter(float x, float y) {
+		return (float) Math.sqrt((x-(this.getX()+this.getWidth()/2))*(x-(this.getX()+this.getWidth()/2)) + (y-(this.getY()+this.getHeight()/2))*(y-(this.getY()+this.getHeight()/2)));
+	}
+	
 //	/** calculate distance to Point (x,y) */
 //	public int getDistance(int x, int y) {
 //		return (int) Math.sqrt((x-this.getX())*(x-this.getX()) + (y-(this.getY()))*(y-(this.getY())));
 //	}
 	
-	public void setGoal(boolean goal) {
-		this.goal = goal;
-	}
+//	public void setGoal(boolean goal) {
+//		this.goal = goal;
+//	}
 	
 	public boolean hasGoal() {
-		return goal;
+		return (this.getActualGoal() != null);
 	}
 
 	public Goal getActualGoal() {
@@ -154,19 +174,26 @@ public abstract class Agent extends PlayerEntity {
 	public void nextPathElement() {
 		if (pathList.size() > 0 && pathList != null) {
 //			System.out.println("old position: x="+pathList.get(0).getX()+" y="+pathList.get(0).getY());
-			this.pathList.remove(0);
+			
+			if (pathList.size() == 1) {
+				pathList = new ArrayList<WorldPosition>();
+//				pathList.add(null);
+			} else {
+				this.pathList.remove(0);
+			}
+			
 		}
 	}
 	
 	public void nextGoal() {
-		System.out.println("next goal!");
-		this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
+//		System.out.println("next goal!");
+		this.setMovement(-this.getTotalAreaInfluences()[AttributeType.MX.ordinal()], -this.getTotalAreaInfluences()[AttributeType.MY.ordinal()]);
 		this.setContinuousState(EntityStates.STANDING);
 		if (goalList != null && goalList.size()>0) {
-			this.setGoal(true);
+//			this.setGoal(true);
 //			System.out.println("old position: x="+pathList.get(0).getX()+" y="+pathList.get(0).getY());
 			this.actualGoal = goalList.get(0);
-			System.out.println("actualGoal: x="+actualGoal.getPosition().getX()+" y="+actualGoal.getPosition().getY());
+//			System.out.println("actualGoal: x="+actualGoal.getPosition().getX()+" y="+actualGoal.getPosition().getY());
 			this.restartPathCalculation();
 			this.goalList.remove(0);
 //			for (int i = 0; i < goalList.size(); i ++) {
@@ -174,8 +201,8 @@ public abstract class Agent extends PlayerEntity {
 //			}
 		} else {
 			this.setActualGoal(null);
-			this.setGoal(false);
-			System.out.println("no more goals!");
+//			this.setGoal(false);
+//			System.out.println("no more goals!");
 		}
 	}
 	
@@ -191,7 +218,7 @@ public abstract class Agent extends PlayerEntity {
 		this.goalList = goalList;
 	}
 
-	protected WorldPosition getActualPathElement() {
+	public WorldPosition getActualPathElement() {
 		return actualPathElement;
 	}
 
@@ -200,7 +227,7 @@ public abstract class Agent extends PlayerEntity {
 	}
 	
 	public void restartPathCalculation() {
-		this.setMovement(-this.getAttributes()[AttributeType.MX.ordinal()], -this.getAttributes()[AttributeType.MY.ordinal()]);
+		this.setMovement(-this.getTempTotalAreaInfluences()[AttributeType.MX.ordinal()], -this.getTotalAreaInfluences()[AttributeType.MY.ordinal()]);
 		this.setContinuousState(EntityStates.STANDING);
 		pathList = new ArrayList<WorldPosition>(); // defines the way to the actualGoal
 		pathCalculationComplete = false;
@@ -211,5 +238,38 @@ public abstract class Agent extends PlayerEntity {
 	
 	public void restartPathCalculationAfterCollision(ObjectMapManager collisionMap1, ObjectMapManager collisionMap2) {
 		restartPathCalculation();
+	}
+	
+	/** add one message to the messageBoard */
+	public void addMessage(String message) {
+		messageBoard.add(message);
+	}
+	
+	/** retrieve the first message and delete it from the agent */
+	public String retrieveFirstMessage() {
+		String retValue = "";
+		if (messageBoard.size() > 0) {
+			retValue = messageBoard.get(0);
+			messageBoard.remove(0);
+		} else {
+			// messageBoard is empty
+		}
+		return retValue;
+	}
+	
+	public Entity getInfoIcon() {
+		return infoIcon;
+	}
+
+	public void setInfoIcon(Entity infoIcon) {
+		this.infoIcon = infoIcon;
+	}
+	
+	public ArrayList<String> getMessageBoard() {
+		return messageBoard;
+	}
+
+	public void setMessageBoard(ArrayList<String> messageBoard) {
+		this.messageBoard = messageBoard;
 	}
 }

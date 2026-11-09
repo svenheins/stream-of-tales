@@ -1,16 +1,17 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.managers;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.NoSuchElementException;
-
-import javax.swing.RowFilter.Entry;
-
 import de.svenheins.objects.Entity;
 import de.svenheins.objects.LocalObject;
-import de.svenheins.objects.Space;
 import de.svenheins.objects.ZIndexObjectComparator;
 
 
@@ -20,6 +21,7 @@ public class EntityManager{
 	public static Comparator<LocalObject> comparator = new ZIndexObjectComparator();
 	
 	public static List<BigInteger> idList = new ArrayList<BigInteger>();
+	public static BigInteger maxID = BigInteger.valueOf(0);
 	
 	public static void remove(BigInteger index) throws IllegalArgumentException {
 //		if(entityList.get(index) instanceof AlienEntity) AlienEntity.aliens--;
@@ -45,6 +47,10 @@ public class EntityManager{
 		} else {
 			entityList.put(entity.getId(), entity);
 			idList.add(entity.getId());
+//			System.out.println("added entity");
+			if (maxID.compareTo(entity.getId())< 0) {
+				maxID = entity.getId();
+			}
 			return true;
 		}
 	}

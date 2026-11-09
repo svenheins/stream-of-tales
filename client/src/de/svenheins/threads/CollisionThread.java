@@ -1,18 +1,20 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.threads;
-import java.awt.Point;
-
 import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
-import de.svenheins.main.GameStates;
-import de.svenheins.main.GameWindow;
-import de.svenheins.managers.PlayerManager;
-import de.svenheins.objects.Entity;
 
 
 public class CollisionThread implements Runnable {
 	private long duration, last; 
 	private long millis, frames;
+	
+
 	
 	@Override
 	public void run() {
@@ -23,7 +25,55 @@ public class CollisionThread implements Runnable {
 			millis += duration;
 			frames +=1;
 			if(!GamePanel.gp.isPaused() && GameModus.modus == GameModus.GAME) {
-				/** check if player is moving */
+
+				
+				
+				//				/** check if player is moving */
+//				
+//				List<BigInteger> idListTempAgentsA = new ArrayList<BigInteger>(AgentManager.idList);
+//				List<BigInteger> idListTempAgentsB = new ArrayList<BigInteger>(AgentManager.idList);
+//				for (BigInteger i: idListTempAgentsA) {
+//					Agent eA= AgentManager.get(i);
+//					if (eA != null) { 
+//						for (BigInteger j: idListTempAgentsB) {
+//							/** only compare if its not the same agent */
+//							if (!j.equals(i)) {
+//								Agent eB= AgentManager.get(j);
+//								if (eB != null) { 
+//									if (eA.collides(eB)) {
+//										eA.setMovement(-eA.getTotalAreaInfluences()[AttributeType.MX.ordinal()], -eA.getTotalAreaInfluences()[AttributeType.MY.ordinal()]);
+////										eA.restartPathCalculationAfterCollision(GameWindow.gw.getObjectMapManagers().get("tree1"), GameWindow.gw.getObjectMapManagers().get("tree2"));
+//									}
+//								}
+//							}
+//						}
+//					}
+//					
+//					
+//					/** PlayerAgentsMove */
+//					for (PlayerAgentManager playerAgentManager : PlayerAgentManagerManager.playerAgentManagerList.values()) {
+//						List<BigInteger> idListTempPlayerAgents = new ArrayList<BigInteger>(playerAgentManager.getIdList());
+//						for (BigInteger k: idListTempPlayerAgents) {
+//							PlayerEntity tempAgent = playerAgentManager.get(k);
+//							if (tempAgent != null && tempAgent.isVisible()) {
+//								Entity eC= tempAgent;
+//								if(eC != null) {
+//									if (eA.collides(eC)) {
+//										eA.setMovement(-eA.getTotalAreaInfluences()[AttributeType.MX.ordinal()], -eA.getTotalAreaInfluences()[AttributeType.MY.ordinal()]);
+//										eA.restartPathCalculationAfterCollision(GameWindow.gw.getObjectMapManagers().get("tree1"), GameWindow.gw.getObjectMapManagers().get("tree2"));
+//									}
+//								}
+//							} else {
+//								GameWindow.gw.gameInfoConsole.appendInfo("I got a NULL Agent");
+//							}
+//						}
+//					}
+//					//System.out.println("id: "+ e.getId()+" x: "+e.getX()+" y: "+ e.getY()+" mx: "+e.getHorizontalMovement()+" my: "+e.getVerticalMovement());
+//				}
+			
+			
+			
+			
 //				if (GamePanel.gp.getPlayerEntity().getMX() != 0 || GamePanel.gp.getPlayerEntity().getMY() != 0) {
 //					/** playerPosition */
 //					Point entityPoint = new Point( (int) GamePanel.gp.getPlayerEntity().getX(), (int) GamePanel.gp.getPlayerEntity().getY() );
@@ -167,7 +217,7 @@ public class CollisionThread implements Runnable {
 				millis =0;
 			}
 			try {
-				Thread.sleep(5);
+				Thread.sleep(20);
 			}
 			catch(InterruptedException exception) {
 				System.out.println(exception);

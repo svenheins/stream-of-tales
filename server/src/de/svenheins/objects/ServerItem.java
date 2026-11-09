@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 
@@ -23,6 +29,7 @@ public class ServerItem extends WorldObject{
 	private int count;
 	private int capacity;
 	private String name;
+	private String comment;
 	private BigInteger id;
 	private ITEMCODE itemCode;
 	private ManagedReference<ServerEntity> itemEntity;
@@ -37,10 +44,12 @@ public class ServerItem extends WorldObject{
         Logger.getLogger(ServerEntity.class.getName());
 	
 	
-    public ServerItem (BigInteger id, ITEMCODE itemCode, String name, ServerEntity itemEntity, int count, int capacity, float[] states) {
+    public ServerItem (BigInteger id, ITEMCODE itemCode, String name, String comment, String room, ServerEntity itemEntity, int count, int capacity, float[] states) {
     	setId(id);
     	setItemCode(itemCode);
     	setName(name);
+    	setComment(comment);
+    	setRoom(room);
     	setItemEntity(AppContext.getDataManager().createReference(itemEntity));
     	setCount(count);
     	setCapacity(capacity);
@@ -128,5 +137,15 @@ public class ServerItem extends WorldObject{
 
 	public void setStates(float[] states) {
 		this.states = states;
+	}
+
+
+	public String getComment() {
+		return comment;
+	}
+
+
+	public void setComment(String comment) {
+		this.comment = comment;
 	}
 }

@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.math.BigInteger;
@@ -21,8 +27,11 @@ public class AreaInfluence {
 	private float[] attributes;
 	/** priority */
 	private Priority priority;
+	/** creator */
+	private String creator;
+
 	
-	public AreaInfluence(BigInteger id, long timeBegin, long timeEnd, LocalObject localObject, String groupName, boolean exclusive, float[] attributes, Priority priority) {
+	public AreaInfluence(BigInteger id, long timeBegin, long timeEnd, LocalObject localObject, String groupName, boolean exclusive, float[] attributes, Priority priority, String creator) {
 		this.setId(id);
 		this.setTimeBegin(timeBegin);
 		this.setTimeEnd(timeEnd);
@@ -31,6 +40,7 @@ public class AreaInfluence {
 		this.setExclusive(exclusive);
 		this.setAttributes(attributes);	
 		this.setPriority(priority);
+		this.setCreator(creator);
 	}
 	
 	public long getTimeBegin() {
@@ -90,6 +100,22 @@ public class AreaInfluence {
 
 	public void setLocalObject(LocalObject localObject) {
 		this.localObject = localObject;
+	}
+	
+	public void setX(float x) {
+		this.localObject.setX(x);
+	}
+	
+	public void setY(float y) {
+		this.localObject.setY(y);
+	}
+
+	public String getCreator() {
+		return creator;
+	}
+
+	public void setCreator(String creator) {
+		this.creator = creator;
 	}
 
 }

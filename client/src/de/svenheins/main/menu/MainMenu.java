@@ -1,11 +1,15 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.main.menu;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -22,15 +26,12 @@ import javax.swing.JTextField;
 
 import de.svenheins.handlers.FileAddAction;
 import de.svenheins.handlers.FileAddTextureAction;
+import de.svenheins.main.GUI;
 import de.svenheins.main.GameModus;
 import de.svenheins.main.GamePanel;
 import de.svenheins.main.GameStates;
 import de.svenheins.main.GameWindow;
-import de.svenheins.managers.MapManager;
 import de.svenheins.managers.PlayerManager;
-import de.svenheins.managers.TileSetManager;
-import de.svenheins.messages.ClientMessages;
-import de.svenheins.messages.OBJECTCODE;
 
 public class MainMenu extends JMenuBar {
 
@@ -109,7 +110,7 @@ public class MainMenu extends JMenuBar {
 		JMenuItem exitItem = new JMenuItem("Exit");
 		exitItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				GameWindow.gw.dispose();
+				GUI.gui.dispose();
 		         System.exit(0); //calling the method is a must				
 			}
 		});
@@ -196,9 +197,9 @@ public class MainMenu extends JMenuBar {
 //					    GameWindow.gw.initMapManagers();
 					    /** delete only the Maps, not the changedPoints */
 //					    GameWindow.gw.deleteOnlyMapsOfMapManagers();
-					    GameWindow.gw.setGameMasterName(playerName);
-					    GameWindow.gw.initLocalMapFileList(playerName);
-					    if (GameWindow.gw.isGameMaster()) {
+					    GameWindow.gw.setMapMasterName(playerName);
+					    GameWindow.gw.initLocalMapFileList(playerName, GamePanel.gp.getPlayerEntity().getRoom());
+					    if (GameWindow.gw.isMapMaster()) {
 //					    	GameWindow.gw.initSendMapList();
 					    }
 //						GameWindow.gw.send(ClientMessages.editPlayerAddons(entity.getId(), GameWindow.gw.getPlayerName(), entity.getTileSet().getName(), entity.getTileSet().getFileName(), (int) entity.getWidth(), (int) entity.getHeight(), entity.getCountry(), entity.getGroupName(), entity.getExperience()));

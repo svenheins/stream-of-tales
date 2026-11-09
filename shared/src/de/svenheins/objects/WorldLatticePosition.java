@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.awt.Point;
@@ -31,37 +37,64 @@ public class WorldLatticePosition {
 		return new WorldLatticePosition(new Point(latticePointX, latticePointY), localX, localY);
 	}
 	
+	public static WorldLatticePosition shiftWorldLatticePosition(WorldLatticePosition wlp, int shiftX, int shiftY) {
+		WorldLatticePosition retValue = new WorldLatticePosition(wlp.getMapCoordinates(), wlp.getLocalX(), wlp.getLocalY());
+		if ( Math.abs(shiftX) < GameStates.mapWidth && Math.abs(shiftY) <GameStates.mapHeight) {
+			retValue.setLocalX(retValue.getLocalX()+shiftX);
+			retValue.setLocalY(retValue.getLocalY()+shiftY);
+			if (retValue.getLocalX() >= GameStates.mapWidth) {
+				retValue.setLocalX(retValue.getLocalX()-GameStates.mapWidth);
+				retValue.mapCoordinates.x += GameStates.mapTotalWidth;
+			} else if (retValue.getLocalX() < 0) {
+				retValue.setLocalX(retValue.getLocalX()+GameStates.mapWidth);
+				retValue.mapCoordinates.x -= GameStates.mapTotalWidth;
+			}
+			
+			if (retValue.getLocalY() >= GameStates.mapHeight) {
+				retValue.setLocalY(retValue.getLocalY()-GameStates.mapHeight);
+				retValue.mapCoordinates.y += GameStates.mapTotalHeight;
+			} else if (retValue.getLocalY() < 0) {
+				retValue.setLocalY(retValue.getLocalY()+GameStates.mapHeight);
+				retValue.mapCoordinates.y -= GameStates.mapTotalHeight;
+			}
+		} else {
+			System.out.println("Error: shiftX or shiftY is too large");
+			retValue =  null;
+		}
+		return retValue;
+	}
+	
 	public static WorldLatticePosition getClosestWorldLatticePosition(WorldPosition position) {
 		int localWidth = GameStates.mapTotalWidth;
 		int localHeight = GameStates.mapTotalHeight;
 		
-		int latticePointX = (int) Math.floor( (float) (position.getX()) / (localWidth)) * localWidth;
-		int latticePointY = (int) Math.floor( (float) (position.getY()) / (localHeight)) * localHeight;
-		int localXFloor = (int) Math.floor( (float) (position.getX() - latticePointX )/ GameStates.mapTileSetWidth);
-		int localYFloor = (int) Math.floor( (float) ( position.getY() - latticePointY )/ GameStates.mapTileSetHeight);
+		int latticePointX = (int) Math.floor( (float) (position.getX()+5) / (localWidth)) * localWidth;
+		int latticePointY = (int) Math.floor( (float) (position.getY()+5) / (localHeight)) * localHeight;
+		int localXFloor = (int) Math.floor( (float) (position.getX()+5 - latticePointX )/ GameStates.mapTileSetWidth);
+		int localYFloor = (int) Math.floor( (float) ( position.getY()+5 - latticePointY )/ GameStates.mapTileSetHeight);
 		int localXCeiling = (int) Math.ceil( (float) (position.getX() - latticePointX )/ GameStates.mapTileSetWidth);
 		int localYCeiling = (int) Math.ceil( (float) ( position.getY() - latticePointY )/ GameStates.mapTileSetHeight);
 		
 		int localX,localY;
 		
-		if (Math.abs(latticePointX+localXFloor*GameStates.mapTileSetWidth-position.getX()) < Math.abs(latticePointX+localXCeiling*GameStates.mapTileSetWidth-position.getX())) {
+//		if (Math.abs(latticePointX+localXFloor*GameStates.mapTileSetWidth-position.getX()) < Math.abs(latticePointX+localXCeiling*GameStates.mapTileSetWidth-position.getX())) {
 			localX = localXFloor;
-		} else {
-			localX = localXCeiling;
+//		} else {
+//			localX = localXCeiling;
 			if( localX == GameStates.mapWidth) {
 				latticePointX += localWidth;
 				localX = 0;
 			}
-		}
-		if (Math.abs(latticePointY+localYFloor*GameStates.mapTileSetHeight-position.getY()) < Math.abs(latticePointY+localYCeiling*GameStates.mapTileSetHeight-position.getY())) {
+//		}
+//		if (Math.abs(latticePointY+localYFloor*GameStates.mapTileSetHeight-position.getY()) < Math.abs(latticePointY+localYCeiling*GameStates.mapTileSetHeight-position.getY())) {
 			localY = localYFloor;
-		} else {
-			localY = localYCeiling;
+//		} else {
+//			localY = localYCeiling;
 			if( localY == GameStates.mapHeight) {
 				latticePointY += localHeight;
 				localY = 0;
 			}
-		}
+//		}
 		
 		return new WorldLatticePosition(new Point(latticePointX, latticePointY), localX, localY);
 	}

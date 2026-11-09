@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import java.awt.Point;
@@ -40,7 +46,7 @@ public class Light {
 
 	public Point getLocation() {
 		if (entity != null) {
-			System.out.println("here");
+//			System.out.println("here");
 			return new Point( (int) entity.getX() - ((int) entity.getX() % GameStates.lightTileWidth), (int) entity.getY() - ((int) entity.getY() % GameStates.lightTileHeight));
 		} else
 		return location;

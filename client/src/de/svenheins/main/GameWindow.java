@@ -1,27 +1,51 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ */
 package de.svenheins.main;
 
 
 import de.svenheins.WorldClient;
 import de.svenheins.functions.MyMath;
+import de.svenheins.functions.MyStrings;
 import de.svenheins.functions.MyUtil;
 import de.svenheins.handlers.ClientMessageHandler;
 import de.svenheins.handlers.ConsoleInputHandler;
-import de.svenheins.main.gui.EditorGUIManager;
 import de.svenheins.main.gui.PlayerListGUIManager;
 import de.svenheins.main.menu.MainMenu;
 import de.svenheins.managers.ClientTextureManager;
 import de.svenheins.managers.EntityManager;
+import de.svenheins.managers.LightManager;
 import de.svenheins.managers.MapManager;
+import de.svenheins.managers.MusicManager;
 import de.svenheins.managers.ObjectMapManager;
 import de.svenheins.managers.PlayerManager;
 import de.svenheins.managers.RessourcenManager;
+import de.svenheins.managers.SoundEffectManager;
 import de.svenheins.managers.SpaceManager;
+import de.svenheins.managers.TextEffectManager;
 import de.svenheins.managers.TileMapManager;
 import de.svenheins.managers.UndergroundMapManager;
 import de.svenheins.messages.ClientMessages;
 import de.svenheins.objects.IngameConsole;
 
 
+
+
+
+
+
+
+
+
+
+
+import de.svenheins.objects.MessageWindow;
+import de.svenheins.objects.MiniMap;
+import de.svenheins.objects.TextEffect;
+
+import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
@@ -29,6 +53,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferStrategy;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -44,39 +69,45 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javafx.embed.swing.JFXPanel;
+
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
+
 import com.sun.sgs.client.ClientChannel;
 import com.sun.sgs.client.ClientChannelListener;
 import com.sun.sgs.client.simple.SimpleClient;
 import com.sun.sgs.client.simple.SimpleClientListener;
 
 
-public class GameWindow extends JFrame implements SimpleClientListener, ActionListener {
+public class GameWindow implements SimpleClientListener, ActionListener {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	//private String title;
-	public final int hoehe;
-	public final int breite;
+	public final int height;
+	public final int width;
 	private Dimension dim;
-	private GamePanel panel;
-	private StatPanel menuPanel;
+
+
+	public Sound sound;
 //	public final JMenuItem item21= new JMenuItem("reset zoom");
 	
 	public static GameWindow gw;
-	private GraphicsDevice device;
+	public static GamePanel gp;
+//	private GraphicsDevice device;
     private boolean isFullScreen = false;
     private boolean loggedIn; //, superUser;
-    private boolean showConsole, showInfoConsole;
+
     
     private boolean readyForNextMessage;
     
-    private ConsoleInputHandler consoleInput;
-    public IngameConsole gameConsole;
-    public IngameConsole gameInfoConsole;
+//    private ConsoleInputHandler consoleInput;
+//    public IngameConsole gameConsole;
+//    public IngameConsole gameInfoConsole;
+//    public MessageWindow messageWindow;
     
     private int[] loadingStates = new int[4];
 
@@ -85,18 +116,26 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     public static final String HOST_PROPERTY = "tutorial.host";
 
     /** The default hostname. */
-    public static final String DEFAULT_HOST = "localhost";//"193.174.43.177";
+    public static final String DEFAULT_HOST = "localhost";
     private String hostName;
 
     /** The name of the port property. */
     public static final String PORT_PROPERTY = "tutorial.port";
 
     /** The default port. */
-    public static final String DEFAULT_PORT = "1139";//"62964";//"1139";
+    public static final String DEFAULT_PORT = "1139";
     private String portNumber;
     
     private String loginName = "";
     private String loginPassword = "";
+    private TwitchBot twitchBot;
+    private boolean usingTwitch = true;
+    private String twitchUserName = "";
+    private String twitchPWD = "";
+    private String twitchChannel = "";
+    private MySQLConnector mySQL;
+    
+    
     
 
     /** The message encoding. */
@@ -110,11 +149,16 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     
     /** The Player Name*/
     protected String playerName;
-    /** gameMasterName */
-    protected String gameMasterName;
+    /** mapMasterName */
+    protected String mapMasterName;
+    private boolean gameMaster;
     
-    protected boolean night;
-    private boolean light;
+    protected boolean night = false;
+    private boolean light = true;
+    private boolean usingLight = true;
+    private boolean usingWeather = true;
+    
+	private boolean initingLocalMapFileList = false;
     
     /** Map that associates a channel name with a {@link ClientChannel}. */
     protected final Map<String, ClientChannel> channelsByName =
@@ -128,6 +172,8 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     protected HashMap<String, MapManager> mapManagers = new HashMap<String, MapManager>();
     /** objectMapManager */
     protected HashMap<String, ObjectMapManager> objectMapManagers = new HashMap<String, ObjectMapManager>();
+    /** objectMapManager of the lower room*/
+    protected HashMap<String, ObjectMapManager> objectMapManagersLowerRoom = new HashMap<String, ObjectMapManager>();
     /** undergroundMapManagers */
     protected HashMap<String, UndergroundMapManager> undergroundMapManagers = new HashMap<String, UndergroundMapManager>();
     
@@ -147,55 +193,68 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     
     /** HelloChannelClient instance for the player name etc*/
     protected static WorldClient worldClient;
+    
+    
 
 	
-	public GameWindow(String title, int breite, int hoehe){
-		super(title);
+	public GameWindow(String title, int width, int height) {
+//		super(title);
 		gw = this;
-		
-		this.breite = breite;
-		this.hoehe = hoehe;
-		dim = new Dimension(this.breite, this.hoehe);
+
+		this.width = width;
+		this.height = height;
+		dim = new Dimension(this.width, this.height);
 		
 		simpleClient = new SimpleClient(this);
 		
-		/** add the menuPanel, that lies above the GamePanel 
-		 * it is used for menus, infoboxes and consoles
-		 * */
-		menuPanel = new StatPanel();
-		setGlassPane(menuPanel);
-		menuPanel.setVisible(true);
+//		/** add the menuPanel, that lies above the GamePanel 
+//		 * it is used for menus, infoboxes and consoles
+//		 * */
+//		menuPanel = new StatPanel();
+//		setGlassPane(menuPanel);
+//		menuPanel.setVisible(true);
+//		
+//		/** JFX Init */
+//		jfxPanel = new JFXPanel();
+//		this.getContentPane().add(jfxPanel);
 		
-		/** Main-GamePanel
-		 * this panel will be scaled or rotated*/
-		panel = new GamePanel();
-		panel.setBackground(new Color(0,0,0));
-		panel.setDoubleBuffered(true);
+		/** init sound */
+		SoundEffectManager.init();
+		MusicManager.init();
+		this.sound = new Sound();
+		this.setMySQL(new MySQLConnector("com.mysql.jdbc.Driver", "jdbc:mysql://192.168.56.101/stream", "streammanager", "test1234", "streamviewers"));
 		
+//		/** Main-GamePanel
+//		 * this panel will be scaled or rotated*/
+//		panel = new GamePanel(strategy);
+//		panel.setBackground(new Color(0,0,0));
+//		panel.setDoubleBuffered(true);
+
+		gp = new GamePanel();
+		
+
 		/** configuration */
 		this.config();
 		
-		JInternalFrame frame1;
-		frame1 = new JInternalFrame("Frame1", true, true, true, true);
-        frame1.setBounds(20, 200, 150, 100);
-        frame1.setVisible(true);
+//		JInternalFrame frame1;
+//		frame1 = new JInternalFrame("Frame1", true, true, true, true);
+//        frame1.setBounds(20, 200, 150, 100);
+//        frame1.setVisible(true);
 		
-		setMaximumSize(dim);
-		setMinimumSize(dim);
-		setPreferredSize(dim);
+//		setMaximumSize(dim);
+//		setMinimumSize(dim);
+//		setPreferredSize(dim);
+//		
+//		setLocationRelativeTo(null);
+//		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		setLocationRelativeTo(null);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
-		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        device =ge.getDefaultScreenDevice();
-//        GameStates.setWidth(ge.getMaximumWindowBounds().width);
-//        GameStates.setHeight(ge.getMaximumWindowBounds().height);
-        GameStates.setWidth(breite);
-        GameStates.setHeight(hoehe);
+//		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+//      device =ge.getDefaultScreenDevice();
+
         
-        /** init ressources */
-//        initializeRessources();
+        GameStates.setWidth(width);
+        GameStates.setHeight(height);
+        
         
         /** create an image-folder */
      	/** all non-existent ancestor directories are automatically created */
@@ -212,43 +271,59 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	    if (!createMapFolderSccess) {
 	         // Directory creation failed
 	    }
-		consoleInput = new ConsoleInputHandler();
-		gameConsole = new IngameConsole(new Point(20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 220}, 0.5f, true, true, 14);
-		gw.addKeyListener(consoleInput);
-		this.showConsole = false;
+//		consoleInput = new ConsoleInputHandler();
+//		gameConsole = new IngameConsole(new Point(20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 220}, 0.5f, true, true, 14);
+//		gw.addKeyListener(consoleInput);
+//		this.showConsole = false;
+//		
+//		gw.addKeyListener(GamePanel.gp.getPlayer().getInputHandler());
+//		
+//		/** InfoConsole */
+//		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2 + 20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 120}, 0.5f, false, false, 14);
+//        
+//		/** messageWindow */
+//		int messageWindowWidth = 300;
+//		int messageWindowHeight = 200;
+//		messageWindow = new MessageWindow(new Point(GameStates.getWidth()/2 - messageWindowWidth/2, GameStates.getHeight()/2 - 3*messageWindowHeight/2), messageWindowWidth, messageWindowHeight, new int[]{120, 120, 120}, 0.5f, 14);
 		
-		gw.addKeyListener(GamePanel.gp.getPlayer().getInputHandler());
-		
-		/** InfoConsole */
-		gameInfoConsole = new IngameConsole(new Point(GameStates.getWidth()/2 + 20, GameStates.getHeight()-220), GameStates.getWidth()/2-40, 160, new int[]{120, 120, 120}, 0.5f, false, false, 14);
-        
-		
-		setResizable(false);
-		
-		add(panel);
+//		setResizable(false);
+//		
+//		add(panel);
 		
 		/** create MainMenu */
-		MainMenu menuBar = new MainMenu(panel);
+//		MainMenu menuBar = new MainMenu(panel);
 		// Comment to unsupport Menu
 //		this.setJMenuBar(menuBar);
 
 //		this.setExtendedState(JFrame.MAXIMIZED_BOTH);
 		
-		setVisible(true);
-		gw.setFocusable(true);
-		gw.requestFocus();	
+		
+//		setVisible(true);
+//		gw.setFocusable(true);
+//		gw.requestFocus();
+		
+//		// Tell AWT not to bother repainting our canvas since we're
+//		// going to do that our self in accelerated mode
+//		gw.setIgnoreRepaint(true);
+//		// setup our canvas size and put it into the content of the frame
+//				gw.setBounds(0,0,width,height);
+//				// request the focus so key events come to us
+//				gw.requestFocus();		
+//				
+//		// create the buffering strategy which will allow AWT
+//		// to manage our accelerated graphics
+//		gw.createBufferStrategy(2);
+//		gw.strategy = getBufferStrategy();
 	}
 	
 	public void config() {
 		setLoggedIn(false);
-		setGameMasterName("standard");
+		setMapMasterName("standard");
+		setGameMaster(false);
 	    this.setReadyForNextMessage(true);
 	    /** prepare the loading states */
 	    loadingStates = new int[]{0,0,0,0};
-	    this.showInfoConsole = true;
-	    
-	    /** config the GamePanel */
-	    this.panel.config();
+
 	}
 	
 	public void logout() {
@@ -281,15 +356,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //        panel.add(inputField, BorderLayout.CENTER);
     }
 
-    /**
-     * Appends the given message to the output text pane.
-     *
-     * @param x the message to append to the output text pane
-     */
-    public void appendOutput(String x) {
-//        outputArea.append(x + "\n");
-    	gameInfoConsole.appendSimpleDate(x);
-    }
+
 
     /**
      * Initiates asynchronous login to the SGS server specified by
@@ -313,6 +380,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //            }
             
             new Thread(GamePanel.serverUpdateThread).start();
+            
 //            new Thread(GamePanel.inputThread).start();
             
             
@@ -321,16 +389,49 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
             disconnected(false, e.getMessage());
         }
     }
-
-    /**
-     * Displays the given string in this client's status bar.
-     *
-     * @param status the status message to set
-     */
-    public void setStatus(String status) {
-        appendOutput("Status Set: " + status);
-//        statusLabel.setText("Status: " + status);
+    
+    protected void twitchLogin(String hostName, String name, String pwd, String channel) {
+    	if (usingTwitch) {
+        	this.connectTwitchBot(hostName, name, pwd, channel);
+        }
     }
+    
+    public void connectTwitchBot(String hostName, String name, String pwd, String channel) {
+    	if (!name.equals("") && (!pwd.equals(""))) {
+//	    	twitchBot = new TwitchBot(name, false);
+//			twitchBot.setVerbose(true);
+//			try {
+//				twitchBot.connect("irc.twitch.tv", 6667, pwd);
+//			} catch (NickAlreadyInUseException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			} catch (IrcException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			if (!channel.equals("")) {
+//				twitchBot.joinChannel("#"+channel);
+//			} else {
+//				twitchBot.joinChannel("#"+name);
+//			}
+    		
+    		String channelNameCorrected;
+    		if (!channel.equals("")) {
+				channelNameCorrected="#"+channel;
+			} else {
+				channelNameCorrected="#"+name;
+			}
+    		twitchBot = new TwitchBot(hostName, 6667, name, pwd, name, channelNameCorrected, true);// "irc.twitch.tv"
+			
+    	} else {
+    		System.out.println("no connection with twitch because of empty fields");
+    	}
+    }
+
+    
 
     /**
      * Encodes a {@code String} into a {@link ByteBuffer}.
@@ -391,7 +492,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     public PasswordAuthentication getPasswordAuthentication() {
         this.playerName = this.getLoginName();//"guest-" + random.nextInt(1000);
 //    	this.player = "player";
-        setStatus("Logging in as " + playerName);
+        GUI.gui.setStatus("Logging in as " + playerName);
         String password = this.getLoginPassword();
         return new PasswordAuthentication(playerName, password.toCharArray());
     	
@@ -404,11 +505,11 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      */
     public void loggedIn() {
 //        inputPanel.setEnabled(true);
-        setStatus("Logged in");
+        GUI.gui.setStatus("Logged in");
         setLoggedIn(true);
         /** create a map-folder */
      	/** all non-existent ancestor directories are automatically created */
-	    boolean createMapFolderSuccess = (new File(GameStates.standardMapFolder+"/"+this.getGameMasterName())).mkdirs();
+	    boolean createMapFolderSuccess = (new File(GameStates.standardMapFolder+"/"+this.getMapMasterName())).mkdirs();
 	    if (!createMapFolderSuccess) {
 	         // Directory creation failed
 	    	System.out.println("Error at creating game-master map-folder!");
@@ -418,12 +519,47 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	         // Directory creation failed
 	    	System.out.println("Error at creating playerName map-folder!");
 	    }
+	    String standardRoom = this.getPlayerName() + "0000";
+	    createMapFolderSuccess = (new File(GameStates.standardMapFolder+"/"+this.getPlayerName()+"/"+standardRoom)).mkdirs();
+	    if (!createMapFolderSuccess) {
+	         // Directory creation failed
+	    	System.out.println("Error at creating playerName map-folder!");
+	    }
+	    createMapFolderSuccess = (new File(GameStates.standardMapFolder+"/"+this.getPlayerName()+"/"+this.getLowerRoom(standardRoom))).mkdirs();
+	    if (!createMapFolderSuccess) {
+	         // Directory creation failed
+	    	System.out.println("Error at creating playerName lowerRoom map-folder!");
+	    }
 	    System.out.println("Playername: "+ this.getPlayerName());
 	    GamePanel.gp.setPlayerEntityName(this.getPlayerName());
+	    GamePanel.gp.getPlayerEntity().setRoom(standardRoom);
+	    GamePanel.gp.setPlayerGroupName(this.getPlayerName());
 	    PlayerListGUIManager.get("playerList").get(BigInteger.valueOf(0)).setStrValue(this.getPlayerName());
+	    
+	    String folderPath = "./ressources/maps/";
+		String src = this.getPlayerName()+".png";
+		MiniMap	miniMap = new MiniMap(folderPath, src);
+		MiniMap dungeonMiniMap = new MiniMap(folderPath, "dungeon"+src);
+		if (miniMap.getMap() != null) ; 
+		else {
+			System.out.println("couldn't get the file "+folderPath+src+" -> take the standard 10x10 miniMap with green color");
+			miniMap = new MiniMap();
+		}
+		if (dungeonMiniMap.getMap() != null) ; 
+		else {
+			System.out.println("couldn't get the file "+folderPath+src+" -> take the standard 30x30 Dungeon miniMap with color");
+			dungeonMiniMap = new MiniMap("dungeon.png");
+		}
+	    GamePanel.gp.setMiniMap(miniMap);
+	    GamePanel.gp.setDungeonMiniMap(dungeonMiniMap);
+//	    System.out.println("00: "+dungeonMiniMap.getMapType(0, 0));
+//	    System.out.println("01: "+dungeonMiniMap.getMapType(0, 1));
+//	    System.out.println("10: "+dungeonMiniMap.getMapType(1, 0));
+//	    System.out.println("11: "+dungeonMiniMap.getMapType(1, 1));
 	    
 	    /** reset the maps */
 	    this.resetMapManagers();
+	    this.setMapMaster(this.getPlayerName());
     }
 
     /**
@@ -432,7 +568,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      * Updates the status message on failed login.
      */
     public void loginFailed(String reason) {
-        setStatus("Login failed: " + reason);
+        GUI.gui.setStatus("Login failed: " + reason);
         setLoggedIn(false);
     }
 
@@ -443,7 +579,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      */
     public void disconnected(boolean graceful, String reason) {
 //        inputPanel.setEnabled(false);
-        setStatus("Disconnected: " + reason);
+        GUI.gui.setStatus("Disconnected: " + reason);
         setLoggedIn(false);
     }
 
@@ -462,7 +598,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      * Updates the status message on successful reconnect.
      */
     public void reconnected() {
-        setStatus("reconnected");
+        GUI.gui.setStatus("reconnected");
     }
 
     /**
@@ -471,7 +607,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
      * Updates the status message when reconnection is attempted.
      */
     public void reconnecting() {
-        setStatus("reconnecting");
+        GUI.gui.setStatus("reconnecting");
     }
 
 
@@ -520,7 +656,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
     public ClientChannelListener joinedChannel(ClientChannel channel) {
         String channelName = channel.getName();
         channelsByName.put(channelName, channel);
-        appendOutput("Joined to channel " + channelName);
+        GUI.gui.appendOutput("Joined to channel " + channelName);
         if (channelName.startsWith("SpaceChannel_")) {
         	System.out.println("Got Space-Channel");
         	joinSpaceChannel(BigInteger.valueOf(Long.parseLong(channelName.substring(13))));
@@ -581,7 +717,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
          * Displays a message when this client leaves a channel.
          */
         public void leftChannel(ClientChannel channel) {
-            appendOutput("Removed from channel " + channel.getName());
+            GUI.gui.appendOutput("Removed from channel " + channel.getName());
             if (channel.getName().startsWith("SpaceChannel_")) {
             	leaveSpaceChannel(BigInteger.valueOf(Long.parseLong(channel.getName().substring(13))));
             }
@@ -642,25 +778,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 //            setVisible(true);
 //        }
 //    }
-	public void setShowConsole(boolean showConsole){
-		this.showConsole = showConsole;
-	}
 	
-	public boolean getShowConsole() {
-		return showConsole;
-	}
-	
-	public void setShowInfoConsole(boolean showInfoConsole){
-		this.showInfoConsole = showInfoConsole;
-	}
-	
-	public boolean getShowInfoConsole() {
-		return showInfoConsole;
-	}
-	
-	public ConsoleInputHandler getConsoleInputHandler() {
-		return this.consoleInput;
-	}
 
 
 //	public boolean isSuperUser() {
@@ -788,6 +906,9 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 			} else {
 				// OK, ready for GAME
 				GameModus.modus = GameModus.GAME;
+				GamePanel.gp.setTransparentLoad(-7.0f);
+				this.selectBackgroundMusicByEnvironment();
+//				GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.GAME);
 			}
 			break;
 		case GameModus.GAME:
@@ -804,15 +925,25 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		return loadingStates[index];
 	}
 	
-	public String getGameMasterName() {
-		return gameMasterName;
+	public String getMapMasterName() {
+		return mapMasterName;
 	}
 	
-	public void setGameMasterName(String name) {
-		this.gameMasterName = name;
+	/** return the mapMasterID depending on if its me or another player */
+	public BigInteger getMapMasterID() {
+		if (isMapMaster()) {
+			return GamePanel.gp.getPlayerEntity().getId();
+		} else {
+			return PlayerManager.get(GameWindow.gw.getMapMasterName()).getId();
+		}
 	}
 	
-	public void setGameMaster(String playerName) {
+	public void setMapMasterName(String name) {
+		this.mapMasterName = name;
+	}
+	
+	public void setMapMaster(String playerName) {
+		String standardRoomName = playerName+"0000";
 		if (this.isLoggedIn()) {
 			GamePanel.gp.setPaintLayer("empty");
 			GamePanel.gp.setPaintType(0);
@@ -823,51 +954,153 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		         // Directory creation failed
 		    }
 		    /** delete only the Maps, not the changedPoints */
-		    GameWindow.gw.setGameMasterName(playerName);
-		    GameWindow.gw.initLocalMapFileList(playerName);
+		    GameWindow.gw.setMapMasterName(playerName);
+		    
+		    /** if the player entered his own world */
+		    if (GameWindow.gw.getPlayerName().equals(playerName)) {
+		    	GamePanel.gp.getPlayerEntity().setRoom(standardRoomName);
+		    	GamePanel.gp.getPlayerEntity().setX(0);
+		    	GamePanel.gp.getPlayerEntity().setY(0);
+		    	GameWindow.gw.initLocalMapFileList(playerName, standardRoomName);
+		    } else {
+		    	/** world of another player */
+		    	String playerRoom = PlayerManager.get(playerName).getRoom(); // we dont need this, because the player could be in another world
+		    	boolean createMapSubFolderSccess = (new File(GameStates.standardMapFolder+playerName+"/"+standardRoomName)).mkdirs();
+			    if (!createMapSubFolderSccess) {
+			         // Directory creation failed
+			    }
+			    boolean createMapSubFolderSccessLowerRoom = (new File(GameStates.standardMapFolder+playerName+"/"+this.getLowerRoom(standardRoomName))).mkdirs();
+			    if (!createMapSubFolderSccessLowerRoom) {
+			         // Directory creation failed
+			    }
+			    System.out.println("loaded "+GameStates.standardMapFolder+playerName+"/"+standardRoomName);
+		    	GamePanel.gp.getPlayerEntity().setX(0);
+		    	GamePanel.gp.getPlayerEntity().setY(0);
+		    	GameWindow.gw.initLocalMapFileList(playerName, standardRoomName);
+		    	GamePanel.gp.getPlayerEntity().setRoom(standardRoomName);
+		    }
+		    
+		    GameWindow.gw.send(ClientMessages.editPlayerRoom(GamePanel.gp.getPlayerEntity().getId(), this.getPlayerName(), standardRoomName));
+		    
+		    
+		    if (!isGameMaster()) GamePanel.gp.setZoomFactor(GameStates.standardZoomFactor);
+		    this.selectLightByEnvironment();
 		}
 	}
 	
-	public boolean isGameMaster() {
-		return (this.getPlayerName().equals(this.getGameMasterName()));
+	public void enterRoom(String room) {
+		if (this.isLoggedIn()) {
+			GamePanel.gp.setTransparentLoad(0.0f);
+			GamePanel.gp.setPaintLayer("empty");
+			GamePanel.gp.setPaintType(0);
+			GamePanel.gp.configGUI();
+			
+			/** create map folder for the chosen player */
+		    boolean createMapFolderSuccess = (new File(GameStates.standardMapFolder+GameWindow.gw.getMapMasterName())).mkdirs();
+		    if (!createMapFolderSuccess) {
+		         // Directory creation failed
+		    }
+		    boolean createMapSubFolderSuccess = (new File(GameStates.standardMapFolder+GameWindow.gw.getMapMasterName()+"/"+room)).mkdirs();
+		    if (!createMapSubFolderSuccess) {
+		         // Directory creation failed
+		    }
+		    boolean createMapSubFolderSuccessLowerRoom = (new File(GameStates.standardMapFolder+GameWindow.gw.getMapMasterName()+"/"+this.getLowerRoom(room))).mkdirs();
+		    if (!createMapSubFolderSuccessLowerRoom) {
+		         // Directory creation failed
+		    }
+		    
+		    /** if the player enter his own world */
+		    if (GameWindow.gw.getPlayerName().equals(GameWindow.gw.getMapMasterName())) {
+		    	
+		    	GamePanel.gp.getPlayerEntity().setRoom(room);
+//		    	GamePanel.gp.getPlayerEntity().setX(0);
+//		    	GamePanel.gp.getPlayerEntity().setY(0);
+		    	GameWindow.gw.initLocalMapFileList(playerName, room);
+		    } else {
+		    	/** world of another player */
+//			    System.out.println("loaded "+GameStates.standardMapFolder+playerName+"/"+playerName);
+//		    	GamePanel.gp.getPlayerEntity().setX(0);
+//		    	GamePanel.gp.getPlayerEntity().setY(0);
+		    	GameWindow.gw.initLocalMapFileList(GameWindow.gw.getMapMasterName(), room);
+		    	GamePanel.gp.getPlayerEntity().setRoom(room);
+		    }
+		    
+		    GameWindow.gw.send(ClientMessages.editPlayerRoom(GamePanel.gp.getPlayerEntity().getId(), this.getPlayerName(), GamePanel.gp.getPlayerEntity().getRoom()));
+		    
+		    LightManager.clear();
+		    this.selectLightByEnvironment();
+		    if (!isGameMaster()) GamePanel.gp.setZoomFactor(GameStates.standardZoomFactor);
+		    this.selectBackgroundMusicByEnvironment();
+		}
+	}
+	
+	
+	
+	public String getLowerRoom(String actualRoomName) {
+		String retString =MyStrings.increaseStringNumerator(actualRoomName);
+		return retString;
+	}
+	
+	public String getUpperRoom(String actualRoomName) {
+		String retString =MyStrings.decreaseStringNumerator(actualRoomName);
+		return retString;
+	}
+	
+	public boolean isMapMaster() {
+		return (this.getPlayerName().equals(this.getMapMasterName()));
 	}
 	
 	public void initMapManagers() {
-		MapManager cobbleStoneLayer = new MapManager("cobble");
+//		System.out.println(GamePanel.gp.getMiniMap().getWidth()+" "+GamePanel.gp.getMiniMap().getHeight());
+		MapManager cobbleStoneLayer = new MapManager("cobble", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
 		mapManagers.put(cobbleStoneLayer.getPaintLayer(), cobbleStoneLayer);
-		MapManager grassLayer = new MapManager("grass");
+		MapManager grassLayer = new MapManager("grass", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
 		mapManagers.put(grassLayer.getPaintLayer(), grassLayer);
-		MapManager snowLayer = new MapManager("snow");
-		mapManagers.put(snowLayer.getPaintLayer(), snowLayer);
-		MapManager desertLayer = new MapManager("desert");
-		mapManagers.put(desertLayer.getPaintLayer(), desertLayer);
-		ObjectMapManager treeLayer1 = new ObjectMapManager("tree1");
+//		MapManager snowLayer = new MapManager("snow");
+//		mapManagers.put(snowLayer.getPaintLayer(), snowLayer);
+		MapManager holeLayer = new MapManager("hole", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
+		mapManagers.put(holeLayer.getPaintLayer(), holeLayer);
+		ObjectMapManager treeLayer1 = new ObjectMapManager("tree1", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
+		ObjectMapManager treeLayer1LowerRoom = new ObjectMapManager("tree1", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
 		objectMapManagers.put(treeLayer1.getPaintLayer(), treeLayer1);
-		ObjectMapManager treeLayer2 = new ObjectMapManager("tree2");
+		objectMapManagersLowerRoom.put(treeLayer1.getPaintLayer(), treeLayer1LowerRoom);
+		ObjectMapManager treeLayer2 = new ObjectMapManager("tree2", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
+		ObjectMapManager treeLayer2LowerRoom = new ObjectMapManager("tree2", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
 		objectMapManagers.put(treeLayer2.getPaintLayer(), treeLayer2);
-		ObjectMapManager overlayTreeLayer1 = new ObjectMapManager("overlayTree1");
+		objectMapManagersLowerRoom.put(treeLayer2.getPaintLayer(), treeLayer2LowerRoom);
+		ObjectMapManager overlayTreeLayer1 = new ObjectMapManager("overlayTree1", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
+		ObjectMapManager overlayTreeLayer1LowerRoom = new ObjectMapManager("overlayTree1", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
 		objectMapManagers.put(overlayTreeLayer1.getPaintLayer(), overlayTreeLayer1);
-		ObjectMapManager overlayTreeLayer2 = new ObjectMapManager("overlayTree2");
+		objectMapManagersLowerRoom.put(overlayTreeLayer1.getPaintLayer(), overlayTreeLayer1LowerRoom);
+		ObjectMapManager overlayTreeLayer2 = new ObjectMapManager("overlayTree2", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
+		ObjectMapManager overlayTreeLayer2LowerRoom = new ObjectMapManager("overlayTree2", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
 		objectMapManagers.put(overlayTreeLayer2.getPaintLayer(), overlayTreeLayer2);
-		UndergroundMapManager undergroundMapManager = new UndergroundMapManager("underground");
+		objectMapManagersLowerRoom.put(overlayTreeLayer2.getPaintLayer(), overlayTreeLayer2LowerRoom);
+		UndergroundMapManager undergroundMapManager = new UndergroundMapManager("underground", GamePanel.gp.getMiniMap().getWidth(), GamePanel.gp.getMiniMap().getHeight());
 		undergroundMapManagers.put(undergroundMapManager.getPaintLayer(), undergroundMapManager);
 	}
 	
-	public void initLocalMapFileList(String playerName) {
-		
+	public void initLocalMapFileList(String playerName, String room) {
+		this.setInitingLocalMapFileList(true);
 		this.resetMapManagers();
 		for (ObjectMapManager oManager : objectMapManagers.values()) {
-			oManager.initLocalMapFileList(playerName);
-			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+oManager.paintLayer);
+			oManager.initLocalMapFileList(playerName, room);
+			GUI.gui.gameInfoConsole.appendInfo("Initialized files of "+oManager.paintLayer);
+		}
+		for (ObjectMapManager oManager : objectMapManagersLowerRoom.values()) {
+			oManager.initLocalMapFileList(playerName, this.getLowerRoom(room));
+			GUI.gui.gameInfoConsole.appendInfo("Initialized lowerRoom files of "+oManager.paintLayer);
 		}
 		for (MapManager mManager : mapManagers.values()) {
-			mManager.initLocalMapFileList(playerName);
-			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+mManager.paintLayer);
+			mManager.initLocalMapFileList(playerName, room);
+			GUI.gui.gameInfoConsole.appendInfo("Initialized files of "+mManager.paintLayer);
 		}
 		for (UndergroundMapManager ugrmManager : undergroundMapManagers.values()) {
-			ugrmManager.initLocalUndergroundMapFileList(playerName);
-			GameWindow.gw.gameInfoConsole.appendInfo("Initialized files of "+ugrmManager.paintLayer);
+			ugrmManager.initLocalUndergroundMapFileList(playerName, room);
+			GUI.gui.gameInfoConsole.appendInfo("Initialized files of "+ugrmManager.paintLayer);
 		}
+		this.setInitingLocalMapFileList(false);
+		GamePanel.gp.setTransparentLoad(0.0f);
 	}
 	
 //	public void deleteOnlyMapsOfMapManagers() {
@@ -894,6 +1127,7 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	public void resetMapManagers() {
 		mapManagers.clear();
 	    objectMapManagers.clear();
+	    objectMapManagersLowerRoom.clear();
 	    undergroundMapManagers.clear();
 	    this.initMapManagers();
 	}
@@ -908,6 +1142,10 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 
 	public HashMap<String, ObjectMapManager> getObjectMapManagers() {
 		return objectMapManagers;
+	}
+	
+	public HashMap<String, ObjectMapManager> getObjectMapManagersLowerRoom() {
+		return objectMapManagersLowerRoom;
 	}
 	
 	public HashMap<String, UndergroundMapManager> getUndergroundMapManagers() {
@@ -941,8 +1179,13 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 	}
 	
 	public void initSendMapList() {
-		File folder = new File(GameStates.standardMapFolder+playerName);
-		setSendMapList(MyUtil.listFilesForFolder(folder));
+		File folder = new File(GameStates.standardMapFolder+playerName+"/"+GamePanel.gp.getPlayerEntity().getRoom());
+		ArrayList<String> folderContent = MyUtil.listFilesForFolder(folder);
+		ArrayList<String> sendMapListNew = new ArrayList<String>();
+		for (String folderContentEntry : folderContent) {
+			sendMapListNew.add(GamePanel.gp.getPlayerEntity().getRoom()+"/"+folderContentEntry);
+		}
+		setSendMapList(sendMapListNew);
 	}
 	
 	public String takeFirstSendMap() {
@@ -999,5 +1242,220 @@ public class GameWindow extends JFrame implements SimpleClientListener, ActionLi
 		if (!this.sendItemList.contains(itemID)) this.sendItemList.add(itemID);
 	}
 
+	public boolean isGameMaster() {
+		return gameMaster;
+	}
+
+	public void setGameMaster(boolean gameMaster) {
+		this.gameMaster = gameMaster;
+		if (!isGameMaster()) {
+			GamePanel.gp.setZoomFactor(GameStates.standardZoomFactor);
+		}
+		TextEffectManager.add(new TextEffect("GameMaster-Mode is "+ (isGameMaster() ? "ON (light = 100%)":"OFF")));
+		this.selectLightByEnvironment();
+		/** take care for the music and effects */
+		if (GameModus.modus == GameModus.GAME) {
+			this.selectBackgroundMusicByEnvironment();
+		} else if (GameModus.modus == GameModus.MAINMENU) {
+			GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.MAINMENU);
+		}
+	}
+	
+	public void selectBackgroundMusicByEnvironment() {
+		if (!isGameMaster()) {
+			WorldType worldType = this.getWorldType(GamePanel.gp.getPlayerEntity().getRoom());
+			switch (worldType) {
+			case BASE:  {
+				if (GamePanel.gp.getLightIntensity() > GameStates.maxDay-(3*GameStates.timeStep)) {
+					GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.FORESTBIRDS);
+					GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.GAME);
+				} else {
+					// nightsound
+					GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.NIGHTOWL);
+					GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.EMPTY);
+				}
+				break;
+			}
+			case UNDERGROUND_A: {
+				GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.DUNGEON);
+				GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.EMPTY);
+				break;
+			}
+			case UNDERGROUND_B: {
+				GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.DUNGEON);
+				GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.EMPTY);
+				break;
+			}
+			case UNDERGROUND_C: {
+				GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.DUNGEON);
+				GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.EMPTY);
+				break;
+			}
+			default: ;
+			break;
+			}
+		} else {
+			GameWindow.gw.sound.startMusic(MusicType.BACKGROUND, MusicName.GAMEMASTER);
+			WorldType worldType = this.getWorldType(GamePanel.gp.getPlayerEntity().getRoom());
+			switch (worldType) {
+			case BASE:  {
+				if (GamePanel.gp.getLightIntensity() > GameStates.maxDay-(3*GameStates.timeStep)) {
+					GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.FORESTBIRDS);
+				} else {
+					// nightsound
+					GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.NIGHTOWL);
+				}
+				break;
+			}
+			case UNDERGROUND_A: {
+				GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.EMPTY);
+				break;
+			}
+			case UNDERGROUND_B: {
+				GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.EMPTY);
+				break;
+			}
+			case UNDERGROUND_C: {
+				GameWindow.gw.sound.startMusic(MusicType.ATMOSPHERE, MusicName.EMPTY);
+				break;
+			}
+			default: ;
+			break;
+			}
+		}
+	}
+	
+	public void selectLightByEnvironment() {
+		if (!isGameMaster()) {
+			WorldType worldType = this.getWorldType(GamePanel.gp.getPlayerEntity().getRoom());
+			switch (worldType) {
+			case BASE:  {
+				this.setLight(false);
+				break;
+			}
+			default: {
+				if (this.isUsingLight()) this.setLight(true); else this.setLight(false);
+			};
+			break;
+			}
+		} else {
+			this.setLight(false);
+		}
+	}
+
+	public boolean isInitingLocalMapFileList() {
+		return initingLocalMapFileList;
+	}
+
+	public void setInitingLocalMapFileList(boolean initingLocalMapFileList) {
+		this.initingLocalMapFileList = initingLocalMapFileList;
+	}
+	
+	public WorldType getWorldType(String roomName) {
+		WorldType worldType = WorldType.BASE;
+		if (roomName.charAt(roomName.length()-4) == '0' ) {
+			worldType = WorldType.BASE;
+		}
+		if (roomName.charAt(roomName.length()-4) == 'A' ) {
+			worldType = WorldType.UNDERGROUND_A;
+		}
+		if (roomName.charAt(roomName.length()-4) == 'B' ) {
+			worldType = WorldType.UNDERGROUND_B;
+		}
+		if (roomName.charAt(roomName.length()-4) == 'C' ) {
+			worldType = WorldType.UNDERGROUND_C;
+		}
+		return worldType;
+	}
+
+	public int getUndergroundPaintTypeOfWorldType(WorldType worldType) {
+		int paintType = GameStates.undergroundGrassTile;
+		switch (worldType) {
+		case BASE: {
+			paintType = GameStates.undergroundGrassTile;
+			break;
+		}
+		case UNDERGROUND_A: {
+			paintType = GameStates.undergroundEarthTile;
+			break;
+		}
+		case UNDERGROUND_B: {
+			paintType = GameStates.undergroundStoneTile;
+			break;
+		}
+		case UNDERGROUND_C: {
+			paintType = GameStates.undergroundEarthTile;
+			break;
+		}
+		default: paintType = GameStates.undergroundEarthTile;
+		break;
+		}
+		return paintType;
+	}
+
+	public String getTwitchUserName() {
+		return twitchUserName;
+	}
+
+	public void setTwitchUserName(String twitchUserName) {
+		this.twitchUserName = twitchUserName;
+	}
+
+	public String getTwitchPWD() {
+		return twitchPWD;
+	}
+
+	public void setTwitchPWD(String twitchPWD) {
+		this.twitchPWD = twitchPWD;
+	}
+
+	public boolean isUsingTwitch() {
+		return usingTwitch;
+	}
+
+	public void setUsingTwitch(boolean usingTwitch) {
+		this.usingTwitch = usingTwitch;
+	}
+
+	public String getTwitchChannel() {
+		return twitchChannel;
+	}
+
+	public void setTwitchChannel(String twitchChannel) {
+		this.twitchChannel = twitchChannel;
+	}
+	
+	public TwitchBot getTwitchBot() {
+		return twitchBot;
+	}
+
+	public void setTwitchBot(TwitchBot twitchBot) {
+		this.twitchBot = twitchBot;
+	}
+
+	public boolean isUsingLight() {
+		return usingLight;
+	}
+
+	public void setUsingLight(boolean usingLight) {
+		this.usingLight = usingLight;
+	}
+
+	public MySQLConnector getMySQL() {
+		return mySQL;
+	}
+
+	public void setMySQL(MySQLConnector mySQL) {
+		this.mySQL = mySQL;
+	}
+
+	public boolean isUsingWeather() {
+		return usingWeather;
+	}
+
+	public void setUsingWeather(boolean usingWeather) {
+		this.usingWeather = usingWeather;
+	}
+	
 
 }

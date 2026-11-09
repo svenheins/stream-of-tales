@@ -1,3 +1,9 @@
+/* Copyright (C) Sven Heins - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * author: Sven Heins
+ * date: 05.07.2015
+ */
 package de.svenheins.objects;
 
 import de.svenheins.main.TileType;
@@ -14,11 +20,11 @@ public class InteractionTile {
 	}
 	
 	public void interact(int[] addValues) {
-		System.out.println("addValues length = "+addValues.length);
+//		System.out.println("InteractionTile: addValues length = "+addValues.length);
 		if (addValues.length == values.length) {
 			for (int i =0 ; i< values.length; i++) {
 				values[i] += addValues[i];
-				System.out.println("values["+i+"]="+values[i]);
+//				System.out.println("InteractionTile: values["+i+"]="+values[i]);
 			}
 		} else {
 			System.out.println("wrong length of interaction values");
